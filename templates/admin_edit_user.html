@@ -67,24 +67,31 @@
           <form method="post">
             <div class="row mb-3">
               <div class="col-md-6">
+                <label class="form-label">Full Name</label>
+                <input type="text" name="full_name" class="form-control" value="{{ user.full_name or '' }}" placeholder="e.g., Dr. Rajesh Kumar">
+              </div>
+              <div class="col-md-6">
                 <label class="form-label">Username</label>
-                <input type="text" name="username" class="form-control" value="{{ user.username }}" 
+                <input type="text" name="username" class="form-control" value="{{ user.username }}"
                        {% if user.username == 'admin' %}readonly{% endif %} required>
                 {% if user.username == 'admin' %}
                 <small class="text-muted">Admin username cannot be changed</small>
                 {% endif %}
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Employee ID</label>
-                <input type="text" name="emp_id" class="form-control" value="{{ user.emp_id }}" required>
-              </div>
             </div>
 
             <div class="row mb-3">
               <div class="col-md-6">
+                <label class="form-label">Employee ID</label>
+                <input type="text" name="emp_id" class="form-control" value="{{ user.emp_id }}" required>
+              </div>
+              <div class="col-md-6">
                 <label class="form-label">Email ID</label>
                 <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
               </div>
+            </div>
+
+            <div class="row mb-3">
               <div class="col-md-6">
                 <label class="form-label">Gender</label>
                 <select name="gender" class="form-select" required>
@@ -110,6 +117,10 @@
               <label class="form-label">Role</label>
               <select name="role" class="form-select" required {% if user.username == 'admin' %}disabled{% endif %}>
                 <option value="Employee" {% if user.role == 'Employee' %}selected{% endif %}>Employee</option>
+                <option value="Intern" {% if user.role == 'Intern' %}selected{% endif %}>Intern</option>
+                <option value="School IQAC Coordinator" {% if user.role == 'School IQAC Coordinator' %}selected{% endif %}>School IQAC Coordinator</option>
+                <option value="Campus IQAC Coordinator" {% if user.role == 'Campus IQAC Coordinator' %}selected{% endif %}>Campus IQAC Coordinator</option>
+                <option value="Secretary" {% if user.role == 'Secretary' %}selected{% endif %}>Secretary</option>
                 <option value="Admin" {% if user.role == 'Admin' %}selected{% endif %}>Admin</option>
               </select>
               {% if user.username == 'admin' %}
@@ -132,7 +143,7 @@
       <div class="footer-content">
         <span>Concept: <strong>Dr. Cecil Donald</strong></span>
         <span class="divider">|</span>
-        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26)</span>
+        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26) &amp; <strong>Darshan Heble, Ananya S Shetty, Arnav Narula</strong> (MCA 2025-27)</span>
       </div>
     </footer>
 

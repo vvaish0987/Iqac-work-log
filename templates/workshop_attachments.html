@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Workshop Attachments</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+      body { background-color: #f8fafc; font-size: 15px; }
+      .card { box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1); border: none; border-radius: 0.5rem; }
+      .btn-primary { background-color: #003366; border-color: #003366; }
+      .text-primary { color: #003366 !important; }
+    </style>
+  </head>
+  <body>
+    <div class="container py-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="text-primary mb-0">Workshop Attachments — {{ selected_month }}</h5>
+        <div>
+          <a href="/" class="btn btn-outline-secondary btn-sm me-2">Home</a>
+          <a href="/logout" class="btn btn-outline-secondary btn-sm">Logout</a>
+        </div>
+      </div>
+
+      <form method="GET" action="/workshop_attachments" class="d-flex gap-2 align-items-center mb-3">
+        <label class="form-label mb-0">Reporting Month:</label>
+        <input type="month" name="month" class="form-control" style="max-width:180px;" value="{{ selected_month }}">
+        <button class="btn btn-primary btn-sm">Filter</button>
+      </form>
+
+      {% if workshop_attachments %}
+        <div class="card">
+          <div class="card-body">
+            {% for uname, files in workshop_attachments.items() %}
+              <div class="mb-3">
+                <div class="fw-semibold text-secondary mb-1">{{ uname.title() }}</div>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for f in files %}
+                    <div class="d-flex align-items-center gap-2">
+                      <a href="/view_attachment/{{ f.id }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm me-1">
+                        <i class="bi bi-eye me-1"></i> View
+                      </a>
+                      <a href="/view_attachment/{{ f.id }}?download=1" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-download me-1"></i>{{ f.name }}
+                      </a>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+          <p class="text-muted mt-3">No workshop attachments available for {{ selected_month }}.</p>
+        </div>
+      {% endif %}
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

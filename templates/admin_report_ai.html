@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Report Summary - IQAC Worklog</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    html {
+      height: 100%;
+    }
+
+    body {
+      background-color: #f8fafc;
+      font-size: 14px;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-container {
+      flex: 1;
+    }
+
+    header {
+      background-color: #003366;
+      color: #fff;
+      padding: 1rem 1.5rem;
+      border-radius: .5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .logo-container {
+      background-color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: inline-block;
+    }
+
+    .logo-container img {
+      height: 75px;
+      width: auto;
+    }
+
+    .header-title {
+      color: #fff;
+      margin: 0;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .header-title h5 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    h5,
+    h6 {
+      margin: 0;
+    }
+
+    .card {
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .1);
+      border: none;
+      border-radius: 0.5rem;
+    }
+
+    .btn-primary {
+      background-color: #003366;
+      border-color: #003366;
+    }
+
+    .btn-primary:hover {
+      background-color: #004080;
+      border-color: #004080;
+    }
+
+    th {
+      background-color: #003366 !important;
+      color: #fff !important;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .table td {
+      vertical-align: top;
+      line-height: 1.4;
+      padding: 8px 10px;
+    }
+
+    .table th,
+    .table td {
+      border: 1px solid #dee2e6 !important;
+    }
+
+    .category-task-item {
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      border-left: 3px solid #003366;
+    }
+
+    .category-task-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .category-name {
+      font-weight: 600;
+      color: #003366;
+      font-size: 0.85rem;
+    }
+
+    .category-task-text {
+      color: #333;
+      margin-top: 4px;
+      white-space: pre-line;
+    }
+
+    .report-info,
+    .report-summary {
+      background: #e9f1fa;
+      border-left: 4px solid #003366;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border-radius: .5rem;
+    }
+
+    .report-summary {
+      background: #eef5fb;
+      border-left: 4px solid #004080;
+      font-size: 13px;
+    }
+
+    .signature {
+      margin-top: 2rem;
+      text-align: right;
+      font-weight: 600;
+      color: #003366;
+    }
+
+    .worklog-header h5 {
+      color: #003366;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .card.page-break {
+      border-top: 2px dashed #ccc;
+      padding-top: 20px;
+    }
+
+    .text-primary {
+      color: #003366 !important;
+    }
+
+    .alert {
+      border-radius: 0.5rem;
+    }
+
+    footer {
+      background: linear-gradient(135deg, #002244 0%, #003366 50%, #004080 100%);
+      color: #fff;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      margin-top: auto;
+      border-top: 3px solid #ffc107;
+      font-size: 0.85rem;
+    }
+
+    footer .footer-content {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    footer .divider {
+      color: #ffc107;
+      font-weight: bold;
+    }
+
+    .ai-summary-card {
+      border-left: 5px solid #ffc107;
+      background: linear-gradient(to right, #ffffff, #fcfdff);
+    }
+
+    .ai-summary-card .card-header {
+      background-color: #003366;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .print-header {
+      display: none;
+      width: 100%;
+      background-color: #003366 !important;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      margin-bottom: 1rem;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .print-header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .print-header-logo {
+      background-color: #fff !important;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .print-header-logo img {
+      height: 50px;
+      width: auto;
+    }
+
+    .print-header-title {
+      flex: 1;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      color: #fff !important;
+    }
+
+    @media print {
+      .print-header {
+        display: block !important;
+        background-color: #003366 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .print-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .print-header-logo {
+        display: flex;
+        align-items: center;
+      }
+
+      .print-header-title {
+        color: #fff !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      body {
+        background: white;
+        font-size: 11px;
+        margin: 0;
+        padding: 0;
+        display: block !important;
+      }
+
+      .main-container {
+        display: block !important;
+      }
+
+      .container {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+      }
+
+      .card {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        margin: 0 0 0.25rem 0;
+      }
+
+      .worklog-header {
+        display: none;
+      }
+
+      table {
+        page-break-inside: auto;
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+        break-inside: avoid;
+      }
+
+      table th,
+      table td {
+        border: 1px solid #000;
+        padding: 6px 8px;
+        text-align: left;
+      }
+
+      table th {
+        background: none;
+        color: #000;
+        font-weight: bold;
+      }
+
+      .report-info,
+      .report-summary,
+      .ai-summary {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0.5rem 0;
+      }
+
+      .worklog-header {
+        text-align: center;
+      }
+
+      .worklog-header h5,
+      .worklog-header h6 {
+        margin: 0.25rem 0;
+      }
+
+      .signature {
+        margin: 1rem 0 0 0;
+        text-align: right;
+      }
+
+      .category-task-item {
+        border: none;
+        background: none;
+        padding: 0;
+        margin: 0.25rem 0;
+      }
+
+      .category-name {
+        font-weight: bold;
+      }
+
+      .page-break {
+        page-break-before: auto;
+        break-before: auto;
+      }
+
+      .page-break+.page-break {
+        page-break-before: always;
+        break-before: page;
+      }
+
+      footer {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-3 main-container">
+    <div class="print-header">
+      <div class="print-header-content">
+        <div class="print-header-logo">
+          <img src="{{ url_for('static', filename='christ_logo.png') }}" alt="CHRIST Logo">
+        </div>
+        <div class="print-header-title">INTERNAL QUALITY ASSURANCE CELL (IQAC)</div>
+        <div style="width:80px;"></div>
+      </div>
+    </div>
+    <header class="d-flex justify-content-between align-items-center no-print">
+      <a href="/admin" class="text-decoration-none d-flex align-items-center">
+        <div class="logo-container">
+          <img src="{{ url_for('static', filename='christ_logo.png') }}" alt="CHRIST Logo">
+        </div>
+      </a>
+      <div class="header-title">
+        <h5>INTERNAL QUALITY ASSURANCE CELL (IQAC)</h5>
+      </div>
+      <div>
+        <a href="/admin_report" class="btn btn-light btn-sm me-2"><i class="bi bi-file-earmark-text"></i> Standard
+          Report</a>
+        <a href="/admin" class="btn btn-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Back to Admin</a>
+        <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show no-print" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endwith %}
+
+    <div class="card mb-4 no-print">
+      <div class="card-body">
+        <h6 class="mb-3 text-primary"><i class="bi bi-lightning-charge-fill text-warning"></i> Generate AI Worklog
+          Summary</h6>
+        <form method="post" action="/admin_report_ai" class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">User</label>
+            <select name="user" class="form-select" required>
+              <option value="" disabled {% if not selected_user %}selected{% endif %}>Select user</option>
+              <option value="All" {% if selected_user=='All' %}selected{% endif %}>All Users</option>
+              {% for u in users %}
+              <option value="{{ u['username'] }}" {% if selected_user==u['username'] %}selected{% endif %}>
+                {{ u['username'] }} ({{ u['emp_id'] }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Category Filter</label>
+            <select name="category_filter" class="form-select">
+              <option value="All" {% if category_filter=='All' or not category_filter %}selected{% endif %}>All
+                Categories</option>
+              <option value="Documentation and Audits" {% if category_filter=='Documentation and Audits' %}selected{%
+                endif %}>Documentation &amp; Audits</option>
+              <option value="Rankings" {% if category_filter=='Rankings' %}selected{% endif %}>Rankings</option>
+              <option value="Publications" {% if category_filter=='Publications' %}selected{% endif %}>Publications
+              </option>
+              <option value="Training and Development" {% if category_filter=='Training and Development' %}selected{%
+                endif %}>Training &amp; Development</option>
+              <option value="Strategic Initiatives" {% if category_filter=='Strategic Initiatives' %}selected{% endif
+                %}>Strategic Initiatives</option>
+              <option value="Others" {% if category_filter=='Others' %}selected{% endif %}>Others</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Report Type</label>
+            <select name="filter_mode" id="filter_mode" class="form-select">
+              <option value="date" {% if filter_mode=='date' %}selected{% endif %}>Custom Date Range</option>
+              <option value="month" {% if filter_mode=='month' %}selected{% endif %}>Month-wise</option>
+              <option value="academic_year" {% if filter_mode=='academic_year' %}selected{% endif %}>Academic Year
+                (May-Apr)</option>
+            </select>
+          </div>
+          <div id="date_range_fields" class="col-md-5 d-flex gap-2"
+            style="{% if filter_mode in ['month', 'academic_year'] %}display:none !important;{% else %}display:flex !important;{% endif %}">
+            <div class="flex-fill">
+              <label class="form-label">From Date</label>
+              <input type="date" name="from_date" id="from_date" class="form-control" value="{{ from_date or '' }}">
+            </div>
+            <div class="flex-fill">
+              <label class="form-label">To Date</label>
+              <input type="date" name="to_date" id="to_date" class="form-control" value="{{ to_date or '' }}">
+            </div>
+          </div>
+          <div id="month_field" class="col-md-3"
+            style="{% if filter_mode == 'month' %}display:block !important;{% else %}display:none !important;{% endif %}">
+            <label class="form-label">Select Month &amp; Year (YYYY-MM)</label>
+            <input type="month" name="month" id="month_input" class="form-control" value="{{ selected_month or '' }}">
+          </div>
+          <div id="academic_year_field" class="col-md-3"
+            style="{% if filter_mode == 'academic_year' %}display:block !important;{% else %}display:none !important;{% endif %}">
+            <label class="form-label">Select Academic Year</label>
+            <select name="academic_year" id="academic_year_input" class="form-select">
+              <option value="" disabled {% if not selected_academic_year %}selected{% endif %}>This Academic Year
+              </option>
+              {% set ay_year = datetime.now().year %}
+              {% set ay_month = datetime.now().month %}
+              {% set start_year = ay_year if ay_month >= 5 else ay_year - 1 %}
+              {% for i in range(5) %}
+              {% set year = start_year - i %}
+              <option value="{{ year }}-{{ year + 1 }}" {% if selected_academic_year==(year|string ~ '-' ~
+                (year+1)|string) %}selected{% endif %}>
+                {{ year }}-{{ year + 1 }} (May {{ year }} - Apr {{ year + 1 }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-12 d-flex gap-2 mt-3">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-cpu"></i> Generate AI Summary</button>
+            <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i
+                class="bi bi-printer"></i> Print</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- AI Summary Output Section -->
+    {% if ai_summary %}
+    <div class="card mb-4 ai-summary-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="d-flex align-items-center gap-2">
+          <i class="bi bi-lightning-charge-fill text-warning"></i>
+          AI-Generated IQAC Summary
+        </span>
+        <button class="btn btn-sm btn-outline-light" onclick="copySummary()"><i class="bi bi-clipboard"></i> Copy
+          Text</button>
+      </div>
+      <div class="card-body">
+        <div id="summary-content" style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #1e293b;">{{
+          ai_summary }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if ai_error %}
+    <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <div>{{ ai_error }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Standard worklog preview -->
+    {% if logs and logs|length > 0 %}
+    {% if selected_user == 'All' %}
+    {% set grouped_logs = {} %}
+    {% for log in logs %}
+    {% set uname = log['username'] %}
+    {% if uname not in grouped_logs %}
+    {% set _ = grouped_logs.update({uname: []}) %}
+    {% endif %}
+    {% set _ = grouped_logs[uname].append(log) %}
+    {% endfor %}
+    {% for uname, entries in grouped_logs.items() %}
+    <div class="card mb-5 page-break">
+      <div class="card-body">
+        <div class="text-center worklog-header mb-3">
+          <h5>CHRIST (Deemed to be University), Bengaluru</h5>
+          <h6>Internal Quality Assurance Cell (IQAC)</h6>
+          <h6 class="fw-bold text-primary mt-3">Worklog of {{ uname.title() }}</h6>
+        </div>
+        <div class="report-summary">
+          <div><strong>Report Type:</strong>
+            {% if filter_mode == 'month' %}
+            Month-wise ({{ selected_month | default('—') }})
+            {% elif filter_mode == 'academic_year' %}
+            Academic Year ({{ selected_academic_year | default('—') }})
+            {% else %}
+            Custom Date Range ({{ from_date | default('—') }} to {{ to_date | default('—') }})
+            {% endif %}
+          </div>
+          <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
+        </div>
+        <div class="report-info">
+          <div><strong>Name:</strong> {{ uname.title() }} <strong>(Employee ID:</strong> {{ entries[0]['emp_id'] or '—'
+            }})</div>
+          <div><strong>No. of Entries:</strong> {{ entries|length }}</div>
+        </div>
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th style="width:12%;">Date</th>
+              <th>Category-wise Tasks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in entries %}
+            <tr>
+              <td class="text-center">{{ log['date'] | datetimeformat }}</td>
+              <td>
+                {% if log.tasks_dict %}
+                {% for cat, task in log.tasks_dict.items() %}
+                <div class="category-task-item">
+                  <div class="category-name">{{ cat }}</div>
+                  <div class="category-task-text">{{ task }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <span class="text-muted">No tasks recorded</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="signature">Director, IQAC</div>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card mb-5">
+      <div class="card-body">
+        <div class="text-center worklog-header mb-3">
+          <h5>CHRIST (Deemed to be University), Bengaluru</h5>
+          <h6>Internal Quality Assurance Cell (IQAC)</h6>
+          <h6 class="fw-bold text-primary mt-3">Worklog of {{ selected_user.title() }}</h6>
+        </div>
+        <div class="report-summary">
+          <div><strong>Report Type:</strong>
+            {% if filter_mode == 'month' %}
+            Month-wise ({{ selected_month | default('—') }})
+            {% elif filter_mode == 'academic_year' %}
+            Academic Year ({{ selected_academic_year | default('—') }})
+            {% else %}
+            Custom Date Range ({{ from_date | default('—') }} to {{ to_date | default('—') }})
+            {% endif %}
+          </div>
+          <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
+        </div>
+        <div class="report-info">
+          <div><strong>Name:</strong> {{ selected_user.title() }} <strong>(Employee ID:</strong> {{ logs[0]['emp_id'] or
+            '—' }})</div>
+          <div><strong>No. of Entries:</strong> {{ logs|length }}</div>
+        </div>
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th style="width:12%;">Date</th>
+              <th>Category-wise Tasks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+            <tr>
+              <td class="text-center">{{ log['date'] | datetimeformat }}</td>
+              <td>
+                {% if log.tasks_dict %}
+                {% for cat, task in log.tasks_dict.items() %}
+                <div class="category-task-item">
+                  <div class="category-name">{{ cat }}</div>
+                  <div class="category-task-text">{{ task }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <span class="text-muted">No tasks recorded</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="signature">Director, IQAC</div>
+      </div>
+    </div>
+    {% endif %}
+    {% else %}
+    {% if selected_user %}
+    <div class="alert alert-info">No report data to display. Please generate a report.</div>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    function copySummary() {
+      const text = document.getElementById("summary-content").innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Summary copied to clipboard!");
+      }).catch(err => {
+        console.error("Could not copy: ", err);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      const currentMonthString = today.toISOString().split('T')[0].substring(0, 7);
+
+      const fromDateInput = document.getElementById('from_date');
+      const toDateInput = document.getElementById('to_date');
+      const monthInput = document.getElementById('month_input');
+
+      if (fromDateInput && !fromDateInput.value) fromDateInput.value = todayString;
+      if (toDateInput && !toDateInput.value) toDateInput.value = todayString;
+
+      if (fromDateInput && toDateInput) {
+        const fpFrom = flatpickr(fromDateInput, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          defaultDate: fromDateInput.value,
+          onChange: function(selectedDates, dateStr) {
+            fromDateInput.value = dateStr;
+            fpTo.set('minDate', dateStr);
+          }
+        });
+        
+        const fpTo = flatpickr(toDateInput, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          minDate: fromDateInput.value,
+          defaultDate: toDateInput.value,
+          onChange: function(selectedDates, dateStr) {
+            toDateInput.value = dateStr;
+          }
+        });
+      }
+
+      if (monthInput && !monthInput.value) monthInput.value = currentMonthString;
+
+      const academicYearSelect = document.getElementById('academic_year_input');
+      if (academicYearSelect && !academicYearSelect.value) {
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        const startYear = currentMonth >= 5 ? currentYear : currentYear - 1;
+        academicYearSelect.value = startYear + '-' + (startYear + 1);
+      }
+
+      const modeSelect = document.getElementById("filter_mode");
+      const dateFields = document.getElementById("date_range_fields");
+      const monthField = document.getElementById("month_field");
+      const academicYearField = document.getElementById("academic_year_field");
+
+      function setDisplay(el, value) {
+        if (el) el.style.setProperty('display', value, 'important');
+      }
+
+      function toggleFilterFields(mode) {
+        if (mode === "month") {
+          setDisplay(monthField, 'block');
+          setDisplay(dateFields, 'none');
+          setDisplay(academicYearField, 'none');
+        } else if (mode === "academic_year") {
+          setDisplay(monthField, 'none');
+          setDisplay(dateFields, 'none');
+          setDisplay(academicYearField, 'block');
+        } else {
+          setDisplay(monthField, 'none');
+          setDisplay(dateFields, 'flex');
+          setDisplay(academicYearField, 'none');
+        }
+      }
+
+      if (modeSelect) {
+        toggleFilterFields(modeSelect.value || "{{ filter_mode or 'date' }}");
+        modeSelect.addEventListener("change", function () { toggleFilterFields(this.value); });
+      }
+    });
+  </script>
+
+  <!-- Footer -->
+  <footer class="no-print">
+    <div class="footer-content">
+      <span>Concept: <strong>Dr. Cecil Donald</strong></span>
+      <span class="divider">|</span>
+      <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26) &amp; <strong>Darshan Heble, Ananya S Shetty, Arnav Narula</strong> (MCA 2025-27)</span>
+    </div>
+  </footer>
+</body>
+
+</html>

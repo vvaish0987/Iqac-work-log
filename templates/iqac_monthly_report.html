@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monthly Work Done Report - IQAC</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    html {
+      height: 100%;
+    }
+
+    body {
+      background-color: #f8fafc;
+      font-size: 15px;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-container {
+      flex: 1;
+    }
+
+    header {
+      background-color: #003366;
+      color: #fff;
+      padding: 1rem 1.5rem;
+      border-radius: .5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .logo-container {
+      background-color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .logo-container img {
+      height: 75px;
+      width: auto;
+    }
+
+    .header-title {
+      color: #fff;
+      margin: 0;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .header-title h5 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .card {
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .1);
+      border: none;
+      border-radius: 0.5rem;
+    }
+
+    .btn-primary {
+      background-color: #003366;
+      border-color: #003366;
+    }
+
+    .btn-primary:hover {
+      background-color: #004080;
+      border-color: #004080;
+    }
+
+    .btn-outline-primary {
+      color: #003366;
+      border-color: #003366;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: #003366;
+      color: #fff;
+    }
+
+    .form-label {
+      font-weight: 600;
+      color: #003366;
+    }
+
+    .text-primary {
+      color: #003366 !important;
+    }
+
+    .section-header {
+      background-color: #003366;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 0.3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      margin-top: 1rem;
+    }
+
+    .table thead {
+      background-color: #003366;
+      color: #fff;
+    }
+
+    .table-sm td,
+    .table-sm th {
+      vertical-align: middle;
+    }
+
+    footer {
+      background: linear-gradient(135deg, #002244 0%, #003366 50%, #004080 100%);
+      color: #fff;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      margin-top: auto;
+      border-top: 3px solid #ffc107;
+      font-size: 0.85rem;
+    }
+
+    footer .footer-content {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    footer .divider {
+      color: #ffc107;
+      font-weight: bold;
+    }
+
+    .table input,
+    .table textarea {
+      font-size: 0.85rem;
+    }
+
+    .btn-add-row {
+      font-size: 0.8rem;
+    }
+
+    .btn-del-row {
+      font-size: 0.8rem;
+      padding: 2px 8px;
+    }
+
+    .table-responsive {
+      overflow: visible !important;
+    }
+
+    .resp-area-wrapper {
+      position: relative;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-3 main-container">
+    <!-- Header -->
+    <header class="d-flex justify-content-between align-items-center">
+      <a href="{{ back_url or '/iqac_dashboard' }}" class="text-decoration-none d-flex align-items-center">
+        <div class="logo-container">
+          <img src="{{ url_for('static', filename='christ_logo.png') }}" alt="CHRIST Logo">
+        </div>
+      </a>
+      <div class="header-title">
+        <h5>INTERNAL QUALITY ASSURANCE CELL (IQAC)</h5>
+        <small style="font-size:0.8rem; font-weight:400;">Monthly Work Done Report{% if readonly %} — Read Only{% endif
+          %}</small>
+      </div>
+      <div>
+        <span class="text-light me-3">{{ username.title() }}</span>
+        <a href="{{ back_url or '/iqac_dashboard' }}" class="btn btn-light btn-sm me-1"><i class="bi bi-arrow-left"></i>
+          Back</a>
+        <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+      </div>
+    </header>
+
+    {% if rejection_remarks %}
+    <div class="alert alert-danger d-flex align-items-center gap-3 mb-4" style="border-left: 5px solid #dc3545;">
+      <i class="bi bi-exclamation-triangle-fill fs-3 text-danger"></i>
+      <div>
+        <strong style="font-size: 1.05rem;">Corrections Requested</strong><br>
+        <span style="font-size: 0.92rem;">The reviewer requested corrections:</span><br>
+        <span class="fst-italic" style="font-size: 0.92rem; font-weight: 500;">"{{ rejection_remarks }}"</span>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if locked %}
+    <div class="alert alert-warning d-flex align-items-center justify-content-between gap-3 mb-4"
+      style="border-left: 5px solid #ffc107; background-color: #fff3cd;">
+      <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-lock-fill fs-3 text-warning text-warning-custom"></i>
+        <div>
+          <strong style="font-size: 1.05rem; color:#856404;">Report Locked</strong><br>
+          <span style="font-size: 0.92rem; color:#856404;">This report's raw data has been locked because a PDF has been
+            generated. No further modifications can be made.</span>
+        </div>
+      </div>
+      {% if can_unlock %}
+      <div class="pe-2">
+        <form method="POST" action="/iqac_report/unlock/{{ reporting_month_str }}"
+          onsubmit="return confirm('Are you sure you want to unlock this draft? This will invalidate the previously generated PDF and require you to download and sign a new one after making changes.');">
+          <button type="submit" class="btn btn-warning btn-sm fw-bold text-dark border-secondary">
+            <i class="bi bi-unlock-fill me-1"></i> Unlock for Editing
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/iqac_monthly_report/download" id="reportForm" enctype="multipart/form-data">
+
+      <!-- ── Report Header ── -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <h6 class="text-primary mb-3">IQAC Monthly Reports</h6>
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label">Name of the IQAC Coordinator</label>
+              <input type="hidden" name="coordinator_name" value="{{ user.full_name or user.username.title() }}">
+              <input type="text" class="form-control bg-light" value="{{ user.full_name or user.username.title() }}"
+                disabled>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">School / Campus</label>
+              <input type="hidden" name="school_campus" value="{{ user.department or '' }}">
+              <input type="text" class="form-control bg-light" value="{{ user.department or '' }}" disabled
+                placeholder="e.g., School of Sciences, Bangalore">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Reporting Month</label>
+              <input type="hidden" name="reporting_month" value="{{ reporting_month_str }}">
+              <input type="text" class="form-control bg-light" value="{{ reporting_month_display }}" readonly
+                style="cursor:not-allowed; color:#555;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section I ── -->
+      <div class="section-header">Section I: Quality Assurance Initiatives</div>
+
+      <!-- Part (a) -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <p class="mb-2" style="font-size:0.9rem; font-weight:600; color:#003366;">(a) Meetings / Activities conducted
+            relating to IQAC Coordinator's responsibility areas</p>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm" id="tableA">
+              <thead>
+                <tr>
+                  <th style="width:12%;">Date of Meeting</th>
+                  <th style="width:14%;">Department / School Name</th>
+                  <th style="width:16%;">Participants' Details</th>
+                  <th style="width:20%;">Topics Discussed</th>
+                  <th style="width:20%;">Action Points / Plan</th>
+                  <th style="width:14%;">Related Responsibility Area</th>
+                  <th style="width:4%;"></th>
+                </tr>
+              </thead>
+              <tbody id="tableA-body">
+                {% set meeting_dates = draft_data.get('meeting_date[]', []) if draft_data else [] %}
+                {% set num_meeting_rows = meeting_dates|length if meeting_dates|length > 0 else 1 %}
+                {% for i in range(num_meeting_rows) %}
+                {% set meeting_date_val = meeting_dates[i] if i < meeting_dates|length else '' %} {% set
+                  dept_name_val=draft_data.get('dept_name[]', [])[i] if (draft_data and i <
+                  draft_data.get('dept_name[]', [])|length) else '' %} {% set
+                  participants_val=draft_data.get('participants[]', [])[i] if (draft_data and i <
+                  draft_data.get('participants[]', [])|length) else '' %} {% set topics_val=draft_data.get('topics[]',
+                  [])[i] if (draft_data and i < draft_data.get('topics[]', [])|length) else '' %} {% set
+                  action_points_val=draft_data.get('action_points[]', [])[i] if (draft_data and i <
+                  draft_data.get('action_points[]', [])|length) else '' %} {% set
+                  responsibility_area_val=draft_data.get('responsibility_area[]', [])[i] if (draft_data and i <
+                  draft_data.get('responsibility_area[]', [])|length) else '' %} {% set
+                  selected_areas=responsibility_area_val.split(', ') if responsibility_area_val else [] %}
+                    <tr class="row-template-a">
+                      <td><input type="date" name="meeting_date[]" class="form-control form-control-sm" value="{{ meeting_date_val }}"></td>
+                      <td><input type="text" name="dept_name[]" class="form-control form-control-sm" placeholder="Department / School" value="{{ dept_name_val }}"></td>
+                      <td><input type="text" name="participants[]" class="form-control form-control-sm" placeholder="Names / Designations" value="{{ participants_val }}"></td>
+                      <td><textarea name="topics[]" class="form-control form-control-sm topics-field" rows="2" placeholder="Auto-filled or type here">{{ topics_val }}</textarea></td>
+                      <td><textarea name="action_points[]" class="form-control form-control-sm" rows="2" placeholder="Action points">{{ action_points_val }}</textarea></td>
+                      <td style="min-width:180px;">
+                        <div class="resp-area-wrapper">
+                          <input type="hidden" name="responsibility_area[]" class="resp-area-hidden" value="{{ responsibility_area_val }}">
+                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem; background:#fff; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
+                            <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>
+                          </div>
+                          <div class="resp-area-checklist border rounded p-2 mt-1 bg-white shadow-sm" style="display:none; max-height:160px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:280px;">
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Monitoring Strategic Plan Implementation" {% if '
+                  Monitoring Strategic Plan Implementation' in selected_areas %}checked{% endif %}> Monitoring Strategic
+                  Plan Implementation</label>
+                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                      value="Benchmarking" {% if 'Benchmarking' in selected_areas %}checked{% endif %}>
+                    Benchmarking</label>
+                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                      value="Gap Analysis and Guidance" {% if 'Gap Analysis and Guidance' in selected_areas %}checked{%
+                      endif %}> Gap Analysis and Guidance</label>
+                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                      value="Data and Document Management" {% if 'Data and Document Management' in selected_areas
+                      %}checked{% endif %}> Data and Document Management</label>
+                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                      value="Audit Coordination" {% if 'Audit Coordination' in selected_areas %}checked{% endif %}>
+                    Audit Coordination</label>
+                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                      value="Engagement with University Offices/Centres" {%
+                      if 'Engagement with University Offices/Centres' in selected_areas %}checked{% endif %}> Engagement
+                    with University Offices/Centres</label>
+                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                      value="Participation in Rankings and Accreditations" {%
+                      if 'Participation in Rankings and Accreditations' in selected_areas %}checked{% endif %}>
+                    Participation in Rankings and Accreditations</label>
+                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                      value="Monitoring website updates of department activities" {%
+                      if 'Monitoring website updates of department activities' in selected_areas %}checked{% endif %}>
+                    Monitoring website updates of department activities</label>
+                  <label class="d-flex align-items-start gap-1 mb-0"><input type="checkbox" class="resp-cb mt-1"
+                      value="Report Preparation and Submission" {% if 'Report Preparation and Submission' in
+                      selected_areas %}checked{% endif %}> Report Preparation and Submission</label>
+          </div>
+        </div>
+        </td>
+        <td class="text-center"><button type="button" class="btn btn-danger btn-del-row" onclick="delRow(this)"><i
+              class="bi bi-trash"></i></button></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btn-outline-primary btn-add-row" onclick="addRow('A')">
+        <i class="bi bi-plus-circle me-1"></i> Add Row
+      </button>
+      <p class="text-muted small mt-2 mb-0">(Additional tables may be inserted for each department)</p>
+  </div>
+  </div>
+
+  <!-- Part (b) -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <p class="mb-3" style="font-size:0.9rem; font-weight:600; color:#003366;">(b) Workshops / Seminars / Training
+        Programs organised by the IQAC coordinator (If any)</p>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm" id="tableB">
+          <thead>
+            <tr>
+              <th style="width:11%;">Date</th>
+              <th style="width:12%;">Venue</th>
+              <th style="width:16%;">Title of the Program</th>
+              <th style="width:8%;">No. of Participants</th>
+              <th style="width:18%;">Name of the Resource Person/s</th>
+              <th style="width:18%;">Related Responsibility Area</th>
+              <th style="width:13%;">Report (Optional)</th>
+              <th style="width:4%;"></th>
+            </tr>
+          </thead>
+          <tbody id="tableB-body">
+            {% set ws_dates = draft_data.get('ws_date[]', []) if draft_data else [] %}
+            {% set num_ws_rows = ws_dates|length if ws_dates|length > 0 else 1 %}
+            {% for i in range(num_ws_rows) %}
+            {% set ws_date_val = ws_dates[i] if i < ws_dates|length else '' %} {% set
+              ws_venue_val=draft_data.get('ws_venue[]', [])[i] if (draft_data and i < draft_data.get('ws_venue[]',
+              [])|length) else '' %} {% set ws_title_val=draft_data.get('ws_title[]', [])[i] if (draft_data and i <
+              draft_data.get('ws_title[]', [])|length) else '' %} {% set
+              ws_participants_val=draft_data.get('ws_participants[]', [])[i] if (draft_data and i <
+              draft_data.get('ws_participants[]', [])|length) else '' %} {% set
+              ws_resource_val=draft_data.get('ws_resource[]', [])[i] if (draft_data and i <
+              draft_data.get('ws_resource[]', [])|length) else '' %} {% set
+              ws_responsibility_val=draft_data.get('ws_responsibility[]', [])[i] if (draft_data and i <
+              draft_data.get('ws_responsibility[]', [])|length) else '' %} {% set
+              selected_ws_areas=ws_responsibility_val.split(', ') if ws_responsibility_val else [] %}
+                    <tr class="row-template-b">
+                      <td><input type="date" name="ws_date[]" class="form-control form-control-sm" value="{{ ws_date_val }}"></td>
+                      <td><input type="text" name="ws_venue[]" class="form-control form-control-sm" placeholder="Venue" value="{{ ws_venue_val }}"></td>
+                      <td><input type="text" name="ws_title[]" class="form-control form-control-sm" placeholder="Program title" value="{{ ws_title_val }}"></td>
+                      <td><input type="number" name="ws_participants[]" class="form-control form-control-sm" placeholder="0" min="0" value="{{ ws_participants_val }}"></td>
+                      <td><input type="text" name="ws_resource[]" class="form-control form-control-sm" placeholder="Resource person(s)" value="{{ ws_resource_val }}"></td>
+                      <td style="min-width:180px;">
+                        <div class="resp-area-wrapper">
+                          <input type="hidden" name="ws_responsibility[]" class="resp-area-hidden" value="{{ ws_responsibility_val }}">
+                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem; background:#fff; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
+                            <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>
+                          </div>
+                          <div class="resp-area-checklist border rounded p-2 mt-1 bg-white shadow-sm" style="display:none; max-height:160px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:280px;">
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Monitoring Strategic Plan Implementation" {% if '
+              Monitoring Strategic Plan Implementation' in selected_ws_areas %}checked{% endif %}> Monitoring Strategic
+              Plan Implementation</label>
+              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                  value="Benchmarking" {% if 'Benchmarking' in selected_ws_areas %}checked{% endif %}>
+                Benchmarking</label>
+              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                  value="Gap Analysis and Guidance" {% if 'Gap Analysis and Guidance' in selected_ws_areas %}checked{%
+                  endif %}> Gap Analysis and Guidance</label>
+              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                  value="Data and Document Management" {% if 'Data and Document Management' in selected_ws_areas
+                  %}checked{% endif %}> Data and Document Management</label>
+              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                  value="Audit Coordination" {% if 'Audit Coordination' in selected_ws_areas %}checked{% endif %}> Audit
+                Coordination</label>
+              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                  value="Engagement with University Offices/Centres" {% if 'Engagement with University Offices/Centres'
+                  in selected_ws_areas %}checked{% endif %}> Engagement with University Offices/Centres</label>
+              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                  value="Participation in Rankings and Accreditations" {%
+                  if 'Participation in Rankings and Accreditations' in selected_ws_areas %}checked{% endif %}>
+                Participation in Rankings and Accreditations</label>
+              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
+                  value="Monitoring website updates of department activities" {%
+                  if 'Monitoring website updates of department activities' in selected_ws_areas %}checked{% endif %}>
+                Monitoring website updates of department activities</label>
+              <label class="d-flex align-items-start gap-1 mb-0"><input type="checkbox" class="resp-cb mt-1"
+                  value="Report Preparation and Submission" {% if 'Report Preparation and Submission' in
+                  selected_ws_areas %}checked{% endif %}> Report Preparation and Submission</label>
+      </div>
+    </div>
+    </td>
+    <td class="text-center align-middle">
+      {% set existing_file = ws_files_map.get(loop.index0) if ws_files_map else None %}
+      <input type="hidden" name="ws_existing_file[]" class="ws-existing-file-input" value="{{ existing_file or '' }}">
+      <input type="file" name="ws_report_file[]" class="d-none ws-file-input" accept=".pdf,.jpg,.jpeg,.png">
+      {% if existing_file %}
+      <button type="button" class="btn btn-success btn-sm ws-upload-btn" onclick="this.previousElementSibling.click()"
+        title="Change attached file">
+        <i class="bi bi-check-circle"></i>
+      </button>
+      <div class="ws-file-name text-muted mt-1" style="font-size:0.7rem; word-break:break-all;">{{ existing_file }}
+      </div>
+      <div class="ws-existing-file-link mt-1">
+        {% set att_id = ws_urls_map.get(loop.index0) if ws_urls_map else None %}
+        {% if att_id %}
+        <a href="/view_attachment/{{ att_id }}" target="_blank" class="text-success small fw-bold text-decoration-none"
+          style="font-size: 0.72rem;">
+          <i class="bi bi-eye"></i> View Attached
+        </a>
+        {% endif %}
+      </div>
+      {% else %}
+      <button type="button" class="btn btn-outline-secondary btn-sm ws-upload-btn"
+        onclick="this.previousElementSibling.click()" title="Attach report file">
+        <i class="bi bi-paperclip"></i>
+      </button>
+      <div class="ws-file-name text-muted mt-1" style="font-size:0.7rem; word-break:break-all;"></div>
+      {% endif %}
+    </td>
+    <td class="text-center align-middle"><button type="button" class="btn btn-danger btn-sm btn-del-row"
+        onclick="delRow(this)"><i class="bi bi-trash"></i></button></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+  </div>
+  <button type="button" class="btn btn-outline-primary btn-add-row" onclick="addRow('B')">
+    <i class="bi bi-plus-circle me-1"></i> Add Row
+  </button>
+
+  <!-- Report description removed per request -->
+  </div>
+  </div>
+
+  <!-- ── Section II ── -->
+  <div class="section-header">Section II: Plans for Next Month</div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div id="plans-container">
+        {% set plans = draft_data.get('plan[]', []) if draft_data else [] %}
+        {% set num_plans = plans|length if plans|length > 0 else 3 %}
+        {% for i in range(num_plans) %}
+        {% set plan_val = plans[i] if i < plans|length else '' %} <div class="input-group mb-2 plan-item">
+          <span class="input-group-text">{{ i + 1 }}.</span>
+          <input type="text" name="plan[]" class="form-control" placeholder="Plan item {{ i + 1 }}"
+            value="{{ plan_val }}">
+          <button type="button" class="btn btn-danger btn-del-row" onclick="delPlan(this)"><i
+              class="bi bi-trash"></i></button>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-add-row mt-1" onclick="addPlan()">
+      <i class="bi bi-plus-circle me-1"></i> Add Plan Item
+    </button>
+  </div>
+  </div>
+
+  <!-- ── Signatures ── -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h6 class="text-primary mb-3">Signatures <span class="text-muted fw-normal small">(actual signatures will be done
+          on the printed copy)</span></h6>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Name of the IQAC Coordinator</label>
+          <input type="hidden" name="sig_coordinator_name" value="{{ user.full_name or user.username.title() }}">
+          <input type="text" class="form-control bg-light" value="{{ user.full_name or user.username.title() }}"
+            readonly style="cursor:not-allowed; color:#555;">
+          <small class="text-muted">Signature: ________________________</small>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Remarks of the Dean</label>
+          <input type="text" name="sig_dean_remarks" class="form-control" placeholder="Dean's remarks (if any)"
+            value="{{ draft_data.get('sig_dean_remarks', '') if draft_data else '' }}">
+          <small class="text-muted">Signature: ________________________</small>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Remarks of Director IQAC</label>
+          <input type="text" name="sig_director_remarks" class="form-control"
+            placeholder="Director IQAC's remarks (if any)"
+            value="{{ draft_data.get('sig_director_remarks', '') if draft_data else '' }}">
+          <small class="text-muted">Signature: ________________________</small>
+        </div>
+      </div>
+      <div class="row mt-3">
+        <div class="col-md-3">
+          <label class="form-label">Date</label>
+          {% set fd_val = ist_now().strftime('%Y-%m-%d') %}
+          {% set fd_disp = ist_now().strftime('%d-%m-%Y') %}
+          <input type="hidden" name="footer_date" value="{{ fd_val }}">
+          <input type="text" id="footerDateDisplay" class="form-control bg-light" disabled readonly
+            value="{{ fd_disp }}" style="cursor:not-allowed;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Download/Save Buttons -->
+  <div class="d-flex gap-2 mb-4">
+    <button type="submit" class="btn btn-primary btn-lg px-5">
+      <i class="bi bi-file-earmark-pdf me-2"></i>Download as PDF
+    </button>
+    <button type="button" id="saveDraftBtn" class="btn btn-warning btn-lg px-5 text-dark fw-bold">
+      <i class="bi bi-journal-bookmark me-2"></i>Save as Draft
+    </button>
+    <a href="{{ back_url or '/iqac_dashboard' }}" id="cancelBtn" class="btn btn-outline-secondary btn-lg">Cancel</a>
+  </div>
+
+  </form>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <span>Concept: <strong>Dr. Cecil Donald</strong></span>
+      <span class="divider">|</span>
+      <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26) &amp; <strong>Darshan Heble, Ananya S Shetty,
+          Arnav Narula</strong> (MCA 2025-27)</span>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    function syncRespArea(wrapper) {
+      const checked = Array.from(wrapper.querySelectorAll('.resp-cb:checked')).map(c => c.value);
+      const hidden = wrapper.querySelector('.resp-area-hidden');
+      if (hidden) hidden.value = checked.join(', ');
+      const display = wrapper.querySelector('.resp-area-display');
+      if (!display) return;
+      display.innerHTML = '';
+      if (checked.length === 0) {
+        display.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>';
+      } else {
+        checked.forEach(val => {
+          const badge = document.createElement('span');
+          badge.className = 'badge rounded-pill text-bg-primary me-1 mb-1';
+          badge.style.cssText = 'font-size:0.68rem; font-weight:500; white-space:normal; text-align:left;';
+          badge.textContent = val;
+          display.appendChild(badge);
+        });
+      }
+      return checked;
+    }
+
+    // ── On load: close all checklists and sync any browser-restored checkbox state ──
+    function applyDateMax(root) {
+      const reportingMonth = "{{ reporting_month_str }}"; // "YYYY-MM"
+      if (!reportingMonth) return;
+      const minDate = `${reportingMonth}-01`;
+      const [year, idx] = reportingMonth.split('-').map(Number);
+      const lastDay = new Date(year, idx, 0).getDate();
+      const maxDate = `${reportingMonth}-${String(lastDay).padStart(2, '0')}`;
+
+      (root || document).querySelectorAll('input[type="date"]').forEach(el => {
+        flatpickr(el, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          minDate: minDate,
+          maxDate: maxDate,
+          defaultDate: el.value || null,
+          onChange: function (selectedDates, dateStr, instance) {
+            el.value = dateStr;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      applyDateMax();
+      document.querySelectorAll('.resp-area-wrapper').forEach(wrapper => {
+        wrapper.querySelector('.resp-area-checklist').style.display = 'none';
+        syncRespArea(wrapper);
+      });
+    });
+
+    // ── Toggle checklist on display click ──
+    document.addEventListener('click', function (e) {
+      const display = e.target.closest('.resp-area-display');
+      if (display) {
+        const checklist = display.parentElement.querySelector('.resp-area-checklist');
+        checklist.style.display = checklist.style.display === 'none' ? 'block' : 'none';
+        return;
+      }
+      // Click outside wrapper → close all
+      if (!e.target.closest('.resp-area-wrapper')) {
+        document.querySelectorAll('.resp-area-checklist').forEach(cl => cl.style.display = 'none');
+      }
+    });
+
+    // ── Workshop file pick: show filename on button ──
+    document.addEventListener('change', function (e) {
+      if (!e.target.classList.contains('ws-file-input')) return;
+      const btn = e.target.nextElementSibling;
+      const nameDiv = btn.nextElementSibling;
+      if (e.target.files && e.target.files[0]) {
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-success');
+        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+        nameDiv.textContent = e.target.files[0].name;
+
+        // Clear the hidden input indicating an existing file
+        const existingInput = e.target.closest('td').querySelector('.ws-existing-file-input');
+        if (existingInput) existingInput.value = '';
+      } else {
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-secondary');
+        btn.innerHTML = '<i class="bi bi-paperclip"></i>';
+        nameDiv.textContent = '';
+      }
+    });
+
+    // ── Checkbox change: sync display + hidden + topics ──
+    document.addEventListener('change', function (e) {
+      if (!e.target.classList.contains('resp-cb')) return;
+      const wrapper = e.target.closest('.resp-area-wrapper');
+      const row = e.target.closest('tr');
+      const checked = syncRespArea(wrapper);
+      const topicsField = row ? row.querySelector('.topics-field') : null;
+      if (topicsField && checked) {
+        topicsField.value = checked.join(', ');
+      }
+    });
+
+    // ── Dynamic table row management ──
+
+    function addRow(table) {
+      const tbody = document.getElementById('table' + table + '-body');
+      const templateClass = '.row-template-' + table.toLowerCase();
+      const template = tbody.querySelector(templateClass);
+
+      // Temporarily destroy Flatpickr on template row to clone clean inputs
+      template.querySelectorAll('input').forEach(el => {
+        if (el._flatpickr) el._flatpickr.destroy();
+      });
+
+      const newRow = template.cloneNode(true);
+
+      // Re-initialize Flatpickr on template row
+      applyDateMax(template);
+
+      newRow.querySelectorAll('input[type="text"], input[type="date"], input[type="hidden"], textarea').forEach(el => el.value = '');
+
+      // Set min for new row based on last row's date
+      applyDateMax(newRow);
+      newRow.querySelectorAll('input[type="number"]').forEach(el => el.value = '');
+      newRow.querySelectorAll('input[type="file"]').forEach(el => el.value = '');
+      newRow.querySelectorAll('.ws-file-name').forEach(el => el.textContent = '');
+      newRow.querySelectorAll('.ws-existing-file-link').forEach(el => el.remove());
+      newRow.querySelectorAll('.ws-upload-btn').forEach(btn => { btn.classList.remove('btn-success'); btn.classList.add('btn-outline-secondary'); btn.innerHTML = '<i class="bi bi-paperclip"></i>'; });
+      newRow.querySelectorAll('.resp-cb').forEach(cb => cb.checked = false);
+      newRow.querySelectorAll('.resp-area-checklist').forEach(cl => cl.style.display = 'none');
+      newRow.querySelectorAll('.resp-area-display').forEach(d => {
+        d.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>';
+      });
+      tbody.appendChild(newRow);
+    }
+
+    function delRow(btn) {
+      const tbody = btn.closest('tbody');
+      const rows = tbody.querySelectorAll('tr');
+      if (rows.length <= 1) {
+        const row = btn.closest('tr');
+        // Clear text inputs and textareas
+        row.querySelectorAll('input:not([type="checkbox"]), textarea').forEach(el => el.value = '');
+        // Uncheck all responsibility area checkboxes
+        row.querySelectorAll('.resp-cb').forEach(cb => cb.checked = false);
+        // Reset the visual tag display
+        row.querySelectorAll('.resp-area-display').forEach(d => {
+          d.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>';
+        });
+        // Reset attachment: hide file name, link, reset button to paperclip
+        row.querySelectorAll('.ws-file-name').forEach(el => el.textContent = '');
+        row.querySelectorAll('.ws-existing-file-link').forEach(el => el.innerHTML = '');
+        row.querySelectorAll('.ws-upload-btn').forEach(btn => {
+          btn.classList.remove('btn-success');
+          btn.classList.add('btn-outline-secondary');
+          btn.innerHTML = '<i class="bi bi-paperclip"></i>';
+        });
+        return;
+      }
+      const row = btn.closest('tr');
+      row.querySelectorAll('input').forEach(el => {
+        if (el._flatpickr) el._flatpickr.destroy();
+      });
+      row.remove();
+    }
+
+    // ── Dynamic plan items ──
+    function addPlan() {
+      const container = document.getElementById('plans-container');
+      const count = container.querySelectorAll('.plan-item').length + 1;
+      const div = document.createElement('div');
+      div.className = 'input-group mb-2 plan-item';
+      div.innerHTML = `
+          <span class="input-group-text">${count}.</span>
+          <input type="text" name="plan[]" class="form-control" placeholder="Plan item ${count}">
+          <button type="button" class="btn btn-danger btn-del-row" onclick="delPlan(this)"><i class="bi bi-trash"></i></button>
+        `;
+      container.appendChild(div);
+      renumberPlans();
+    }
+
+    function delPlan(btn) {
+      const container = document.getElementById('plans-container');
+      const items = container.querySelectorAll('.plan-item');
+      if (items.length <= 1) return;
+      btn.closest('.plan-item').remove();
+      renumberPlans();
+    }
+
+    function renumberPlans() {
+      const items = document.querySelectorAll('#plans-container .plan-item');
+      items.forEach((item, i) => {
+        item.querySelector('.input-group-text').textContent = (i + 1) + '.';
+        item.querySelector('input').placeholder = 'Plan item ' + (i + 1);
+      });
+    }
+
+    // ── Row validation: if any field in a row is filled, all must be filled ──
+    document.getElementById('reportForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      function highlight(el) {
+        el.style.border = '2px solid red';
+        el.addEventListener('input', () => el.style.border = '', { once: true });
+      }
+
+      let errors = [];
+
+      // Section (a)
+      document.querySelectorAll('#tableA-body tr').forEach((row, i) => {
+        const date = row.querySelector('input[name="meeting_date[]"]');
+        const dept = row.querySelector('input[name="dept_name[]"]');
+        const parts = row.querySelector('input[name="participants[]"]');
+        const topics = row.querySelector('textarea[name="topics[]"]');
+        const action = row.querySelector('textarea[name="action_points[]"]');
+        const resp = row.querySelector('input[name="responsibility_area[]"]');
+        const fields = [date, dept, parts, topics, action];
+        const vals = fields.map(f => f.value.trim());
+        const respVal = resp ? resp.value.trim() : '';
+        const anyFilled = vals.some(v => v) || respVal;
+        if (anyFilled) {
+          let rowOk = true;
+          fields.forEach(f => { if (!f.value.trim()) { highlight(f); rowOk = false; } });
+          if (!respVal) {
+            const display = row.querySelector('.resp-area-display');
+            if (display) display.style.border = '2px solid red';
+            rowOk = false;
+          }
+          if (!rowOk) errors.push(`Section (a) row ${i + 1}: please fill all fields.`);
+        }
+      });
+
+      // Section (b)
+      document.querySelectorAll('#tableB-body tr').forEach((row, i) => {
+        const date = row.querySelector('input[name="ws_date[]"]');
+        const venue = row.querySelector('input[name="ws_venue[]"]');
+        const title = row.querySelector('input[name="ws_title[]"]');
+        const resource = row.querySelector('input[name="ws_resource[]"]');
+        const resp = row.querySelector('input[name="ws_responsibility[]"]');
+        const fields = [date, venue, title, resource];
+        const vals = fields.map(f => f.value.trim());
+        const respVal = resp ? resp.value.trim() : '';
+        const anyFilled = vals.some(v => v) || respVal;
+        if (anyFilled) {
+          let rowOk = true;
+          fields.forEach(f => { if (!f.value.trim()) { highlight(f); rowOk = false; } });
+          if (!respVal) {
+            const display = row.querySelector('.resp-area-display');
+            if (display) display.style.border = '2px solid red';
+            rowOk = false;
+          }
+          if (!rowOk) errors.push(`Section (b) row ${i + 1}: please fill all fields.`);
+        }
+      });
+
+      if (errors.length) {
+        alert('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'));
+        return;
+      }
+
+      // Validation passed — download PDF via fetch then redirect to dashboard
+      const form = this;
+      const btn = form.querySelector('[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Generating PDF…';
+
+      let _pdfFilename = 'IQAC_Report.pdf';
+      fetch(form.action, { method: 'POST', body: new FormData(form) })
+        .then(r => {
+          const ct = r.headers.get('content-type') || '';
+          if (!ct.includes('application/pdf')) throw new Error('not_pdf');
+          const cd = r.headers.get('content-disposition') || '';
+          const m = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+          if (m) _pdfFilename = m[1].replace(/['"]/g, '').trim();
+          return r.blob();
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = _pdfFilename;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
+          setTimeout(() => { window.location.href = '/iqac_dashboard'; }, 1500);
+        })
+        .catch(() => {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-file-earmark-pdf me-2"></i>Download as PDF';
+          alert('PDF generation failed. Please try again.');
+        });
+    });
+
+    document.getElementById('saveDraftBtn').addEventListener('click', function () {
+      const form = document.getElementById('reportForm');
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving…';
+
+      const formData = new FormData(form);
+      formData.append('report_type', 'standard');
+
+      fetch('/iqac_report/save_draft', {
+        method: 'POST',
+        body: formData
+      })
+        .then(r => r.json())
+        .then(res => {
+          if (res.success) {
+            alert('Draft saved successfully!');
+            window.location.reload();
+          } else {
+            alert('Failed to save draft: ' + res.error);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert('An error occurred while saving the draft.');
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-journal-bookmark me-2"></i>Save as Draft';
+        });
+    });
+
+    {% if locked or readonly %}
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll("#reportForm input, #reportForm textarea, #reportForm select, #reportForm button").forEach(el => {
+        el.disabled = true;
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.readOnly = true;
+      });
+      document.querySelectorAll("#reportForm .btn-add-row, #reportForm .btn-del-row, #reportForm .btn-danger, #reportForm .ws-upload-btn, #reportForm .btn-outline-primary, #reportForm #saveDraftBtn, #reportForm #downloadBtn").forEach(el => {
+        el.style.display = "none";
+      });
+      const cancelBtn = document.getElementById('cancelBtn');
+      if (cancelBtn) {
+        cancelBtn.classList.remove('btn-outline-secondary');
+        cancelBtn.classList.add('btn-secondary');
+        cancelBtn.innerHTML = '<i class="bi bi-arrow-left me-1"></i>Back';
+      }
+    });
+    {% endif %}
+  </script>
+</body>
+
+</html>

@@ -6,6 +6,7 @@
     <title>Admin Report - IQAC Worklog</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
       html { height: 100%; }
       body { background-color:#f8fafc; font-size:14px; min-height: 100%; display: flex; flex-direction: column; }
@@ -41,6 +42,7 @@
         color: #333;
         margin-top: 4px;
         white-space: pre-line;
+        word-break: break-word;
       }
       .report-info, .report-summary { background:#e9f1fa; border-left:4px solid #003366; padding:0.75rem 1rem; margin-bottom:1rem; border-radius:.5rem; }
       .report-summary { background:#eef5fb; border-left:4px solid #004080; font-size:13px; }
@@ -107,7 +109,7 @@
         </div>
         <div>
           <a href="/admin_report_ai" class="btn btn-light btn-sm me-2"><i class="bi bi-lightning-charge"></i> Quick Summary</a>
-          <a href="/admin" class="btn btn-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Back to Admin</a>
+          <a href="{{ '/secretary_dashboard' if session['role'] == 'Secretary' else '/admin' }}" class="btn btn-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Back</a>
           <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
         </div>
       </header>
@@ -188,7 +190,8 @@
             </div>
             <div class="col-md-12 d-flex gap-2 mt-3">
               <button class="btn btn-primary" type="submit">Generate</button>
-              <button type="button" class="btn btn-outline-secondary" onclick="window.print()">Print</button>
+              <button type="button" class="btn btn-outline-secondary" onclick="printAndRedirect()">Print</button>
+              <a href="/admin" class="btn btn-outline-primary"><i class="bi bi-house"></i> Back to Dashboard</a>
             </div>
           </form>
         </div>
@@ -222,7 +225,7 @@
                       Custom Date Range ({{ from_date | default('—') }} to {{ to_date | default('—') }})
                     {% endif %}
                   </div>
-                  <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d/%m/%Y') }}</div>
+                  <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
                 </div>
                 <div class="report-info">
                   <div><strong>Name:</strong> {{ uname.title() }} <strong>(Employee ID:</strong> {{ entries[0]['emp_id'] or '—' }})</div>
@@ -272,7 +275,7 @@
                     Custom Date Range ({{ from_date | default('—') }} to {{ to_date | default('—') }})
                   {% endif %}
                 </div>
-                <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d/%m/%Y') }}</div>
+                <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
               </div>
               <div class="report-info">
                 <div><strong>Name:</strong> {{ selected_user.title() }} <strong>(Employee ID:</strong> {{ logs[0]['emp_id'] or '—' }})</div>
@@ -310,6 +313,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         // Set default dates on page load
@@ -324,6 +328,31 @@
         
         if (!fromDateInput.value) fromDateInput.value = todayString;
         if (!toDateInput.value) toDateInput.value = todayString;
+        
+        const fpFrom = flatpickr(fromDateInput, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          defaultDate: fromDateInput.value,
+          onChange: function(selectedDates, dateStr) {
+            fromDateInput.value = dateStr;
+            fpTo.set('minDate', dateStr);
+          }
+        });
+        
+        const fpTo = flatpickr(toDateInput, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          minDate: fromDateInput.value,
+          defaultDate: toDateInput.value,
+          onChange: function(selectedDates, dateStr) {
+            toDateInput.value = dateStr;
+          }
+        });
+
         if (!monthInput.value) monthInput.value = currentMonthString;
         
         // Set default academic year
@@ -361,6 +390,11 @@
         toggleFilterFields(modeSelect.value || "{{ filter_mode or 'date' }}");
         modeSelect.addEventListener("change", function () { toggleFilterFields(this.value); });
       });
+
+      function printAndRedirect() {
+        window.onafterprint = function() { window.location.href = '/admin'; };
+        window.print();
+      }
     </script>
 
     <!-- Footer -->
@@ -368,7 +402,7 @@
       <div class="footer-content">
         <span>Concept: <strong>Dr. Cecil Donald</strong></span>
         <span class="divider">|</span>
-        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26)</span>
+        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26) &amp; <strong>Darshan Heble, Ananya S Shetty, Arnav Narula</strong> (MCA 2025-27)</span>
       </div>
     </footer>
   </body>

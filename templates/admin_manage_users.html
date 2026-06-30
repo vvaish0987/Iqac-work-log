@@ -30,6 +30,10 @@
       .btn-outline-primary:hover { background-color:#003366; border-color:#003366; color:#fff; }
       .card { box-shadow:0 0.5rem 1rem rgba(0,0,0,.1); }
       .table th { background-color:#003366; color:#fff; font-weight:500; }
+      #usersTable td, #usersTable th {
+        word-break: break-word;
+        vertical-align: middle;
+      }
       .badge-admin { background-color:#003366; }
       .badge-employee { background-color:#004080; }
       .action-btns .btn { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
@@ -120,8 +124,12 @@
                   <td>
                     {% if user.role.lower() == 'admin' %}
                       <span class="badge badge-admin">Admin</span>
+                    {% elif user.role.lower() == 'school iqac coordinator' %}
+                      <span class="badge bg-success">School Coordinator</span>
+                    {% elif user.role.lower() == 'campus iqac coordinator' %}
+                      <span class="badge bg-info text-dark">Campus Coordinator</span>
                     {% else %}
-                      <span class="badge badge-employee">Employee</span>
+                      <span class="badge badge-employee">{{ user.role }}</span>
                     {% endif %}
                   </td>
                   <td class="action-btns">
@@ -201,7 +209,7 @@
       <div class="footer-content">
         <span>Concept: <strong>Dr. Cecil Donald</strong></span>
         <span class="divider">|</span>
-        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26)</span>
+        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26) &amp; <strong>Darshan Heble, Ananya S Shetty, Arnav Narula</strong> (MCA 2025-27)</span>
       </div>
     </footer>
 

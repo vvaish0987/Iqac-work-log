@@ -15,8 +15,7 @@ The script will:
 """
 
 import sqlite3
-import psycopg2
-import psycopg2.extras
+import psycopg
 import os
 import re
 from dotenv import load_dotenv
@@ -62,7 +61,7 @@ def create_database_if_not_exists():
     
     # Connect to default 'postgres' database to create our database
     try:
-        conn = psycopg2.connect(
+        conn = psycopg.connect(
             host=parsed['host'],
             port=parsed['port'],
             user=parsed['user'],
@@ -88,7 +87,7 @@ def create_database_if_not_exists():
         conn.close()
         return True
         
-    except psycopg2.Error as e:
+    except psycopg.Error as e:
         print(f"⚠ Could not create database automatically: {e}")
         return False
 
@@ -104,16 +103,16 @@ def get_postgres_connection():
     
     # Try with SSL first (for cloud databases like Render, Supabase, etc.)
     try:
-        conn = psycopg2.connect(db_url, sslmode="require")
+        conn = psycopg.connect(db_url, sslmode="require")
         return conn
-    except psycopg2.OperationalError:
+    except psycopg.OperationalError:
         # Fallback to no SSL for local PostgreSQL
         try:
-            conn = psycopg2.connect(db_url, sslmode="prefer")
+            conn = psycopg.connect(db_url, sslmode="prefer")
             return conn
-        except psycopg2.OperationalError:
+        except psycopg.OperationalError:
             # Last attempt with no SSL at all
-            conn = psycopg2.connect(db_url, sslmode="disable")
+            conn = psycopg.connect(db_url, sslmode="disable")
             return conn
 
 def get_sqlite_connection():
@@ -360,7 +359,7 @@ def main():
         
     except FileNotFoundError as e:
         print(f"\n❌ ERROR: {e}")
-    except psycopg2.Error as e:
+    except psycopg.Error as e:
         print(f"\n❌ PostgreSQL Error: {e}")
     except Exception as e:
         print(f"\n❌ Unexpected Error: {e}")

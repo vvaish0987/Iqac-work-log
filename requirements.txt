@@ -1,7 +1,10 @@
 Flask==3.0.0
 Werkzeug==3.0.1
-psycopg2-binary==2.9.9
+psycopg[binary]
 gunicorn==21.2.0
 python-dotenv==1.0.1
-google-generativeai==0.8.6
+google-genai
+openai
 APScheduler==3.10.4
+reportlab==4.2.5
+cloudinary

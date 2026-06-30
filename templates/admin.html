@@ -1,332 +1,744 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin Dashboard - IQAC Worklog</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-      html { height: 100%; }
-      body { background-color:#f8fafc; font-size:15px; min-height: 100%; display: flex; flex-direction: column; }
-      .main-container { flex: 1; }
-      header { background-color:#003366; color:#fff; padding:1rem 1.5rem; border-radius:.5rem; margin-bottom:1.5rem; position: relative; }
-      .logo-container { background-color: #fff; padding: 8px 12px; border-radius: 8px; display: inline-block; }
-      .logo-container img { height: 75px; width: auto; }
-      .header-title { color: #fff; margin: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
-      .header-title h5 { font-size: 1.25rem; font-weight: 700; margin: 0; }
-      h5, h6 { margin:0; }
-      .card { box-shadow:0 0.5rem 1rem rgba(0,0,0,.1); border:none; border-radius: 0.5rem; }
-      .btn-primary { background-color:#003366; border-color:#003366; }
-      .btn-primary:hover { background-color:#004080; border-color:#004080; }
-      .btn-outline-primary { color:#003366; border-color:#003366; }
-      .btn-outline-primary:hover { background-color:#003366; color:#fff; }
-      .chart-container { position:relative; height:400px; width:100%; }
-      .form-label { font-weight:600; color:#003366; }
-      .text-primary { color: #003366 !important; }
-      .toast-container { z-index:9999; }
-      .stat-card { background: linear-gradient(135deg, #003366 0%, #004080 100%); color: white; }
-      .stat-number { font-size: 2.5rem; font-weight: bold; }
-      footer { background: linear-gradient(135deg, #002244 0%, #003366 50%, #004080 100%); color: #fff; padding: 0.75rem 1rem; text-align: center; margin-top: auto; border-top: 3px solid #ffc107; font-size: 0.85rem; }
-      footer .footer-content { display: flex; justify-content: center; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-      footer .divider { color: #ffc107; font-weight: bold; }
-      footer a { color: #fff; text-decoration: none; }
-      footer a:hover { text-decoration: underline; }
-    </style>
-  </head>
-  <body>
-    <div class="container py-3 main-container">
-      <!-- Header -->
-      <header class="d-flex justify-content-between align-items-center">
-        <a href="/admin" class="text-decoration-none d-flex align-items-center">
-          <div class="logo-container">
-            <img src="{{ url_for('static', filename='christ_logo.png') }}" alt="CHRIST Logo">
-          </div>
-        </a>
-        <div class="header-title">
-          <h5>INTERNAL QUALITY ASSURANCE CELL (IQAC)</h5>
-        </div>
-        <div>
-          <span class="text-light me-3">Welcome, {{ username.title() }}</span>
-          <a href="/logout" class="btn btn-light btn-sm">Logout</a>
-        </div>
-      </header>
 
-      <!-- Toast Messages -->
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="toast-container position-fixed bottom-0 end-0 p-3">
-              <div class="toast align-items-center text-bg-{{ 'success' if category=='success' else 'danger' }} border-0 show" role="alert">
-                <div class="d-flex">
-                  <div class="toast-body">{{ message }}</div>
-                  <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-              </div>
-            </div>
-            <script>
-              setTimeout(()=>{document.querySelectorAll('.toast').forEach(t=>t.classList.remove('show'));},6000);
-            </script>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard - IQAC Worklog</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    html {
+      height: 100%;
+    }
 
-      <!-- Action Cards -->
-      <div class="row mb-4">
-        <div class="col-md-4 mb-3">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-person-plus text-primary" style="font-size: 2.5rem;"></i>
-              <h6 class="text-primary mb-3 mt-2">Add New User</h6>
-              <p>Register a new faculty or staff account and send credentials via email.</p>
-              <a href="/admin_add_user" class="btn btn-primary">Add User</a>
-            </div>
-          </div>
+    body {
+      background-color: #f8fafc;
+      font-size: 15px;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-container {
+      flex: 1;
+    }
+
+    header {
+      background-color: #003366;
+      color: #fff;
+      padding: 1rem 1.5rem;
+      border-radius: .5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .logo-container {
+      background-color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: inline-block;
+    }
+
+    .logo-container img {
+      height: 75px;
+      width: auto;
+    }
+
+    .header-title {
+      color: #fff;
+      margin: 0;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .header-title h5 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    h5,
+    h6 {
+      margin: 0;
+    }
+
+    .card {
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .1);
+      border: none;
+      border-radius: 0.5rem;
+    }
+
+    .btn-primary {
+      background-color: #003366;
+      border-color: #003366;
+    }
+
+    .btn-primary:hover {
+      background-color: #004080;
+      border-color: #004080;
+    }
+
+    .btn-outline-primary {
+      color: #003366;
+      border-color: #003366;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: #003366;
+      color: #fff;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 400px;
+      width: 100%;
+    }
+
+    .form-label {
+      font-weight: 600;
+      color: #003366;
+    }
+
+    .text-primary {
+      color: #003366 !important;
+    }
+
+    .toast-container {
+      z-index: 9999;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #003366 0%, #004080 100%);
+      color: white;
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+
+    footer {
+      background: linear-gradient(135deg, #002244 0%, #003366 50%, #004080 100%);
+      color: #fff;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      margin-top: auto;
+      border-top: 3px solid #ffc107;
+      font-size: 0.85rem;
+    }
+
+    footer .footer-content {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    footer .divider {
+      color: #ffc107;
+      font-weight: bold;
+    }
+
+    footer a {
+      color: #fff;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-3 main-container">
+    <!-- Header -->
+    <header class="d-flex justify-content-between align-items-center">
+      <a href="/admin" class="text-decoration-none d-flex align-items-center">
+        <div class="logo-container">
+          <img src="{{ url_for('static', filename='christ_logo.png') }}" alt="CHRIST Logo">
         </div>
-        <div class="col-md-4 mb-3">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-people text-primary" style="font-size: 2.5rem;"></i>
-              <h6 class="text-primary mb-3 mt-2">Manage Users</h6>
-              <p>View, edit, delete users and reset passwords for all accounts.</p>
-              <a href="/admin_manage_users" class="btn btn-primary">Manage Users</a>
-            </div>
-          </div>
+      </a>
+      <div class="header-title">
+        <h5>INTERNAL QUALITY ASSURANCE CELL (IQAC)</h5>
+      </div>
+      <div>
+        <span class="text-light me-3">Welcome, {{ username.title() }}</span>
+        <a href="/logout" class="btn btn-light btn-sm">Logout</a>
+      </div>
+    </header>
+
+    <!-- Toast Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div class="toast align-items-center text-bg-{{ 'success' if category=='success' else 'danger' }} border-0 show"
+        role="alert">
+        <div class="d-flex">
+          <div class="toast-body">{{ message }}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
-        <div class="col-md-4 mb-3">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-file-earmark-text text-primary" style="font-size: 2.5rem;"></i>
-              <h6 class="text-primary mb-3 mt-2">Generate Report</h6>
-              <p>View and print worklog reports filtered by date or month.</p>
-              <a href="/admin_report" class="btn btn-primary">Generate Report</a>
-            </div>
+      </div>
+    </div>
+    <script>
+      setTimeout(() => { document.querySelectorAll('.toast').forEach(t => t.classList.remove('show')); }, 6000);
+    </script>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Action Cards -->
+    <div class="row mb-4">
+      <div class="col-md-4 mb-3">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-person-plus text-primary" style="font-size: 2.5rem;"></i>
+            <h6 class="text-primary mb-3 mt-2">Add New User</h6>
+            <p>Register a new faculty or staff account and send credentials via email.</p>
+            <a href="/admin_add_user" class="btn btn-primary">Add User</a>
           </div>
         </div>
       </div>
-
-      <!-- Month Selector and Quick Summary Chart -->
-      <div class="card mb-4">
-        <div class="card-body">
-          <h6 class="mb-3 text-primary">Quick Summary - Worklog Entries</h6>
-          <form method="POST" class="row g-3 align-items-end mb-4">
-            <div class="col-md-2">
-              <label class="form-label">User</label>
-              <select name="user" class="form-select">
-                <option value="All" {% if selected_user == 'All' or not selected_user %}selected{% endif %}>All Users</option>
-                {% for u in users %}
-                  <option value="{{ u['username'] }}" {% if selected_user == u['username'] %}selected{% endif %}>
-                    {{ u['username'].title() }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Category</label>
-              <select name="category_filter" class="form-select">
-                <option value="All" {% if category_filter == 'All' or not category_filter %}selected{% endif %}>All Categories</option>
-                <option value="Documentation and Audits" {% if category_filter == 'Documentation and Audits' %}selected{% endif %}>Documentation & Audits</option>
-                <option value="Rankings" {% if category_filter == 'Rankings' %}selected{% endif %}>Rankings</option>
-                <option value="Publications" {% if category_filter == 'Publications' %}selected{% endif %}>Publications</option>
-                <option value="Training and Development" {% if category_filter == 'Training and Development' %}selected{% endif %}>Training & Development</option>
-                <option value="Strategic Initiatives" {% if category_filter == 'Strategic Initiatives' %}selected{% endif %}>Strategic Initiatives</option>
-                <option value="Others" {% if category_filter == 'Others' %}selected{% endif %}>Others</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Report Type</label>
-              <select name="filter_mode" id="filter_mode" class="form-select">
-                <option value="month" {% if filter_mode == 'month' or not filter_mode %}selected{% endif %}>Month-wise</option>
-                <option value="date" {% if filter_mode == 'date' %}selected{% endif %}>Custom Date Range</option>
-                <option value="academic_year" {% if filter_mode == 'academic_year' %}selected{% endif %}>Academic Year</option>
-              </select>
-            </div>
-            <div id="month_field" class="col-md-2" style="{% if filter_mode == 'date' or filter_mode == 'academic_year' %}display:none !important;{% else %}display:block !important;{% endif %}">
-              <label class="form-label">Month & Year</label>
-              <input type="month" name="month" id="month_input" class="form-control" 
-                     value="{{ selected_month or datetime.now().strftime('%Y-%m') }}">
-            </div>
-            <div id="date_range_fields" class="col-md-4 d-flex gap-2" style="{% if filter_mode == 'date' %}display:flex !important;{% else %}display:none !important;{% endif %}">
-              <div class="flex-fill">
-                <label class="form-label">From Date</label>
-                <input type="date" name="from_date" id="from_date" class="form-control" value="{{ from_date or '' }}">
-              </div>
-              <div class="flex-fill">
-                <label class="form-label">To Date</label>
-                <input type="date" name="to_date" id="to_date" class="form-control" value="{{ to_date or '' }}">
-              </div>
-            </div>
-            <div id="academic_year_field" class="col-md-2" style="{% if filter_mode == 'academic_year' %}display:block !important;{% else %}display:none !important;{% endif %}">
-              <label class="form-label">Academic Year</label>
-              <select name="academic_year" id="academic_year_input" class="form-select">
-                {% set current_year = datetime.now().year %}
-                {% set current_month = datetime.now().month %}
-                {% set start_year = current_year if current_month >= 5 else current_year - 1 %}
-                {% for i in range(5) %}
-                  {% set year = start_year - i %}
-                  <option value="{{ year }}-{{ year + 1 }}" {% if selected_academic_year == (year|string ~ '-' ~ (year+1)|string) %}selected{% endif %}>
-                    {{ year }}-{{ year + 1 }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button type="submit" class="btn btn-primary w-100">View Summary</button>
-            </div>
-          </form>
-          
-          <div class="mb-3">
-            <h6 class="text-primary mb-0">
-              {% if filter_mode == 'academic_year' %}
-                Summary for Academic Year {{ selected_academic_year or '' }}
-              {% elif filter_mode == 'date' %}
-                Summary for {{ from_date or '' }} to {{ to_date or '' }}
-              {% else %}
-                Summary for {{ current_month }}
-              {% endif %}
-              {% if selected_user and selected_user != 'All' %} - {{ selected_user.title() }}{% endif %}
-              {% if category_filter and category_filter != 'All' %} ({{ category_filter }}){% endif %}
-            </h6>
+      <div class="col-md-4 mb-3">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-people text-primary" style="font-size: 2.5rem;"></i>
+            <h6 class="text-primary mb-3 mt-2">Manage Users</h6>
+            <p>View, edit, delete users and reset passwords for all accounts.</p>
+            <a href="/admin_manage_users" class="btn btn-primary">Manage Users</a>
           </div>
-          
-          {% if summary %}
-            <div class="chart-container">
-              <canvas id="summaryChart"></canvas>
-            </div>
-          {% else %}
-            <p class="text-muted mb-0">No data available for the selected filters.</p>
-          {% endif %}
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-file-earmark-text text-primary" style="font-size: 2.5rem;"></i>
+            <h6 class="text-primary mb-3 mt-2">Generate Report</h6>
+            <p>View and print worklog reports filtered by date or month.</p>
+            <a href="/admin_report" class="btn btn-primary">Generate Report</a>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Footer -->
-    <footer>
-      <div class="footer-content">
-        <span>Concept: <strong>Dr. Cecil Donald</strong></span>
-        <span class="divider">|</span>
-        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26)</span>
+    <!-- Row 2: Submitted IQAC Reports card + Progress bar -->
+    <div class="row mb-4">
+      <!-- Submitted IQAC Reports card (same width as one top card) -->
+      <div class="col-md-4 mb-3">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-file-earmark-check text-primary" style="font-size: 2.5rem;"></i>
+            <h6 class="text-primary mb-3 mt-2">Submitted IQAC Reports</h6>
+            <p>View and review monthly reports submitted by IQAC Coordinators.</p>
+            <a href="/admin_signed_reports" class="btn btn-primary">View Submitted Reports</a>
+          </div>
+        </div>
       </div>
-    </footer>
 
-    <!-- JS Dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+      <!-- IQAC Report Submission Progress (width of 2 cards) -->
+      <div class="col-md-8 mb-3">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column justify-content-center">
+            {% if total_coordinators > 0 %}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="text-primary mb-0">
+                <i class="bi bi-bar-chart-fill me-2"></i>IQAC Report Submissions — {{ current_report_month }}
+              </h6>
+              <span class="fw-bold" style="font-size:1.1rem; color:#003366;">
+                {{ submitted_coordinators }} / {{ total_coordinators }}
+              </span>
+            </div>
 
-    <!-- Chart Script -->
-    <script>
-      {% if summary %}
-      const ctx = document.getElementById('summaryChart');
-      const labels = [{% for row in summary %}'{{ row["username"].title() }}',{% endfor %}];
-      const dataValues = [{% for row in summary %}{{ row["count"] }},{% endfor %}];
+            <div class="progress mb-3" style="height: 22px; border-radius: 8px;">
+              <div
+                class="progress-bar {% if submission_pct == 100 %}bg-success{% elif submission_pct >= 50 %}bg-warning{% else %}bg-danger{% endif %} fw-bold"
+                role="progressbar" style="width: {{ submission_pct }}%; font-size:0.85rem;"
+                aria-valuenow="{{ submission_pct }}" aria-valuemin="0" aria-valuemax="100">
+                {% if submission_pct > 10 %}{{ submission_pct }}%{% endif %}
+              </div>
+            </div>
 
-      // Generate distinct HSL colors
-      const backgroundColors = labels.map((_, i) =>
-        `hsl(${i * (360 / labels.length)}, 70%, 55%)`
-      );
+            <div class="row g-2 mt-1">
+              {% if submitted_coordinator_names %}
+              <div class="col-md-4">
+                <p class="mb-1 small fw-semibold text-success"><i class="bi bi-check-circle me-1"></i>Submitted ({{
+                  submitted_coordinator_names | length }}):</p>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for name in submitted_coordinator_names %}
+                  <span class="badge rounded-pill bg-success" style="font-size:0.8rem;">
+                    <i class="bi bi-person-check me-1"></i>{{ name }}
+                  </span>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              {% if draft_coordinator_names %}
+              <div class="col-md-4">
+                <p class="mb-1 small fw-semibold" style="color:#e67e00;"><i
+                    class="bi bi-file-earmark-text me-1"></i>Draft Saved ({{ draft_coordinator_names | length }}):</p>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for name in draft_coordinator_names %}
+                  <span class="badge rounded-pill" style="background-color:#fd7e14; color:#fff; font-size:0.8rem;">
+                    <i class="bi bi-hourglass-split me-1"></i>{{ name }}
+                  </span>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              {% if pending_coordinators %}
+              <div class="col-md-4">
+                <p class="mb-1 small fw-semibold text-danger"><i class="bi bi-clock me-1"></i>Pending ({{
+                  pending_coordinators | length }}):</p>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for name in pending_coordinators %}
+                  <span class="badge rounded-pill" style="background-color:#dc3545; color:#fff; font-size:0.8rem;">
+                    <i class="bi bi-person-x me-1"></i>{{ name }}
+                  </span>
+                  {% endfor %}
+                </div>
+              </div>
+              {% elif not draft_coordinator_names %}
+              <div class="col-12">
+                <p class="text-success mb-0 fw-semibold"><i class="bi bi-check-circle me-1"></i>All coordinators have
+                  submitted for this month!</p>
+              </div>
+              {% endif %}
+            </div>
+            {% else %}
+            <p class="text-muted mb-0 text-center">No IQAC Coordinators found.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
 
-      // Build dynamic chart title
-      let chartTitle = 'Worklog Summary';
-      {% if filter_mode == 'academic_year' and selected_academic_year %}
-        chartTitle += ' - Academic Year {{ selected_academic_year }}';
-      {% elif filter_mode == 'date' and from_date and to_date %}
-        chartTitle += ' - {{ from_date }} to {{ to_date }}';
-      {% else %}
-        chartTitle += ' - {{ current_month }}';
-      {% endif %}
-      {% if category_filter and category_filter != 'All' %}
-        chartTitle += ' ({{ category_filter }})';
-      {% endif %}
+    <!-- Submission Window Settings -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="text-primary mb-3"><i class="bi bi-calendar-range me-2"></i>IQAC Report Submission Window</h6>
+        <p class="text-muted small mb-3">
+          Coordinators can upload their signed monthly report from the <strong>1<sup>st</sup></strong> to the
+          <strong>{{ submission_close_day }}<sup>th</sup></strong> of every month.
+          The start date is always the 1st. You can extend the deadline if needed.
+        </p>
+        <form method="POST" class="row g-3 align-items-end">
+          <input type="hidden" name="update_window" value="1">
+          <div class="col-md-2">
+            <label class="form-label">Open Day</label>
+            <input type="number" class="form-control bg-light" value="1" disabled>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Close Day <span class="text-muted">(1–31)</span></label>
+            <input type="number" name="submission_close_day" class="form-control" min="1" max="31"
+              value="{{ submission_close_day }}" required>
+          </div>
+          <div class="col-md-3">
+            <button type="submit" class="btn btn-primary">Extend Deadline</button>
+          </div>
+          <div class="col-md-4 text-muted small d-flex align-items-center">
+            e.g. Close: 7 → coordinators can upload from the 1st to 7th of each month.
+          </div>
+        </form>
+      </div>
+    </div>
 
-      const summaryChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: '{% if category_filter and category_filter != "All" %}{{ category_filter }}{% else %}Worklog Entries{% endif %}',
-            data: dataValues,
-            backgroundColor: backgroundColors,
-            borderColor: '#003366',
-            borderWidth: 1,
-            barThickness: labels.length > 10 ? 30 : 45
-          }]
+    <!-- Quick Summary - IQAC Coordinators Monthly Reports -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="mb-3 text-primary">Quick Summary - IQAC Coordinators Monthly Reports</h6>
+        <form method="GET" class="row g-3 align-items-end mb-4">
+          <input type="hidden" name="coord_form" value="1">
+          <div class="col-md-3">
+            <label class="form-label">Coordinator</label>
+            <select name="coord_user" class="form-select">
+              <option value="All" {% if coord_user=='All' %}selected{% endif %}>All Coordinators</option>
+              {% for c in coordinators %}
+              <option value="{{ c['username'] }}" {% if coord_user==c['username'] %}selected{% endif %}>
+                {{ c['username'].title() }} ({{ c['role'] }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Report Type</label>
+            <select name="coord_report_type" id="coord_report_type" class="form-select">
+              <option value="monthly" {% if coord_report_type=='monthly' %}selected{% endif %}>Monthly-wise</option>
+              <option value="yearly" {% if coord_report_type=='yearly' %}selected{% endif %}>Yearly-wise</option>
+            </select>
+          </div>
+          <div id="coord_range_field" class="col-md-4"
+            style="display:{{ 'none' if coord_report_type == 'yearly' else 'block' }}">
+            <div class="d-flex gap-2 align-items-end">
+              <div class="flex-fill">
+                <label class="form-label">From Month</label>
+                <input type="month" name="coord_from_month" class="form-control" value="{{ coord_from_month or '' }}">
+              </div>
+              <div class="flex-fill">
+                <label class="form-label">To Month</label>
+                <input type="month" name="coord_to_month" class="form-control" value="{{ coord_to_month or '' }}">
+              </div>
+            </div>
+          </div>
+          <div id="coord_year_field" class="col-md-2"
+            style="display:{{ 'block' if coord_report_type == 'yearly' else 'none' }}">
+            <label class="form-label">Year</label>
+            <select name="coord_year" class="form-select">
+              {% for y in range(datetime.now().year, datetime.now().year - 4, -1) %}
+              <option value="{{ y }}" {% if coord_year==y|string %}selected{% endif %}>{{ y }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">View Summary</button>
+          </div>
+        </form>
+
+        {% if coord_reports is not none %}
+        {% if coord_reports %}
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle" style="font-size:0.9rem;">
+            <thead>
+              <tr style="background-color:#003366; color:#fff;">
+                <th>#</th>
+                <th>Coordinator</th>
+                <th>Role</th>
+                <th>Reporting Month</th>
+                <th>Submitted On</th>
+                <th>Status</th>
+                <th>View</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in coord_reports %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ r.username.title() }}</td>
+                <td><span class="badge" style="background-color:#003366; font-size:0.75rem;">{{ r.role }}</span></td>
+                <td>{{ r.reporting_month | datetimeformat }}</td>
+                <td>{{ r.uploaded_at|ist if r.uploaded_at else '—' }}</td>
+                <td>
+                  {% if r.status == 'reviewed' %}
+                  <span class="badge bg-success">Authorised</span>
+                  {% else %}
+                  <span class="badge" style="background-color:#ffc107; color:#000;">Pending Authorisation</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="/view_report/{{ r.id }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-muted small mb-0">{{ coord_reports | length }} report(s) found.</p>
+        {% else %}
+        <p class="text-muted mb-0">No reports submitted for the selected period.</p>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Month Selector and Quick Summary Chart -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="mb-3 text-primary">Quick Summary - Worklog Entries</h6>
+        <form method="GET" class="row g-3 align-items-end mb-4">
+          <div class="col-md-2">
+            <label class="form-label">User</label>
+            <select name="user" class="form-select">
+              <option value="All" {% if selected_user=='All' or not selected_user %}selected{% endif %}>All Users
+              </option>
+              {% for u in users %}
+              <option value="{{ u['username'] }}" {% if selected_user==u['username'] %}selected{% endif %}>
+                {{ u['username'].title() }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Category</label>
+            <select name="category_filter" class="form-select">
+              <option value="All" {% if category_filter=='All' or not category_filter %}selected{% endif %}>All
+                Categories</option>
+              <option value="Documentation and Audits" {% if category_filter=='Documentation and Audits' %}selected{%
+                endif %}>Documentation & Audits</option>
+              <option value="Rankings" {% if category_filter=='Rankings' %}selected{% endif %}>Rankings</option>
+              <option value="Publications" {% if category_filter=='Publications' %}selected{% endif %}>Publications
+              </option>
+              <option value="Training and Development" {% if category_filter=='Training and Development' %}selected{%
+                endif %}>Training & Development</option>
+              <option value="Strategic Initiatives" {% if category_filter=='Strategic Initiatives' %}selected{% endif
+                %}>Strategic Initiatives</option>
+              <option value="Others" {% if category_filter=='Others' %}selected{% endif %}>Others</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Report Type</label>
+            <select name="filter_mode" id="filter_mode" class="form-select">
+              <option value="month" {% if filter_mode=='month' or not filter_mode %}selected{% endif %}>Month-wise
+              </option>
+              <option value="date" {% if filter_mode=='date' %}selected{% endif %}>Custom Date Range</option>
+              <option value="academic_year" {% if filter_mode=='academic_year' %}selected{% endif %}>Academic Year
+              </option>
+            </select>
+          </div>
+          <div id="month_field" class="col-md-2"
+            style="{% if filter_mode == 'date' or filter_mode == 'academic_year' %}display:none !important;{% else %}display:block !important;{% endif %}">
+            <label class="form-label">Month & Year</label>
+            <input type="month" name="month" id="month_input" class="form-control"
+              value="{{ selected_month or datetime.now().strftime('%Y-%m') }}">
+          </div>
+          <div id="date_range_fields" class="col-md-4 d-flex gap-2"
+            style="{% if filter_mode == 'date' %}display:flex !important;{% else %}display:none !important;{% endif %}">
+            <div class="flex-fill">
+              <label class="form-label">From Date</label>
+              <input type="date" name="from_date" id="from_date" class="form-control" value="{{ from_date or '' }}">
+            </div>
+            <div class="flex-fill">
+              <label class="form-label">To Date</label>
+              <input type="date" name="to_date" id="to_date" class="form-control" value="{{ to_date or '' }}">
+            </div>
+          </div>
+          <div id="academic_year_field" class="col-md-2"
+            style="{% if filter_mode == 'academic_year' %}display:block !important;{% else %}display:none !important;{% endif %}">
+            <label class="form-label">Academic Year</label>
+            <select name="academic_year" id="academic_year_input" class="form-select">
+              {% set current_year = datetime.now().year %}
+              {% set current_month = datetime.now().month %}
+              {% set start_year = current_year if current_month >= 5 else current_year - 1 %}
+              {% for i in range(5) %}
+              {% set year = start_year - i %}
+              <option value="{{ year }}-{{ year + 1 }}" {% if selected_academic_year==(year|string ~ '-' ~
+                (year+1)|string) %}selected{% endif %}>
+                {{ year }}-{{ year + 1 }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">View Summary</button>
+          </div>
+        </form>
+
+        <div class="mb-3">
+          <h6 class="text-primary mb-0">
+            {% if filter_mode == 'academic_year' %}
+            Summary for Academic Year {{ selected_academic_year or '' }}
+            {% elif filter_mode == 'date' %}
+            Summary for {{ from_date or '' }} to {{ to_date or '' }}
+            {% else %}
+            Summary for {{ current_month }}
+            {% endif %}
+            {% if selected_user and selected_user != 'All' %} - {{ selected_user.title() }}{% endif %}
+            {% if category_filter and category_filter != 'All' %} ({{ category_filter }}){% endif %}
+          </h6>
+        </div>
+
+        {% if summary %}
+        <div class="chart-container">
+          <canvas id="summaryChart"></canvas>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No data available for the selected filters.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <span>Concept: <strong>Dr. Cecil Donald</strong></span>
+      <span class="divider">|</span>
+      <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26) &amp; <strong>Darshan Heble, Ananya S Shetty,
+          Arnav Narula</strong> (MCA 2025-27)</span>
+    </div>
+  </footer>
+
+  <!-- JS Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <!-- Chart Script -->
+  <script>
+    {% if summary %}
+    const ctx = document.getElementById('summaryChart');
+    const labels = [{% for row in summary %}'{{ row["username"].title() }}', {% endfor %}];
+    const dataValues = [{% for row in summary %}{{ row["count"] }}, {% endfor %}];
+
+    // Generate distinct HSL colors
+    const backgroundColors = labels.map((_, i) =>
+      `hsl(${i * (360 / labels.length)}, 70%, 55%)`
+    );
+
+    // Build dynamic chart title
+    let chartTitle = 'Worklog Summary';
+    {% if filter_mode == 'academic_year' and selected_academic_year %}
+    chartTitle += ' - Academic Year {{ selected_academic_year }}';
+    {% elif filter_mode == 'date' and from_date and to_date %}
+    chartTitle += ' - {{ from_date }} to {{ to_date }}';
+    {% else %}
+    chartTitle += ' - {{ current_month }}';
+    {% endif %}
+    {% if category_filter and category_filter != 'All' %}
+    chartTitle += ' ({{ category_filter }})';
+    {% endif %}
+
+    const summaryChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '{% if category_filter and category_filter != "All" %}{{ category_filter }}{% else %}Worklog Entries{% endif %}',
+          data: dataValues,
+          backgroundColor: backgroundColors,
+          borderColor: '#003366',
+          borderWidth: 1,
+          barThickness: labels.length > 10 ? 30 : 45
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, precision: 0 },
+            title: { display: true, text: 'Number of Entries' }
+          },
+          x: {
+            title: { display: true, text: 'Users' }
+          }
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { stepSize: 1, precision: 0 },
-              title: { display: true, text: 'Number of Entries' }
-            },
-            x: {
-              title: { display: true, text: 'Users' }
+        plugins: {
+          legend: {
+            display: labels.length <= 10,
+            position: 'bottom',
+            labels: {
+              generateLabels: function (chart) {
+                return chart.data.labels.map((label, i) => ({
+                  text: label + ' (' + chart.data.datasets[0].data[i] + ')',
+                  fillStyle: chart.data.datasets[0].backgroundColor[i]
+                }));
+              }
             }
           },
-          plugins: {
-            legend: {
-              display: labels.length <= 10,
-              position: 'bottom',
-              labels: {
-                generateLabels: function(chart) {
-                  return chart.data.labels.map((label, i) => ({
-                    text: label + ' (' + chart.data.datasets[0].data[i] + ')',
-                    fillStyle: chart.data.datasets[0].backgroundColor[i]
-                  }));
-                }
-              }
-            },
-            title: {
-              display: true,
-              text: chartTitle,
-              font: { size: 16, weight: 'bold' },
-              color: '#003366'
-            },
-            datalabels: {
-              color: '#000',
-              anchor: 'end',
-              align: 'start',
-              font: { weight: 'bold', size: 12 },
-              formatter: function(value) {
-                return value > 0 ? value : '';
-              }
+          title: {
+            display: true,
+            text: chartTitle,
+            font: { size: 16, weight: 'bold' },
+            color: '#003366'
+          },
+          datalabels: {
+            color: '#000',
+            anchor: 'end',
+            align: 'start',
+            font: { weight: 'bold', size: 12 },
+            formatter: function (value) {
+              return value > 0 ? value : '';
             }
           }
-        },
-        plugins: [ChartDataLabels]
-      });
-      {% endif %}
-      
-      // Toggle filter fields based on report type
-      document.addEventListener("DOMContentLoaded", function () {
-        const modeSelect = document.getElementById("filter_mode");
-        const dateFields = document.getElementById("date_range_fields");
-        const monthField = document.getElementById("month_field");
-        const academicYearField = document.getElementById("academic_year_field");
-        
-        function setDisplay(el, value) { el.style.setProperty('display', value, 'important'); }
-        
-        function toggleFilterFields(mode) {
-          if (mode === "month") { 
-            setDisplay(monthField, 'block'); 
-            setDisplay(dateFields, 'none'); 
-            setDisplay(academicYearField, 'none');
-          } else if (mode === "academic_year") {
-            setDisplay(monthField, 'none'); 
-            setDisplay(dateFields, 'none'); 
-            setDisplay(academicYearField, 'block');
-          } else { 
-            setDisplay(monthField, 'none'); 
-            setDisplay(dateFields, 'flex'); 
-            setDisplay(academicYearField, 'none');
-          }
         }
-        
-        toggleFilterFields(modeSelect.value || "month");
-        modeSelect.addEventListener("change", function () { toggleFilterFields(this.value); });
-      });
-    </script>
-  </body>
+      },
+      plugins: [ChartDataLabels]
+    });
+    {% endif %}
+
+    // Toggle filter fields based on report type
+    document.addEventListener("DOMContentLoaded", function () {
+      const modeSelect = document.getElementById("filter_mode");
+      const dateFields = document.getElementById("date_range_fields");
+      const monthField = document.getElementById("month_field");
+      const academicYearField = document.getElementById("academic_year_field");
+
+      const today = new Date().toISOString().split('T')[0];
+      const fromDate = document.getElementById('from_date');
+      const toDate = document.getElementById('to_date');
+
+      if (fromDate && toDate) {
+        const fpFrom = flatpickr(fromDate, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: today,
+          defaultDate: fromDate.value || null,
+          onChange: function (selectedDates, dateStr) {
+            fromDate.value = dateStr;
+            fpTo.set('minDate', dateStr);
+          }
+        });
+
+        const fpTo = flatpickr(toDate, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: today,
+          minDate: fromDate.value || null,
+          defaultDate: toDate.value || null,
+          onChange: function (selectedDates, dateStr) {
+            toDate.value = dateStr;
+          }
+        });
+      }
+
+      function setDisplay(el, value) { el.style.setProperty('display', value, 'important'); }
+
+      function toggleFilterFields(mode) {
+        if (mode === "month") {
+          setDisplay(monthField, 'block');
+          setDisplay(dateFields, 'none');
+          setDisplay(academicYearField, 'none');
+        } else if (mode === "academic_year") {
+          setDisplay(monthField, 'none');
+          setDisplay(dateFields, 'none');
+          setDisplay(academicYearField, 'block');
+        } else {
+          setDisplay(monthField, 'none');
+          setDisplay(dateFields, 'flex');
+          setDisplay(academicYearField, 'none');
+        }
+      }
+
+      toggleFilterFields(modeSelect.value || "month");
+      modeSelect.addEventListener("change", function () { toggleFilterFields(this.value); });
+
+      // Coordinator report type toggle
+      const coordType = document.getElementById("coord_report_type");
+      const coordRangeField = document.getElementById("coord_range_field");
+      const coordYearField = document.getElementById("coord_year_field");
+      function toggleCoordFields(val) {
+        coordRangeField.style.display = (val === "yearly") ? "none" : "block";
+        if (coordYearField) coordYearField.style.display = (val === "yearly") ? "block" : "none";
+      }
+      if (coordType) {
+        toggleCoordFields(coordType.value);
+        coordType.addEventListener("change", function () { toggleCoordFields(this.value); });
+      }
+
+      // From Month → To Month min constraint
+      const fromMonth = document.querySelector("input[name='coord_from_month']");
+      const toMonth = document.querySelector("input[name='coord_to_month']");
+      if (fromMonth && toMonth) {
+        fromMonth.addEventListener("change", function () {
+          toMonth.min = this.value;
+          if (toMonth.value && toMonth.value < this.value) toMonth.value = this.value;
+        });
+        if (fromMonth.value) toMonth.min = fromMonth.value;
+      }
+    });
+  </script>
+</body>
+
 </html>
