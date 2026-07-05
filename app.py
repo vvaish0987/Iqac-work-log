@@ -17,6 +17,22 @@ load_dotenv(override=True)
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "your_secret_key")
 
+# Monkeypatch psycopg Cursor fetchone to inject active session role
+import psycopg
+_orig_fetchone = psycopg.Cursor.fetchone
+def _patched_fetchone(self):
+    row = _orig_fetchone(self)
+    if row and isinstance(row, dict) and "role" in row and "username" in row:
+        try:
+            from flask import session
+            if session and "username" in session and row["username"] == session["username"]:
+                if "role" in session:
+                    row["role"] = session["role"]
+        except Exception:
+            pass
+    return row
+psycopg.Cursor.fetchone = _patched_fetchone
+
 from routes.pdf import pdf_bp
 app.register_blueprint(pdf_bp)
 
@@ -714,18 +730,21 @@ def login():
 
         if user and check_password_hash(user["password"], password):
             session["username"] = username
-            session["role"] = user["role"]
+            available_roles = [r.strip() for r in user["role"].split(",")]
+            session["available_roles"] = available_roles
+            session["role"] = available_roles[0]
             session["must_change_password"] = user.get("must_change_password", False)
             flash(f"Welcome, {username}!", "success")
             
             if session["must_change_password"]:
                 return redirect("/change_password")
                 
-            if user["role"].lower() == "admin":
+            active_role_lower = session["role"].lower()
+            if active_role_lower == "admin":
                 return redirect("/admin")
-            elif user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+            elif active_role_lower in ("school iqac coordinator", "campus iqac coordinator"):
                 return redirect("/iqac_dashboard")
-            elif user["role"].lower() == "secretary":
+            elif active_role_lower == "secretary":
                 return redirect("/secretary_dashboard")
             else:
                 return redirect("/dashboard")
@@ -733,6 +752,30 @@ def login():
             flash("Invalid username or password.", "danger")
 
     return render_template("login.html")
+
+
+@app.route("/switch_role/<role>")
+def switch_role(role):
+    if "username" not in session:
+        return redirect("/login")
+    
+    available = session.get("available_roles", [])
+    if role in available:
+        session["role"] = role
+        flash(f"Switched role to {role}", "success")
+        
+        r_lower = role.lower()
+        if r_lower == "admin":
+            return redirect("/admin")
+        elif r_lower in ("school iqac coordinator", "campus iqac coordinator"):
+            return redirect("/iqac_dashboard")
+        elif r_lower == "secretary":
+            return redirect("/secretary_dashboard")
+        else:
+            return redirect("/dashboard")
+    else:
+        flash("Invalid role selection.", "danger")
+        return redirect("/dashboard")
 
 
 @app.route("/logout")
@@ -1581,7 +1624,8 @@ def admin_add_user():
         gender = request.form["gender"]
         designation = request.form["designation"]
         department = request.form["department"]
-        role = request.form["role"]
+        roles = request.form.getlist("roles")
+        role = ", ".join(roles)
 
         password = "".join(random.choices(string.ascii_letters + string.digits, k=8))
         hashed = generate_password_hash(password)
@@ -2161,7 +2205,8 @@ def admin_edit_user(id):
         gender = request.form["gender"]
         designation = request.form["designation"]
         department = request.form["department"]
-        role = request.form["role"]
+        roles = request.form.getlist("roles")
+        role = ", ".join(roles)
 
         old_username = user["username"]
 

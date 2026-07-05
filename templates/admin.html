@@ -48,12 +48,9 @@
 
     .header-title {
       color: #fff;
-      margin: 0;
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
+      margin: 0 1.5rem;
       text-align: center;
+      flex-grow: 1;
     }
 
     .header-title h5 {
@@ -168,8 +165,24 @@
       <div class="header-title">
         <h5>INTERNAL QUALITY ASSURANCE CELL (IQAC)</h5>
       </div>
-      <div>
-        <span class="text-light me-3">Welcome, {{ username.title() }}</span>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        {% if session.get('available_roles') and session.get('available_roles')|length > 1 %}
+          <div class="dropdown me-1">
+            <button class="btn btn-warning btn-sm dropdown-toggle fw-bold text-dark" type="button" id="roleDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              Role: {{ session.get('role') }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="roleDropdown">
+              {% for role_opt in session.get('available_roles') %}
+                <li>
+                  <a class="dropdown-item {% if session.get('role') == role_opt %}active{% endif %}" href="/switch_role/{{ role_opt }}">
+                    {{ role_opt }}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+        <span class="text-light me-2">Welcome, {{ username.title() }}</span>
         <a href="/change_password" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-key"></i> Change Password</a>
         <a href="/logout" class="btn btn-light btn-sm">Logout</a>
       </div>
