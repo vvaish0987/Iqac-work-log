@@ -230,19 +230,19 @@
           <h6 class="text-primary mb-3">IQAC Monthly Reports</h6>
           <div class="row g-3">
             <div class="col-md-5">
-              <label class="form-label">Name of the IQAC Coordinator <span class="text-danger">*</span></label>
+              <label class="form-label">Name of the IQAC Coordinator</label>
               <input type="hidden" name="coordinator_name" value="{{ user.full_name or user.username.title() }}">
               <input type="text" class="form-control bg-light" value="{{ user.full_name or user.username.title() }}"
                 disabled>
             </div>
             <div class="col-md-4">
-              <label class="form-label">School / Campus <span class="text-danger">*</span></label>
+              <label class="form-label">School / Campus</label>
               <input type="hidden" name="school_campus" value="{{ user.department or '' }}">
               <input type="text" class="form-control bg-light" value="{{ user.department or '' }}" disabled
                 placeholder="e.g., School of Sciences, Bangalore">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Reporting Month <span class="text-danger">*</span></label>
+              <label class="form-label">Reporting Month</label>
               <input type="hidden" name="reporting_month" value="{{ reporting_month_str }}">
               <input type="text" class="form-control bg-light" value="{{ reporting_month_display }}" readonly
                 style="cursor:not-allowed; color:#555;">
@@ -774,7 +774,6 @@
           if (!dept.value.trim()) { highlight(dept); rowOk = false; missingFields.push("Department Name"); }
           if (!parts.value.trim()) { highlight(parts); rowOk = false; missingFields.push("Participants"); }
           if (!topics.value.trim()) { highlight(topics); rowOk = false; missingFields.push("Topics Discussed"); }
-          if (!action.value.trim()) { highlight(action); rowOk = false; missingFields.push("Action Points"); }
           if (!respVal) {
             const display = row.querySelector('.resp-area-display');
             if (display) display.style.border = '2px solid red';
