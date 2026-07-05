@@ -230,19 +230,19 @@
           <h6 class="text-primary mb-3">IQAC Monthly Reports</h6>
           <div class="row g-3">
             <div class="col-md-5">
-              <label class="form-label">Name of the IQAC Coordinator</label>
+              <label class="form-label">Name of the IQAC Coordinator <span class="text-danger">*</span></label>
               <input type="hidden" name="coordinator_name" value="{{ user.full_name or user.username.title() }}">
               <input type="text" class="form-control bg-light" value="{{ user.full_name or user.username.title() }}"
                 disabled>
             </div>
             <div class="col-md-4">
-              <label class="form-label">School / Campus</label>
+              <label class="form-label">School / Campus <span class="text-danger">*</span></label>
               <input type="hidden" name="school_campus" value="{{ user.department or '' }}">
               <input type="text" class="form-control bg-light" value="{{ user.department or '' }}" disabled
                 placeholder="e.g., School of Sciences, Bangalore">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Reporting Month</label>
+              <label class="form-label">Reporting Month <span class="text-danger">*</span></label>
               <input type="hidden" name="reporting_month" value="{{ reporting_month_str }}">
               <input type="text" class="form-control bg-light" value="{{ reporting_month_display }}" readonly
                 style="cursor:not-allowed; color:#555;">
@@ -264,12 +264,12 @@
             <table class="table table-bordered table-sm" id="tableA">
               <thead>
                 <tr>
-                  <th style="width:12%;">Date of Meeting</th>
-                  <th style="width:14%;">Department / School Name</th>
-                  <th style="width:16%;">Participants' Details</th>
-                  <th style="width:20%;">Topics Discussed</th>
-                  <th style="width:20%;">Action Points / Plan</th>
-                  <th style="width:14%;">Related Responsibility Area</th>
+                  <th style="width:12%;">Date of Meeting <span class="text-danger">*</span></th>
+                  <th style="width:14%;">Department / School Name <span class="text-danger">*</span></th>
+                  <th style="width:16%;">Participants' Details <span class="text-danger">*</span></th>
+                  <th style="width:20%;">Topics Discussed <span class="text-danger">*</span></th>
+                  <th style="width:20%;">Action Points / Plan / Outcome <span class="text-muted fw-normal" style="font-size:0.75rem;">(Optional)</span></th>
+                  <th style="width:14%;">IQAC VERTICALS <span class="text-danger">*</span></th>
                   <th style="width:4%;"></th>
                 </tr>
               </thead>
@@ -293,45 +293,22 @@
                       <td><input type="text" name="dept_name[]" class="form-control form-control-sm" placeholder="Department / School" value="{{ dept_name_val }}"></td>
                       <td><input type="text" name="participants[]" class="form-control form-control-sm" placeholder="Names / Designations" value="{{ participants_val }}"></td>
                       <td><textarea name="topics[]" class="form-control form-control-sm topics-field" rows="2" placeholder="Auto-filled or type here">{{ topics_val }}</textarea></td>
-                      <td><textarea name="action_points[]" class="form-control form-control-sm" rows="2" placeholder="Action points">{{ action_points_val }}</textarea></td>
+                      <td><textarea name="action_points[]" class="form-control form-control-sm" rows="2" placeholder="Action points / Outcome (optional)">{{ action_points_val }}</textarea></td>
                       <td style="min-width:180px;">
                         <div class="resp-area-wrapper">
                           <input type="hidden" name="responsibility_area[]" class="resp-area-hidden" value="{{ responsibility_area_val }}">
                           <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem; background:#fff; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
                             <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>
                           </div>
-                          <div class="resp-area-checklist border rounded p-2 mt-1 bg-white shadow-sm" style="display:none; max-height:160px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:280px;">
-                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Monitoring Strategic Plan Implementation" {% if '
-                  Monitoring Strategic Plan Implementation' in selected_areas %}checked{% endif %}> Monitoring Strategic
-                  Plan Implementation</label>
-                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                      value="Benchmarking" {% if 'Benchmarking' in selected_areas %}checked{% endif %}>
-                    Benchmarking</label>
-                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                      value="Gap Analysis and Guidance" {% if 'Gap Analysis and Guidance' in selected_areas %}checked{%
-                      endif %}> Gap Analysis and Guidance</label>
-                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                      value="Data and Document Management" {% if 'Data and Document Management' in selected_areas
-                      %}checked{% endif %}> Data and Document Management</label>
-                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                      value="Audit Coordination" {% if 'Audit Coordination' in selected_areas %}checked{% endif %}>
-                    Audit Coordination</label>
-                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                      value="Engagement with University Offices/Centres" {%
-                      if 'Engagement with University Offices/Centres' in selected_areas %}checked{% endif %}> Engagement
-                    with University Offices/Centres</label>
-                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                      value="Participation in Rankings and Accreditations" {%
-                      if 'Participation in Rankings and Accreditations' in selected_areas %}checked{% endif %}>
-                    Participation in Rankings and Accreditations</label>
-                  <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                      value="Monitoring website updates of department activities" {%
-                      if 'Monitoring website updates of department activities' in selected_areas %}checked{% endif %}>
-                    Monitoring website updates of department activities</label>
-                  <label class="d-flex align-items-start gap-1 mb-0"><input type="checkbox" class="resp-cb mt-1"
-                      value="Report Preparation and Submission" {% if 'Report Preparation and Submission' in
-                      selected_areas %}checked{% endif %}> Report Preparation and Submission</label>
-          </div>
+                          <div class="resp-area-checklist border rounded p-2 mt-1 bg-white shadow-sm" style="display:none; max-height:220px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:260px;">
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Documentation & Audits" {% if 'Documentation & Audits' in selected_areas %}checked{% endif %}> Documentation &amp; Audits</label>
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Rankings, Accreditations & Awards" {% if 'Rankings, Accreditations & Awards' in selected_areas %}checked{% endif %}> Rankings, Accreditations &amp; Awards</label>
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Training & Development" {% if 'Training & Development' in selected_areas %}checked{% endif %}> Training &amp; Development</label>
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Publications" {% if 'Publications' in selected_areas %}checked{% endif %}> Publications</label>
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Strategic Initiatives" {% if 'Strategic Initiatives' in selected_areas %}checked{% endif %}> Strategic Initiatives</label>
+                            <label class="d-flex align-items-start gap-1 mb-1 resp-others-label"><input type="checkbox" class="resp-cb resp-others-cb mt-1" value="Others"> Others</label>
+                            <input type="text" class="resp-others-text form-control form-control-sm mt-1" placeholder="Please specify" style="display:none; font-size:0.76rem;">
+                          </div>
         </div>
         </td>
         <td class="text-center"><button type="button" class="btn btn-danger btn-del-row" onclick="delRow(this)"><i
@@ -358,13 +335,13 @@
         <table class="table table-bordered table-sm" id="tableB">
           <thead>
             <tr>
-              <th style="width:11%;">Date</th>
-              <th style="width:12%;">Venue</th>
-              <th style="width:16%;">Title of the Program</th>
-              <th style="width:8%;">No. of Participants</th>
-              <th style="width:18%;">Name of the Resource Person/s</th>
-              <th style="width:18%;">Related Responsibility Area</th>
-              <th style="width:13%;">Report (Optional)</th>
+              <th style="width:11%;">Date <span class="text-danger">*</span></th>
+              <th style="width:12%;">Venue <span class="text-danger">*</span></th>
+              <th style="width:16%;">Title of the Program <span class="text-danger">*</span></th>
+              <th style="width:8%;">No. of Participants <span class="text-muted fw-normal" style="font-size:0.75rem;">(Optional)</span></th>
+              <th style="width:18%;">Name of the Resource Person/s <span class="text-danger">*</span></th>
+              <th style="width:18%;">IQAC VERTICALS <span class="text-danger">*</span></th>
+              <th style="width:13%;">Report <span class="text-muted fw-normal" style="font-size:0.75rem;">(Optional)</span></th>
               <th style="width:4%;"></th>
             </tr>
           </thead>
@@ -395,37 +372,15 @@
                           <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem; background:#fff; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
                             <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>
                           </div>
-                          <div class="resp-area-checklist border rounded p-2 mt-1 bg-white shadow-sm" style="display:none; max-height:160px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:280px;">
-                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Monitoring Strategic Plan Implementation" {% if '
-              Monitoring Strategic Plan Implementation' in selected_ws_areas %}checked{% endif %}> Monitoring Strategic
-              Plan Implementation</label>
-              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                  value="Benchmarking" {% if 'Benchmarking' in selected_ws_areas %}checked{% endif %}>
-                Benchmarking</label>
-              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                  value="Gap Analysis and Guidance" {% if 'Gap Analysis and Guidance' in selected_ws_areas %}checked{%
-                  endif %}> Gap Analysis and Guidance</label>
-              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                  value="Data and Document Management" {% if 'Data and Document Management' in selected_ws_areas
-                  %}checked{% endif %}> Data and Document Management</label>
-              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                  value="Audit Coordination" {% if 'Audit Coordination' in selected_ws_areas %}checked{% endif %}> Audit
-                Coordination</label>
-              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                  value="Engagement with University Offices/Centres" {% if 'Engagement with University Offices/Centres'
-                  in selected_ws_areas %}checked{% endif %}> Engagement with University Offices/Centres</label>
-              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                  value="Participation in Rankings and Accreditations" {%
-                  if 'Participation in Rankings and Accreditations' in selected_ws_areas %}checked{% endif %}>
-                Participation in Rankings and Accreditations</label>
-              <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1"
-                  value="Monitoring website updates of department activities" {%
-                  if 'Monitoring website updates of department activities' in selected_ws_areas %}checked{% endif %}>
-                Monitoring website updates of department activities</label>
-              <label class="d-flex align-items-start gap-1 mb-0"><input type="checkbox" class="resp-cb mt-1"
-                  value="Report Preparation and Submission" {% if 'Report Preparation and Submission' in
-                  selected_ws_areas %}checked{% endif %}> Report Preparation and Submission</label>
-      </div>
+                          <div class="resp-area-checklist border rounded p-2 mt-1 bg-white shadow-sm" style="display:none; max-height:220px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:260px;">
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Documentation & Audits" {% if 'Documentation & Audits' in selected_ws_areas %}checked{% endif %}> Documentation &amp; Audits</label>
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Rankings, Accreditations & Awards" {% if 'Rankings, Accreditations & Awards' in selected_ws_areas %}checked{% endif %}> Rankings, Accreditations &amp; Awards</label>
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Training & Development" {% if 'Training & Development' in selected_ws_areas %}checked{% endif %}> Training &amp; Development</label>
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Publications" {% if 'Publications' in selected_ws_areas %}checked{% endif %}> Publications</label>
+                            <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Strategic Initiatives" {% if 'Strategic Initiatives' in selected_ws_areas %}checked{% endif %}> Strategic Initiatives</label>
+                            <label class="d-flex align-items-start gap-1 mb-1 resp-others-label"><input type="checkbox" class="resp-cb resp-others-cb mt-1" value="Others"> Others</label>
+                            <input type="text" class="resp-others-text form-control form-control-sm mt-1" placeholder="Please specify" style="display:none; font-size:0.76rem;">
+                          </div>
     </div>
     </td>
     <td class="text-center align-middle">
@@ -472,7 +427,7 @@
   </div>
 
   <!-- ── Section II ── -->
-  <div class="section-header">Section II: Plans for Next Month</div>
+  <div class="section-header">Section II: Plans for Next Month <span class="text-warning fw-normal" style="font-size:0.8rem;">(Optional)</span></div>
 
   <div class="card mb-4">
     <div class="card-body">
@@ -509,13 +464,13 @@
           <small class="text-muted">Signature: ________________________</small>
         </div>
         <div class="col-md-4">
-          <label class="form-label">Remarks of the Dean</label>
+          <label class="form-label">Remarks of the Dean <span class="text-muted fw-normal small">(Optional)</span></label>
           <input type="text" name="sig_dean_remarks" class="form-control" placeholder="Dean's remarks (if any)"
             value="{{ draft_data.get('sig_dean_remarks', '') if draft_data else '' }}">
           <small class="text-muted">Signature: ________________________</small>
         </div>
         <div class="col-md-4">
-          <label class="form-label">Remarks of Director IQAC</label>
+          <label class="form-label">Remarks of Director IQAC <span class="text-muted fw-normal small">(Optional)</span></label>
           <input type="text" name="sig_director_remarks" class="form-control"
             placeholder="Director IQAC's remarks (if any)"
             value="{{ draft_data.get('sig_director_remarks', '') if draft_data else '' }}">
@@ -563,7 +518,14 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
     function syncRespArea(wrapper) {
-      const checked = Array.from(wrapper.querySelectorAll('.resp-cb:checked')).map(c => c.value);
+      const othersText = wrapper.querySelector('.resp-others-text');
+      const checked = Array.from(wrapper.querySelectorAll('.resp-cb:checked')).map(c => {
+        if (c.classList.contains('resp-others-cb')) {
+          const txt = othersText && othersText.value.trim();
+          return txt ? txt : 'Others';
+        }
+        return c.value;
+      });
       const hidden = wrapper.querySelector('.resp-area-hidden');
       if (hidden) hidden.value = checked.join(', ');
       const display = wrapper.querySelector('.resp-area-display');
@@ -657,6 +619,26 @@
       if (!e.target.classList.contains('resp-cb')) return;
       const wrapper = e.target.closest('.resp-area-wrapper');
       const row = e.target.closest('tr');
+
+      // Toggle Others text box
+      if (e.target.classList.contains('resp-others-cb')) {
+        const othersText = e.target.closest('.resp-area-checklist').querySelector('.resp-others-text');
+        if (othersText) othersText.style.display = e.target.checked ? 'block' : 'none';
+        if (!e.target.checked && othersText) othersText.value = '';
+      }
+
+      const checked = syncRespArea(wrapper);
+      const topicsField = row ? row.querySelector('.topics-field') : null;
+      if (topicsField && checked) {
+        topicsField.value = checked.join(', ');
+      }
+    });
+
+    // ── Sync others text into hidden field + Topics Discussed on input ──
+    document.addEventListener('input', function (e) {
+      if (!e.target.classList.contains('resp-others-text')) return;
+      const wrapper = e.target.closest('.resp-area-wrapper');
+      const row = e.target.closest('tr');
       const checked = syncRespArea(wrapper);
       const topicsField = row ? row.querySelector('.topics-field') : null;
       if (topicsField && checked) {
@@ -692,6 +674,7 @@
       newRow.querySelectorAll('.ws-upload-btn').forEach(btn => { btn.classList.remove('btn-success'); btn.classList.add('btn-outline-secondary'); btn.innerHTML = '<i class="bi bi-paperclip"></i>'; });
       newRow.querySelectorAll('.resp-cb').forEach(cb => cb.checked = false);
       newRow.querySelectorAll('.resp-area-checklist').forEach(cl => cl.style.display = 'none');
+      newRow.querySelectorAll('.resp-others-text').forEach(t => { t.value = ''; t.style.display = 'none'; });
       newRow.querySelectorAll('.resp-area-display').forEach(d => {
         d.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>';
       });
@@ -707,6 +690,8 @@
         row.querySelectorAll('input:not([type="checkbox"]), textarea').forEach(el => el.value = '');
         // Uncheck all responsibility area checkboxes
         row.querySelectorAll('.resp-cb').forEach(cb => cb.checked = false);
+        // Reset Others text box
+        row.querySelectorAll('.resp-others-text').forEach(t => { t.value = ''; t.style.display = 'none'; });
         // Reset the visual tag display
         row.querySelectorAll('.resp-area-display').forEach(d => {
           d.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>';
@@ -778,7 +763,7 @@
         const topics = row.querySelector('textarea[name="topics[]"]');
         const action = row.querySelector('textarea[name="action_points[]"]');
         const resp = row.querySelector('input[name="responsibility_area[]"]');
-        const fields = [date, dept, parts, topics, action];
+        const fields = [date, dept, parts, topics]; // action_points is optional
         const vals = fields.map(f => f.value.trim());
         const respVal = resp ? resp.value.trim() : '';
         const anyFilled = vals.some(v => v) || respVal;

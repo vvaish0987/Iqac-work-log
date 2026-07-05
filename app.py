@@ -540,15 +540,12 @@ def check_submission_window():
         else:
             next_year = today.year
             next_month = today.month + 1
-            
+
         next_month_last_day = calendar.monthrange(next_year, next_month)[1]
         effective_next_open_day = min(open_day, next_month_last_day)
         next_open = datetime(next_year, next_month, effective_next_open_day).strftime("%d-%m-%Y")
         close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
         window_msg = (f"Submission window for {month_name} is closed. ")
-
-        # window_msg = (f"Submission window for {month_name} closed on {close_date}. "
-        #               f"Next window opens {next_open}.")
 
     return is_open, reporting_month_str, open_day, close_day, window_msg
 
