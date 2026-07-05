@@ -58,6 +58,29 @@
       footer .divider { color: #ffc107; font-weight: bold; }
       footer a { color: #fff; text-decoration: none; }
       footer a:hover { text-decoration: underline; }
+      .action-btns {
+        white-space: nowrap;
+      }
+      @media (max-width: 768px) {
+        header {
+          flex-direction: column !important;
+          align-items: center !important;
+          gap: 1rem;
+          padding: 1rem;
+        }
+        .header-title {
+          position: static !important;
+          transform: none !important;
+          margin: 0.5rem 0 !important;
+        }
+        header div {
+          display: flex;
+          justify-content: center;
+          width: 100%;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+      }
     </style>
   </head>
   <body>
@@ -97,15 +120,15 @@
           </div>
           
           <div class="table-responsive">
-            <table class="table table-hover table-bordered" id="usersTable" style="table-layout: fixed; width: 100%;">
+            <table class="table table-hover table-bordered" id="usersTable" style="table-layout: fixed; width: 100%; min-width: 850px;">
               <thead>
                 <tr>
                   <th style="width: 5%;">#</th>
-                  <th style="width: 25%;">Username</th>
+                  <th style="width: 17%;">Username</th>
                   <th style="width: 28%;">Email</th>
                   <th style="width: 20%;">Designation</th>
-                  <th style="width: 12%;">Role</th>
-                  <th style="width: 10%;">Actions</th>
+                  <th style="width: 18%;">Role</th>
+                  <th style="width: 12%;">Actions</th>
                 </tr>
               </thead>
               <tbody>
