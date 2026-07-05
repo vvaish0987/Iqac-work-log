@@ -97,30 +97,29 @@
           </div>
           
           <div class="table-responsive">
-            <table class="table table-hover table-bordered" id="usersTable">
+            <table class="table table-hover table-bordered" id="usersTable" style="table-layout: fixed; width: 100%;">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Username</th>
-                  <th>Employee ID</th>
-                  <th>Email</th>
-                  <th>Gender</th>
-                  <th>Designation</th>
-                  <th>Department</th>
-                  <th>Role</th>
-                  <th>Actions</th>
+                  <th style="width: 5%;">#</th>
+                  <th style="width: 25%;">Username</th>
+                  <th style="width: 28%;">Email</th>
+                  <th style="width: 20%;">Designation</th>
+                  <th style="width: 12%;">Role</th>
+                  <th style="width: 10%;">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {% for user in users %}
-                <tr>
+                <tr style="cursor: pointer;" onclick="showUserDetailsModal(event, '{{ user.id }}')">
                   <td>{{ loop.index }}</td>
-                  <td><strong>{{ user.username }}</strong></td>
-                  <td>{{ user.emp_id }}</td>
+                  <td>
+                    <strong>{{ user.username }}</strong>
+                    {% if user.full_name %}
+                      <br><small class="text-muted">{{ user.full_name }}</small>
+                    {% endif %}
+                  </td>
                   <td>{{ user.email }}</td>
-                  <td>{{ user.gender }}</td>
                   <td>{{ user.designation }}</td>
-                  <td>{{ user.department }}</td>
                   <td>
                     {% if user.role.lower() == 'admin' %}
                       <span class="badge badge-admin">Admin</span>
@@ -148,54 +147,120 @@
                     {% endif %}
                   </td>
                 </tr>
-
-                <!-- Delete Modal -->
-                <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1">
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header modal-header-delete">
-                        <h5 class="modal-title">Confirm Delete</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                      </div>
-                      <div class="modal-body">
-                        <p>Are you sure you want to delete user <strong>{{ user.username }}</strong>?</p>
-                        <p class="text-muted"><small>This will also delete all their worklog entries. This action cannot be undone.</small></p>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <form action="/admin_delete_user/{{ user.id }}" method="POST" style="display:inline;">
-                          <button type="submit" class="btn btn-delete-confirm">Delete User</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Reset Password Modal -->
-                <div class="modal fade" id="resetModal{{ user.id }}" tabindex="-1">
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header modal-header-theme">
-                        <h5 class="modal-title">Reset Password</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                      </div>
-                      <div class="modal-body">
-                        <p>Reset password for <strong>{{ user.username }}</strong>?</p>
-                        <p class="text-muted"><small>A new password will be generated and sent to {{ user.email }}</small></p>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <form action="/admin_reset_password/{{ user.id }}" method="POST" style="display:inline;">
-                          <button type="submit" class="btn btn-theme">Reset & Send Email</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 {% endfor %}
               </tbody>
             </table>
           </div>
+
+          <!-- Modals Container -->
+          {% for user in users %}
+            <!-- User Info Modal -->
+            <div class="modal fade" id="infoModal{{ user.id }}" tabindex="-1" aria-labelledby="infoModalLabel{{ user.id }}" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header text-white" style="background-color: #003366;">
+                    <h5 class="modal-title" id="infoModalLabel{{ user.id }}">
+                      <i class="bi bi-person-badge me-2"></i>User Profile — {{ user.username }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body p-4" style="cursor: default;">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center bg-light text-primary" style="width: 60px; height: 60px; font-size: 1.8rem; font-weight: bold; border: 2px solid #003366; flex-shrink: 0;">
+                        {{ (user.full_name or user.username)[:1].upper() }}
+                      </div>
+                      <div>
+                        <h5 class="fw-bold mb-0 text-primary">{{ user.full_name or user.username.title() }}</h5>
+                        <span class="badge {% if user.role.lower() == 'admin' %}bg-primary{% elif 'coordinator' in user.role.lower() %}bg-success{% else %}bg-secondary{% endif %}">
+                          {{ user.role }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="user-details-grid" style="font-size: 0.95rem;">
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Username</div>
+                        <div class="col-sm-8">{{ user.username }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Full Name</div>
+                        <div class="col-sm-8">{{ user.full_name or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Employee ID</div>
+                        <div class="col-sm-8">{{ user.emp_id or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Email</div>
+                        <div class="col-sm-8 text-break">{{ user.email or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Gender</div>
+                        <div class="col-sm-8">{{ user.gender or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Designation</div>
+                        <div class="col-sm-8">{{ user.designation or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2">
+                        <div class="col-sm-4 text-muted fw-semibold">Department</div>
+                        <div class="col-sm-8">{{ user.department or 'N/A' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="/admin_edit_user/{{ user.id }}" class="btn btn-primary" style="background-color: #003366; border-color: #003366;">
+                      <i class="bi bi-pencil me-1"></i> Edit User
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delete Modal -->
+            <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header modal-header-delete">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Are you sure you want to delete user <strong>{{ user.username }}</strong>?</p>
+                    <p class="text-muted"><small>This will also delete all their worklog entries. This action cannot be undone.</small></p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="/admin_delete_user/{{ user.id }}" method="POST" style="display:inline;">
+                      <button type="submit" class="btn btn-delete-confirm">Delete User</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reset Password Modal -->
+            <div class="modal fade" id="resetModal{{ user.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header modal-header-theme">
+                    <h5 class="modal-title">Reset Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Reset password for <strong>{{ user.username }}</strong>?</p>
+                    <p class="text-muted"><small>A new password will be generated and sent to {{ user.email }}</small></p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="/admin_reset_password/{{ user.id }}" method="POST" style="display:inline;">
+                      <button type="submit" class="btn btn-theme">Reset & Send Email</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
 
           {% if not users %}
           <p class="text-muted text-center">No users found.</p>
@@ -224,6 +289,15 @@
           row.style.display = text.includes(filter) ? '' : 'none';
         });
       });
+
+      function showUserDetailsModal(event, userId) {
+        // Do not open details modal if clicking action buttons or internal modal elements
+        if (event.target.closest('.action-btns') || event.target.closest('.modal')) {
+          return;
+        }
+        const modal = new bootstrap.Modal(document.getElementById('infoModal' + userId));
+        modal.show();
+      }
     </script>
   </body>
 </html>

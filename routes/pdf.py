@@ -950,7 +950,7 @@ def iqac_coordinator_report_submit():
 
     conn.close()
 
-    # Send email notification to Admin/Secretary
+    # Send email notification to Admin/Secretary and Director
     try:
         from app import send_email
         notify_conn = get_db_connection()
@@ -960,10 +960,15 @@ def iqac_coordinator_report_submit():
         notify_conn.close()
 
         reporting_month_display = datetime.strptime(reporting_month, "%Y-%m").strftime("%m-%Y")
-        subject = f"IQAC Report Submitted – {username.title()} ({reporting_month_display})"
+        coordinator_name = user.get("full_name") or username.title()
+        if isinstance(coordinator_name, str):
+            coordinator_name = coordinator_name.strip().title()
+
+        # 1. Notify Admin/Secretary
+        subject = f"IQAC Report Submitted – {coordinator_name} ({reporting_month_display})"
         body = (
             f"Dear Admin/Secretary,\n\n"
-            f"{username.title()} ({user.get('designation', '')}, {user.get('department', '')}) "
+            f"{coordinator_name} ({user.get('designation', '')}, {user.get('department', '')}) "
             f"has submitted their signed IQAC report for {reporting_month_display}.\n\n"
             f"Please log in to review and authorise the report.\n\n"
             f"Regards,\n"
@@ -975,6 +980,26 @@ def iqac_coordinator_report_submit():
                 send_email(r['email'], subject, body)
             except Exception as e:
                 print(f"Failed to notify {r['email']}: {e}")
+
+        # 2. Notify Director
+        director_emails = ["director.iqac@christuniversity.in", "darshanheble@gmail.com", "darshanheble@gmai.com"]
+        director_subject = f"Monthly Work Done Report Submitted – {coordinator_name} ({reporting_month_display})"
+        director_body = (
+            f"Dear Director,\n\n"
+            f"IQAC Coordinator {coordinator_name} ({user.get('designation', '')}, {user.get('department', '')}) "
+            f"has submitted their Monthly Work Done Report (AQAR Aligned) for {reporting_month_display}.\n\n"
+            f"Please log in to review the report.\n\n"
+            f"Regards,\n"
+            f"Internal Quality Assurance Cell (IQAC)\n"
+            f"CHRIST (Deemed to be University)"
+        )
+        for d_email in director_emails:
+            try:
+                send_email(d_email, director_subject, director_body)
+                print(f"Sent submission notification email to Director: {d_email}")
+            except Exception as e:
+                print(f"Failed to notify Director ({d_email}): {e}")
+
     except Exception as e:
         print(f"Notification error: {e}")
 
