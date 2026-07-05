@@ -174,7 +174,22 @@
         white-space: pre-line;
         word-break: break-word;
       }
-    </style>
+    
+    [data-theme="dark"] .bg-light {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .login-card, .password-card, .forgot-card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .header h5, [data-theme="dark"] .header h6 {
+      color: var(--text-color) !important;
+    }
+            </style>
   </head>
 
   <body>

@@ -39,10 +39,13 @@
       .login-card {
         max-width: 420px;
         width: 100%;
-        background-color: #fff;
+        background-color: var(--card-bg);
+        color: var(--text-color);
         border-radius: 12px;
-        box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border-color);
         padding: 2rem;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
       }
       .header {
         text-align: center;
@@ -50,6 +53,8 @@
       }
       .header h5 { color: #003366; font-weight: 700; margin-bottom: .25rem; }
       .header h6 { color: #555; font-weight: 400; }
+      [data-theme="dark"] .header h5 { color: #f1f5f9; }
+      [data-theme="dark"] .header h6 { color: #94a3b8; }
       .btn-primary { background-color: #003366; border-color: #003366; }
       .btn-primary:hover { background-color: #004080; border-color: #004080; }
       .fade-out { opacity: 0; transition: opacity 0.8s ease-out; }
@@ -102,6 +107,20 @@
     }
     [data-theme="dark"] .form-label {
       color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .bg-light {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .login-card, .password-card, .forgot-card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .header h5, [data-theme="dark"] .header h6 {
+      color: var(--text-color) !important;
     }
 </style>
   </head>
