@@ -164,6 +164,13 @@
     [data-theme="dark"] .header h5, [data-theme="dark"] .header h6 {
       color: var(--text-color) !important;
     }
+    [data-theme="dark"] .form-control::placeholder {
+      color: #94a3b8 !important;
+      opacity: 0.8;
+    }
+    [data-theme="dark"] .text-muted {
+      color: #94a3b8 !important;
+    }
 </style>
   </head>
   <body>
@@ -198,7 +205,7 @@
       <div class="card">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="text-primary mb-0" style="color:#003366 !important;">All Registered Users ({{ users|length }})</h6>
+            <h6 class="text-primary mb-0">All Registered Users ({{ users|length }})</h6>
             <input type="text" id="searchInput" class="form-control search-box" placeholder="Search users...">
           </div>
           
@@ -227,15 +234,20 @@
                   <td>{{ user.email }}</td>
                   <td>{{ user.designation }}</td>
                   <td>
-                    {% if user.role.lower() == 'admin' %}
-                      <span class="badge badge-admin">Admin</span>
-                    {% elif user.role.lower() == 'school iqac coordinator' %}
-                      <span class="badge bg-success">School Coordinator</span>
-                    {% elif user.role.lower() == 'campus iqac coordinator' %}
-                      <span class="badge bg-info text-dark">Campus Coordinator</span>
-                    {% else %}
-                      <span class="badge badge-employee">{{ user.role }}</span>
-                    {% endif %}
+                    {% for r in user.role.split(',') %}
+                      {% set role_clean = r.strip() %}
+                      {% if role_clean.lower() == 'admin' %}
+                        <span class="badge badge-admin d-block mb-1 text-center">{{ role_clean }}</span>
+                      {% elif role_clean.lower() == 'school iqac coordinator' %}
+                        <span class="badge bg-success d-block mb-1 text-center">School Coordinator</span>
+                      {% elif role_clean.lower() == 'campus iqac coordinator' %}
+                        <span class="badge bg-info text-dark d-block mb-1 text-center">Campus Coordinator</span>
+                      {% elif role_clean.lower() == 'secretary' %}
+                        <span class="badge bg-warning text-dark d-block mb-1 text-center">Secretary</span>
+                      {% else %}
+                        <span class="badge badge-employee d-block mb-1 text-center">{{ role_clean }}</span>
+                      {% endif %}
+                    {% endfor %}
                   </td>
                   <td class="action-btns">
                     <a href="/admin_edit_user/{{ user.id }}" class="btn btn-action btn-sm" title="Edit">
