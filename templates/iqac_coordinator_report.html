@@ -121,7 +121,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <td style="background:#e9ecef; font-weight:600; vertical-align: middle;">Responsibility Area(s)</td>
+                    <td style="background:#e9ecef; font-weight:600; vertical-align: middle;">Responsibility Area(s) <span class="text-danger">*</span></td>
                     <td style="position: relative;">
                       {% set resp_areas_val = draft_data.get('responsibility_areas', '') if (draft_data and draft_data.get('responsibility_areas') is not none) else '' %}
                       {% set selected_resp_areas = resp_areas_val.split(', ') if resp_areas_val else [] %}
@@ -418,6 +418,7 @@
         if (checked.length === 0) {
           display.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.85rem;">Click to select…</span>';
         } else {
+          display.classList.remove('is-invalid-custom');
           checked.forEach(val => {
             const badge = document.createElement('span');
             badge.className = 'badge rounded-pill text-bg-primary me-1 mb-1';
@@ -630,22 +631,14 @@
           rows.forEach((row, i) => {
             const fields = fieldSelectors.map(sel => row.querySelector(sel)).filter(Boolean);
             const vals = fields.map(getVal);
-<<<<<<< Updated upstream
             let rowOk = true;
             let missingFields = [];
-=======
->>>>>>> Stashed changes
 
             fields.forEach((f, idx) => {
               if (!vals[idx]) {
                 markInvalid(f);
-<<<<<<< Updated upstream
                 rowOk = false;
                 missingFields.push(fieldLabels[idx]);
-=======
-                const colHeader = getColumnHeader(f);
-                errors.push(`${sectionLabel} - Row ${i + 1}, Column "${colHeader}" is required.`);
->>>>>>> Stashed changes
               }
             });
 
@@ -655,7 +648,6 @@
                 const otherInput = sel.closest('td').querySelector('input[type="text"]');
                 if (otherInput && !otherInput.value.trim()) {
                   markInvalid(otherInput);
-<<<<<<< Updated upstream
                   rowOk = false;
                   missingFields.push("Other Area Description");
                 }
@@ -665,13 +657,6 @@
             if (!rowOk) {
               errors.push(`${sectionLabel} row ${i + 1}: please fill missing fields [${missingFields.join(', ')}].`);
             }
-=======
-                  const colHeader = getColumnHeader(otherInput);
-                  errors.push(`${sectionLabel} - Row ${i + 1}, Column "${colHeader} (Specify other)" is required.`);
-                }
-              }
-            });
->>>>>>> Stashed changes
           });
         }
       }
@@ -694,6 +679,16 @@
         document.querySelectorAll('.is-invalid-custom').forEach(el => el.classList.remove('is-invalid-custom'));
 
         let errors = [];
+
+        // Validate Responsibility Area(s)
+        const respHidden = document.querySelector('.resp-area-hidden');
+        if (respHidden && !respHidden.value.trim()) {
+          const displayEl = document.querySelector('.resp-area-display');
+          if (displayEl) {
+            markInvalid(displayEl);
+          }
+          errors.push("Responsibility Area(s) is required.");
+        }
 
         // Section 1: Activities
         validateTableRows('tableActivities-body', [
@@ -745,7 +740,7 @@
         }
 
         if (errors.length) {
-          showCustomAlert('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'));
+          showCustomAlert('Please complete all required fields and partially-filled rows:\n\n' + errors.join('\n'));
           // Scroll to the first highlighted field
           const firstBad = document.querySelector('.is-invalid-custom');
           if (firstBad) firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });

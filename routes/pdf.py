@@ -747,6 +747,12 @@ def iqac_coordinator_report_submit():
         else:
             form_data_obj[key] = request.form.get(key)
 
+    # Server-side validation: Ensure Responsibility Area(s) is completed
+    resp_areas = form_data_obj.get("responsibility_areas", "").strip()
+    if not resp_areas:
+        conn.close()
+        return {"success": False, "error": "Responsibility Area(s) is required."}
+
     # Section 1 (Activities)
     act_dates = form_data_obj.get("act_date[]") or []
     act_tasks = form_data_obj.get("act_task[]") or []
