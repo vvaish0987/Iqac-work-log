@@ -159,22 +159,43 @@
     {% endif %}
     {% endwith %}
 
+    <!-- Corrections Alert for AQAR Coordinator -->
+    {% if is_aqar_coordinator %}
+      {% set corrections_reports = submitted_reports | selectattr('status', 'equalto', 'corrections_requested') | list %}
+      {% for cr in corrections_reports %}
+      <div class="alert alert-danger d-flex align-items-start gap-3 mb-4" style="border-left: 5px solid #dc3545;">
+        <i class="bi bi-exclamation-triangle-fill fs-4 text-danger mt-1"></i>
+        <div>
+          <strong>Corrections Requested for {{ datetime.strptime(cr.reporting_month, '%Y-%m').strftime('%B %Y') }}</strong><br>
+          <span style="font-size:0.92rem;">Remarks: <strong>"{{ cr.remarks }}"</strong></span><br>
+          <span class="text-muted small">Please click <strong>Fill Report</strong> below to edit the details, review the preview, and submit the corrected report directly.</span>
+        </div>
+      </div>
+      {% endfor %}
+    {% endif %}
+
     <!-- Main Card: Generate Monthly Report -->
     <div class="row mb-4 justify-content-center">
       <div class="col-md-5">
         <div class="card h-100">
           <div class="card-body text-center py-5">
             <i class="bi bi-file-earmark-text text-primary" style="font-size: 3rem;"></i>
-            <h6 class="text-primary mb-3 mt-3">Generate Monthly Report</h6>
-            <p class="text-muted">Fill in your monthly work report and download it as a professionally formatted PDF for
-              signing.</p>
-            <a href="/iqac_monthly_report" class="btn btn-primary px-4">Generate Report</a>
+            <h6 class="text-primary mb-3 mt-3">{% if is_aqar_coordinator %}Fill Monthly Report{% else %}Generate Monthly Report{% endif %}</h6>
+            <p class="text-muted">
+              {% if is_aqar_coordinator %}
+              Fill in your monthly work report, preview the PDF, and submit it directly.
+              {% else %}
+              Fill in your monthly work report and download it as a professionally formatted PDF for signing.
+              {% endif %}
+            </p>
+            <a href="/iqac_monthly_report" class="btn btn-primary px-4">{% if is_aqar_coordinator %}Fill Report{% else %}Generate Report{% endif %}</a>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Upload Signed Report -->
+    {% if not is_aqar_coordinator %}
     <div class="card mb-4">
       <div class="card-body">
         <h6 class="text-primary mb-3"><i class="bi bi-upload me-2"></i>Upload Signed Report</h6>
@@ -281,6 +302,7 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
     <!-- Submitted Reports History -->
     <div class="card">

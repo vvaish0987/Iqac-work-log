@@ -2523,6 +2523,8 @@ def iqac_dashboard():
 
     return render_template("iqac_coordinator_dashboard.html",
         username=username,
+        user=user,
+        is_aqar_coordinator=is_aqar_coordinator(user),
         submitted_reports=submitted_reports,
         upload_open=is_open,
         reporting_month_str=reporting_month_str,

@@ -74,13 +74,13 @@
           <i class="bi bi-lock-fill fs-3 text-warning text-warning-custom"></i>
           <div>
             <strong style="font-size: 1.05rem; color:#856404;">Report Locked</strong><br>
-            <span style="font-size: 0.92rem; color:#856404;">This report's raw data has been locked because a PDF has been generated. No further modifications can be made.</span>
+            <span style="font-size: 0.92rem; color:#856404;">This report's data has been locked because it has been submitted. No further modifications can be made.</span>
           </div>
         </div>
         {% if can_unlock %}
         <div class="pe-2">
-          <form method="POST" action="/iqac_report/unlock/{{ reporting_month_str }}" onsubmit="return confirm('Are you sure you want to unlock this draft? This will invalidate the previously generated PDF and require you to download and sign a new one after making changes.');">
-            <button type="submit" class="btn btn-warning btn-sm fw-bold text-dark border-secondary">
+          <form id="unlockForm" method="POST" action="/iqac_report/unlock/{{ reporting_month_str }}">
+            <button type="button" id="unlockBtn" class="btn btn-warning btn-sm fw-bold text-dark border-secondary">
               <i class="bi bi-unlock-fill me-1"></i> Unlock for Editing
             </button>
           </form>
@@ -89,7 +89,7 @@
       </div>
       {% endif %}
 
-      <form method="POST" action="/iqac_coordinator_report/download" id="reportForm">
+      <form method="POST" id="reportForm">
 
         <!-- ── Report Header / Particulars ── -->
         <div class="card mb-4">
@@ -379,10 +379,13 @@
           </div>
         </div>
 
-        <!-- Download/Save Buttons -->
+        <!-- Action Buttons -->
         <div class="d-flex gap-2 mb-4">
-          <button type="submit" class="btn btn-primary btn-lg px-5">
-            <i class="bi bi-file-earmark-pdf me-2"></i>Download as PDF
+          <button type="button" id="viewPdfBtn" class="btn btn-info btn-lg px-5 text-white fw-bold">
+            <i class="bi bi-eye me-2"></i>View PDF
+          </button>
+          <button type="button" id="submitReportBtn" class="btn btn-primary btn-lg px-5 fw-bold">
+            <i class="bi bi-send me-2"></i>Submit Report
           </button>
           <button type="button" id="saveDraftBtn" class="btn btn-warning btn-lg px-5 text-dark fw-bold">
             <i class="bi bi-journal-bookmark me-2"></i>Save as Draft
@@ -593,6 +596,18 @@
         return el.tagName === 'SELECT' ? el.value : el.value.trim();
       }
 
+      function getColumnHeader(el) {
+        const td = el.closest('td');
+        if (!td) return '';
+        const tr = td.closest('tr');
+        if (!tr) return '';
+        const colIndex = Array.from(tr.children).indexOf(td);
+        const table = tr.closest('table');
+        if (!table) return '';
+        const ths = table.querySelectorAll('thead th');
+        return ths[colIndex] ? ths[colIndex].textContent.trim() : `Column ${colIndex + 1}`;
+      }
+
       // Validate a table section:
       // 1. Check if the section has any data at all (i.e. at least one field in any row is filled).
       // 2. If it does, then EVERY row in the table must be completely filled.
@@ -615,14 +630,22 @@
           rows.forEach((row, i) => {
             const fields = fieldSelectors.map(sel => row.querySelector(sel)).filter(Boolean);
             const vals = fields.map(getVal);
+<<<<<<< Updated upstream
             let rowOk = true;
             let missingFields = [];
+=======
+>>>>>>> Stashed changes
 
             fields.forEach((f, idx) => {
               if (!vals[idx]) {
                 markInvalid(f);
+<<<<<<< Updated upstream
                 rowOk = false;
                 missingFields.push(fieldLabels[idx]);
+=======
+                const colHeader = getColumnHeader(f);
+                errors.push(`${sectionLabel} - Row ${i + 1}, Column "${colHeader}" is required.`);
+>>>>>>> Stashed changes
               }
             });
 
@@ -632,6 +655,7 @@
                 const otherInput = sel.closest('td').querySelector('input[type="text"]');
                 if (otherInput && !otherInput.value.trim()) {
                   markInvalid(otherInput);
+<<<<<<< Updated upstream
                   rowOk = false;
                   missingFields.push("Other Area Description");
                 }
@@ -641,13 +665,31 @@
             if (!rowOk) {
               errors.push(`${sectionLabel} row ${i + 1}: please fill missing fields [${missingFields.join(', ')}].`);
             }
+=======
+                  const colHeader = getColumnHeader(otherInput);
+                  errors.push(`${sectionLabel} - Row ${i + 1}, Column "${colHeader} (Specify other)" is required.`);
+                }
+              }
+            });
+>>>>>>> Stashed changes
           });
         }
       }
 
-      document.getElementById('reportForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+      document.getElementById('viewPdfBtn').addEventListener('click', function() {
+        const form = document.getElementById('reportForm');
+        const originalAction = form.action;
+        const originalTarget = form.target;
+        
+        form.action = '/iqac_coordinator_report/preview';
+        form.target = '_blank';
+        form.submit();
+        
+        form.action = originalAction;
+        form.target = originalTarget;
+      });
 
+      document.getElementById('submitReportBtn').addEventListener('click', function() {
         // Clear all previous highlights
         document.querySelectorAll('.is-invalid-custom').forEach(el => el.classList.remove('is-invalid-custom'));
 
@@ -694,45 +736,53 @@
           'Target Outcome/Deliverable'
         ], 'Section 5 (Action Plan)', errors);
 
+        // Validation check for empty report
+        const anyFieldsFilled = Array.from(document.querySelectorAll('#reportForm input:not([type="hidden"]), #reportForm textarea, #reportForm select'))
+          .some(el => el.value.trim() !== '');
+        
+        if (!anyFieldsFilled) {
+          errors.push("The report cannot be completely empty. Please fill in at least one activity, meeting, or plan.");
+        }
+
         if (errors.length) {
-          alert('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'));
+          showCustomAlert('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'));
           // Scroll to the first highlighted field
           const firstBad = document.querySelector('.is-invalid-custom');
           if (firstBad) firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }
 
-        // Validation passed — download PDF via fetch then redirect
-        const form = this;
-        const btn = form.querySelector('[type="submit"]');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Generating PDF…';
+        showCustomConfirm('Are you sure you want to submit this report directly? After submission, the report will be locked and sent to the administrator/secretary for review.', function() {
+          const form = document.getElementById('reportForm');
+          const btn = document.getElementById('submitReportBtn');
+          btn.disabled = true;
+          btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting…';
 
-        let _pdfFilename = 'IQAC_Report.pdf';
-        fetch(form.action, { method: 'POST', body: new FormData(form) })
-          .then(r => {
-            const ct = r.headers.get('content-type') || '';
-            if (!ct.includes('application/pdf')) throw new Error('not_pdf');
-            const cd = r.headers.get('content-disposition') || '';
-            const m = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-            if (m) _pdfFilename = m[1].replace(/['"]/g, '').trim();
-            return r.blob();
+          const formData = new FormData(form);
+
+          fetch('/iqac_coordinator_report/submit', {
+            method: 'POST',
+            body: formData
           })
-          .then(blob => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = _pdfFilename;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
-            setTimeout(() => { window.location.href = '/iqac_dashboard'; }, 1500);
+          .then(r => r.json())
+          .then(res => {
+            if (res.success) {
+              showCustomAlert('Report submitted and uploaded successfully!', 'Success', function() {
+                window.location.href = '/iqac_dashboard';
+              });
+            } else {
+              showCustomAlert('Failed to submit report: ' + res.error, 'Submission Error');
+            }
           })
-          .catch(() => {
+          .catch(err => {
+            console.error(err);
+            showCustomAlert('An error occurred while submitting the report.', 'Error');
+          })
+          .finally(() => {
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-file-earmark-pdf me-2"></i>Download as PDF';
-            alert('PDF generation failed. Please try again.');
+            btn.innerHTML = '<i class="bi bi-send me-2"></i>Submit Report';
           });
+        });
       });
 
       document.getElementById('saveDraftBtn').addEventListener('click', function() {
@@ -751,15 +801,16 @@
         .then(r => r.json())
         .then(res => {
           if (res.success) {
-            alert('Draft saved successfully!');
-            window.location.reload();
+            showCustomAlert('Draft saved successfully!', 'Success', function() {
+              window.location.reload();
+            });
           } else {
-            alert('Failed to save draft: ' + res.error);
+            showCustomAlert('Failed to save draft: ' + res.error, 'Error');
           }
         })
         .catch(err => {
           console.error(err);
-          alert('An error occurred while saving the draft.');
+          showCustomAlert('An error occurred while saving the draft.', 'Error');
         })
         .finally(() => {
           btn.disabled = false;
@@ -767,13 +818,72 @@
         });
       });
 
+      let customModalInstance = null;
+      function getModalInstance() {
+        if (!customModalInstance) {
+          customModalInstance = new bootstrap.Modal(document.getElementById('customModal'));
+        }
+        return customModalInstance;
+      }
+
+      function showCustomAlert(message, title = 'Validation Error', onClose = null) {
+        document.getElementById('customModalLabel').textContent = title;
+        document.getElementById('customModalBody').textContent = message;
+        document.getElementById('customModalCancelBtn').style.display = 'none';
+        
+        const confirmBtn = document.getElementById('customModalConfirmBtn');
+        confirmBtn.textContent = 'OK';
+        
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        newConfirmBtn.addEventListener('click', function() {
+          getModalInstance().hide();
+          if (onClose) onClose();
+        });
+        
+        getModalInstance().show();
+      }
+
+      function showCustomConfirm(message, onConfirm, title = 'Confirm Action') {
+        document.getElementById('customModalLabel').textContent = title;
+        document.getElementById('customModalBody').textContent = message;
+        document.getElementById('customModalCancelBtn').style.display = 'block';
+        
+        const confirmBtn = document.getElementById('customModalConfirmBtn');
+        confirmBtn.textContent = 'Confirm';
+        
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        newConfirmBtn.addEventListener('click', function() {
+          getModalInstance().hide();
+          if (onConfirm) onConfirm();
+        });
+        
+        getModalInstance().show();
+      }
+
+      const unlockBtn = document.getElementById('unlockBtn');
+      if (unlockBtn) {
+        unlockBtn.addEventListener('click', function() {
+          showCustomConfirm(
+            'Are you sure you want to unlock this draft? This will invalidate the previously submitted report, and you will need to submit it again after making changes.',
+            function() {
+              document.getElementById('unlockForm').submit();
+            },
+            'Unlock Draft'
+          );
+        });
+      }
+
       {% if locked or readonly %}
       document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll("#reportForm input, #reportForm textarea, #reportForm select, #reportForm button").forEach(el => {
+        document.querySelectorAll("#reportForm input, #reportForm textarea, #reportForm select, #reportForm button:not(#viewPdfBtn)").forEach(el => {
           el.disabled = true;
           if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.readOnly = true;
         });
-        document.querySelectorAll("#reportForm .btn-add-row, #reportForm .btn-del-row, #reportForm .btn-danger, #reportForm .ws-upload-btn, #reportForm .btn-outline-primary, #reportForm #saveDraftBtn, #reportForm #downloadBtn").forEach(el => {
+        document.querySelectorAll("#reportForm .btn-add-row, #reportForm .btn-del-row, #reportForm .btn-danger, #reportForm .ws-upload-btn, #reportForm .btn-outline-primary, #reportForm #saveDraftBtn, #reportForm #submitReportBtn").forEach(el => {
           el.style.display = "none";
         });
         const cancelBtn = document.getElementById('cancelBtn');
@@ -785,5 +895,24 @@
       });
       {% endif %}
     </script>
+
+    <!-- Versatile Custom Modal -->
+    <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true" style="z-index: 1060;">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header" id="customModalHeader" style="background-color: #003366; color: #fff;">
+            <h5 class="modal-title" id="customModalLabel">Notification</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="customModalBody" style="font-size: 0.95rem; white-space: pre-line;">
+            <!-- Message goes here -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="customModalCancelBtn" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="customModalConfirmBtn" style="background-color: #003366; border-color: #003366;">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
