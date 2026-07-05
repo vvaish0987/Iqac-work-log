@@ -597,7 +597,7 @@
       // 1. Check if the section has any data at all (i.e. at least one field in any row is filled).
       // 2. If it does, then EVERY row in the table must be completely filled.
       // 3. If it doesn't, then the entire section is considered empty (and will be discarded), so no validation errors are reported for it.
-      function validateTableRows(tbodyId, fieldSelectors, sectionLabel, errors) {
+      function validateTableRows(tbodyId, fieldSelectors, fieldLabels, sectionLabel, errors) {
         const rows = document.querySelectorAll('#' + tbodyId + ' tr');
         let sectionHasData = false;
 
@@ -616,11 +616,13 @@
             const fields = fieldSelectors.map(sel => row.querySelector(sel)).filter(Boolean);
             const vals = fields.map(getVal);
             let rowOk = true;
+            let missingFields = [];
 
             fields.forEach((f, idx) => {
               if (!vals[idx]) {
                 markInvalid(f);
                 rowOk = false;
+                missingFields.push(fieldLabels[idx]);
               }
             });
 
@@ -631,12 +633,13 @@
                 if (otherInput && !otherInput.value.trim()) {
                   markInvalid(otherInput);
                   rowOk = false;
+                  missingFields.push("Other Area Description");
                 }
               }
             });
 
             if (!rowOk) {
-              errors.push(`${sectionLabel} row ${i + 1}: please fill all fields.`);
+              errors.push(`${sectionLabel} row ${i + 1}: please fill missing fields [${missingFields.join(', ')}].`);
             }
           });
         }
@@ -658,6 +661,13 @@
           'textarea[name="act_stakeholders[]"]',
           'textarea[name="act_outcome[]"]',
           'select[name="act_status[]"]'
+        ], [
+          'Date',
+          'Brief Report/Details',
+          'Key Responsibility Area',
+          'Target Stakeholders',
+          'Key Outcome/Significance',
+          'Status'
         ], 'Section 1 (Activities)', errors);
 
         // Section 2: Meetings
@@ -666,6 +676,11 @@
           'textarea[name="meet_programme[]"]',
           'select[name="meet_role[]"]',
           'textarea[name="meet_outcome[]"]'
+        ], [
+          'Date',
+          'Programme/Event Details',
+          'Role/Activity',
+          'Key Decisions/Action Points/Outcomes'
         ], 'Section 2 (Meetings)', errors);
 
         // Section 5: Action Plan
@@ -673,6 +688,10 @@
           'textarea[name="plan_activity[]"]',
           'select[name="plan_area[]"]',
           'textarea[name="plan_outcome[]"]'
+        ], [
+          'Proposed Activity/Topic',
+          'Key Responsibility Area',
+          'Target Outcome/Deliverable'
         ], 'Section 5 (Action Plan)', errors);
 
         if (errors.length) {

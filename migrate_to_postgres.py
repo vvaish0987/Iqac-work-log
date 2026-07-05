@@ -262,8 +262,8 @@ def ensure_admin_exists(pg_conn):
     cursor.execute("SELECT id FROM users WHERE username = 'admin'")
     if not cursor.fetchone():
         cursor.execute("""
-            INSERT INTO users (username, password, emp_id, email, gender, designation, department, role)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO users (username, password, emp_id, email, gender, designation, department, role, must_change_password)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
         """, (
             'admin',
             generate_password_hash('admin123'),
@@ -275,7 +275,7 @@ def ensure_admin_exists(pg_conn):
             'Admin'
         ))
         pg_conn.commit()
-        print("✓ Default admin user created in PostgreSQL")
+        print("✓ Default admin user created in PostgreSQL (requires password change on first login)")
     else:
         print("✓ Admin user already exists in PostgreSQL")
 

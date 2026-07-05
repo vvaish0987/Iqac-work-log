@@ -119,6 +119,17 @@ def notify_admins_and_secretaries(username, reporting_month):
 
     conn = get_db_connection()
     cursor = get_cursor(conn)
+    
+    # Fetch full name of the coordinator
+    full_name = username.title()
+    try:
+        cursor.execute("SELECT full_name FROM users WHERE username = %s", (username,))
+        row = cursor.fetchone()
+        if row and row.get("full_name"):
+            full_name = row["full_name"].strip().title()
+    except Exception as e:
+        print("Error fetching coordinator full name:", str(e))
+
     try:
         cursor.execute("""
             SELECT email FROM users 
@@ -140,10 +151,10 @@ def notify_admins_and_secretaries(username, reporting_month):
         print("No admin or secretary emails found to send notification.")
         return
 
-    subject = f"Signed IQAC Monthly Report Uploaded - {username.title()} ({reporting_month})"
+    subject = f"Signed IQAC Monthly Report Uploaded - {full_name} ({reporting_month})"
     body = (
         f"Hello,\n\n"
-        f"IQAC Coordinator '{username.title()}' has uploaded the signed monthly report for the month '{reporting_month}'.\n\n"
+        f"IQAC Coordinator '{full_name}' has uploaded the signed monthly report for the month '{reporting_month}'.\n\n"
         f"Please log in to the IQAC Portal to review and authorise this submission.\n\n"
         f"Regards,\n"
         f"Internal Quality Assurance Cell (IQAC)\n"
@@ -296,103 +307,7 @@ def format_dates_by_month(dates):
     
     return ' / '.join(formatted_parts)
 
-def send_29th_reminder():
-    """Send reminder on 29th of month about missing entries"""
-    conn = get_db_connection()
-    cursor = get_cursor(conn)
-    
-    # Get all Employee/Intern users (exclude Admin and Coordinators)
-    cursor.execute("SELECT username, email FROM users WHERE LOWER(role) NOT IN ('admin', 'school iqac coordinator', 'campus iqac coordinator')")
-    users = cursor.fetchall()
-    conn.close()
 
-    today = datetime.now().date()
-    current_year = today.year
-    current_month = today.month
-    
-    for user in users:
-        username = user['username']
-        email = user['email']
-        
-        missing_dates = get_missing_entries(username, current_year, current_month)
-        
-        if missing_dates:
-            month_display = datetime(current_year, current_month, 1).strftime('%B %Y')
-            # Get deadline date (2nd of next month)
-            if current_month == 12:
-                deadline_date = datetime(current_year + 1, 1, 2).date()
-            else:
-                deadline_date = datetime(current_year, current_month + 1, 2).date()
-            deadline_str = deadline_date.strftime('%d-%m-%Y')
-
-            subject = f"IQAC Connect Reminder - Missing Entries"
-            body = f"""Dear {username},
-
-This is a kind reminder to complete and submit your work logs for the month of {month_display}.
-
-The final date to submit your log is {deadline_str}. Please log in to the portal and complete the submission before the deadline.
-
-If you have already submitted the work logs, kindly disregard this email.
-
-Regards,
-Internal Quality Assurance Cell (IQAC)
-CHRIST (Deemed to be University)
-
----
-This is an auto-generated email. Please do not reply to this message.
-"""
-            send_reminder_email(email, subject, body)
-    
-    return f"29th reminder sent to {len(users)} users"
-
-def send_1st_deadline_reminder():
-    """Send final reminder on 1st of month - deadline is today midnight"""
-    conn = get_db_connection()
-    cursor = get_cursor(conn)
-    
-    # Get all Employee/Intern users (exclude Admin and Coordinators)
-    cursor.execute("SELECT username, email FROM users WHERE LOWER(role) NOT IN ('admin', 'school iqac coordinator', 'campus iqac coordinator')")
-    users = cursor.fetchall()
-    conn.close()
-
-    today = datetime.now().date()
-    # Previous month
-    if today.month == 1:
-        prev_month = 12
-        prev_year = today.year - 1
-    else:
-        prev_month = today.month - 1
-        prev_year = today.year
-    
-    for user in users:
-        username = user['username']
-        email = user['email']
-        
-        missing_dates = get_missing_entries(username, prev_year, prev_month)
-        
-        if missing_dates:
-            month_display = datetime(prev_year, prev_month, 1).strftime('%B %Y')
-            deadline_str = today.strftime('%d-%m-%Y')
-
-            subject = f"URGENT: IQAC Connect Submission Deadline - TODAY"
-            body = f"""Dear {username},
-
-This is a final reminder to complete and submit your work logs for the month of {month_display}.
-
-The deadline to submit your log is TODAY ({deadline_str}). Please log in to the portal and complete the submission immediately.
-
-If you have already submitted the work logs, kindly disregard this email.
-
-Regards,
-Internal Quality Assurance Cell (IQAC)
-CHRIST (Deemed to be University)
-
----
-This is an auto-generated email. Please do not reply to this message.
-"""
-            send_reminder_email(email, subject, body)
-    
-    return f"1st deadline reminder sent to {len(users)} users"
 
 # ------------------ AI SETTINGS (NVIDIA & GEMINI) ------------------
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
@@ -593,6 +508,7 @@ def init_postgres():
     """)
     cursor.execute("ALTER TABLE worklog ADD COLUMN IF NOT EXISTS attachment TEXT")
     cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255)")
+    cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT FALSE")
 
     # Create signed_reports table for IQAC Coordinator uploaded reports
     cursor.execute("""
@@ -666,8 +582,8 @@ def init_postgres():
     cursor.execute("SELECT * FROM users WHERE username='admin'")
     if not cursor.fetchone():
         cursor.execute("""
-            INSERT INTO users (username, password, emp_id, email, gender, designation, department, role)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO users (username, password, emp_id, email, gender, designation, department, role, must_change_password)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
         """, (
             'admin',
             generate_password_hash('admin123'),
@@ -726,6 +642,61 @@ def datetimeformat(value):
 def home():
     return redirect("/login")
     
+@app.before_request
+def enforce_password_change():
+    allowed_routes = ['login', 'logout', 'change_password', 'static']
+    if request.endpoint in allowed_routes or not request.endpoint:
+        return
+        
+    if 'username' in session and session.get('must_change_password'):
+        flash("For security reasons, you must change your temporary password before proceeding.", "warning")
+        return redirect(url_for('change_password'))
+
+# ------------------ CHANGE PASSWORD ------------------
+@app.route("/change_password", methods=["GET", "POST"])
+def change_password():
+    if 'username' not in session:
+        return redirect("/login")
+        
+    if request.method == "POST":
+        new_pw = request.form.get("new_password")
+        confirm_pw = request.form.get("confirm_password")
+        
+        if not new_pw or len(new_pw) < 6:
+            flash("Password must be at least 6 characters long.", "danger")
+            return render_template("change_password.html")
+            
+        if new_pw != confirm_pw:
+            flash("Passwords do not match.", "danger")
+            return render_template("change_password.html")
+            
+        hashed = generate_password_hash(new_pw)
+        username = session["username"]
+        
+        conn = get_db_connection()
+        cursor = get_cursor(conn)
+        try:
+            cursor.execute("UPDATE users SET password=%s, must_change_password=FALSE WHERE username=%s", (hashed, username))
+            conn.commit()
+            session["must_change_password"] = False
+            flash("Password updated successfully!", "success")
+            
+            role = session.get("role", "").lower()
+            if role == "admin":
+                return redirect("/admin")
+            elif role in ("school iqac coordinator", "campus iqac coordinator"):
+                return redirect("/iqac_dashboard")
+            elif role == "secretary":
+                return redirect("/secretary_dashboard")
+            else:
+                return redirect("/dashboard")
+        except Exception as e:
+            flash(f"Database error updating password: {e}", "danger")
+        finally:
+            conn.close()
+            
+    return render_template("change_password.html")
+
 # ------------------ LOGIN ------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -744,7 +715,12 @@ def login():
         if user and check_password_hash(user["password"], password):
             session["username"] = username
             session["role"] = user["role"]
+            session["must_change_password"] = user.get("must_change_password", False)
             flash(f"Welcome, {username}!", "success")
+            
+            if session["must_change_password"]:
+                return redirect("/change_password")
+                
             if user["role"].lower() == "admin":
                 return redirect("/admin")
             elif user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
@@ -1618,21 +1594,24 @@ def admin_add_user():
             flash("Username or email already exists.", "danger")
         else:
             cursor.execute("""
-                INSERT INTO users (username, password, emp_id, email, gender, designation, department, role, full_name)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO users (username, password, emp_id, email, gender, designation, department, role, full_name, must_change_password)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
             """, (username, hashed, emp_id, email, gender, designation, department, role, full_name or None))
             conn.commit()
 
             # Send credentials email
             try:
-                body = f"""Dear {username},
+                display_name = full_name if full_name else username
+                body = f"""Dear {display_name},
 
-Your IQAC Connect account has been created. Please find your login credentials below.
+Your IQAC Connect account has been created. Please find your temporary login credentials below.
 
 Username: {username}
 Password: {password}
 
 Login: https://iqacworklog.christuniversity.in/login
+
+Note: For security reasons, you will be required to change this temporary password upon your first login.
 
 Kindly change your password after your first login. If you have any issues, please contact the IQAC Admin.
 
@@ -1671,21 +1650,24 @@ def forgot_password():
     new_password = "".join(random.choices(string.ascii_letters + string.digits, k=8))
     hashed = generate_password_hash(new_password)
 
-    cursor.execute("UPDATE users SET password=%s WHERE username=%s", (hashed, username))
+    cursor.execute("UPDATE users SET password=%s, must_change_password=TRUE WHERE username=%s", (hashed, username))
     conn.commit()
     conn.close()
 
     # Email password
     try:
-        body = f"""Dear {username},
+        display_name = user['full_name'] if user.get('full_name') else username
+        body = f"""Dear {display_name},
 
-Your password for the IQAC Connect account has been successfully reset. Please find your updated login credentials below:
+Your password for the IQAC Connect account has been successfully reset. Please find your temporary login credentials below:
 
 Username: {username}
 New Password: {new_password}
 
 You may log in using the following link:
 https://iqacworklog.christuniversity.in/login
+
+Note: For security reasons, you will be required to change this temporary password upon logging in.
 
 If you did not request this reset or require any assistance, please contact the IQAC Admin.
 
@@ -2285,21 +2267,24 @@ def admin_reset_password(id):
     new_password = "".join(random.choices(string.ascii_letters + string.digits, k=8))
     hashed = generate_password_hash(new_password)
 
-    cursor.execute("UPDATE users SET password=%s WHERE id=%s", (hashed, id))
+    cursor.execute("UPDATE users SET password=%s, must_change_password=TRUE WHERE id=%s", (hashed, id))
     conn.commit()
     conn.close()
 
     # Send email
     try:
-        body = f"""Dear {user['username']},
+        display_name = user['full_name'] if user.get('full_name') else user['username']
+        body = f"""Dear {display_name},
 
-Your password for the IQAC Connect account has been successfully reset. Please find your updated login credentials below:
+Your password for the IQAC Connect account has been successfully reset. Please find your temporary login credentials below:
 
 Username: {user['username']}
 New Password: {new_password}
 
 You may log in using the following link:
 https://iqacworklog.christuniversity.in/login
+
+Note: For security reasons, you will be required to change this temporary password upon logging in.
 
 If you did not request this reset or require any assistance, please contact the IQAC Admin.
 
@@ -2315,30 +2300,6 @@ CHRIST (Deemed to be University)"""
     return redirect("/admin_manage_users")
 
 
-# ------------------ EMAIL REMINDER ROUTES (for scheduler/cron) ------------------
-@app.route("/send_29th_reminders")
-def trigger_29th_reminders():
-    """Trigger 29th reminder emails - can be called by scheduler"""
-    today = datetime.now().date()
-    
-    # Only send on 29th of the month
-    if today.day != 29:
-        return f"Not the 29th. Today is {today.strftime('%d-%m-%Y')}", 400
-    
-    result = send_29th_reminder()
-    return result, 200
-
-@app.route("/send_1st_deadline_reminders")
-def trigger_1st_deadline_reminders():
-    """Trigger 1st deadline reminder emails - can be called by scheduler"""
-    today = datetime.now().date()
-    
-    # Only send on 1st of the month
-    if today.day != 1:
-        return f"Not the 1st. Today is {today.strftime('%d-%m-%Y')}", 400
-    
-    result = send_1st_deadline_reminder()
-    return result, 200
 
 # ------------------ IQAC COORDINATOR REPORT REMINDERS ------------------
 def send_iqac_report_reminder(is_deadline=False):
@@ -2353,13 +2314,14 @@ def send_iqac_report_reminder(is_deadline=False):
     cursor = get_cursor(conn)
 
     # Get all IQAC Coordinators
-    cursor.execute("SELECT username, email FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')")
+    cursor.execute("SELECT username, email, full_name FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')")
     coordinators = cursor.fetchall()
 
     sent_count = 0
     for coord in coordinators:
         username = coord['username']
         email = coord['email']
+        display_name = (coord['full_name'] or username).title()
 
         # Check if they've already submitted for this month
         cursor.execute("""
@@ -2373,9 +2335,9 @@ def send_iqac_report_reminder(is_deadline=False):
 
         if is_deadline:
             subject = f"URGENT: IQAC Monthly Report Due TODAY — {month_display}"
-            body = f"""Dear {username.title()},
+            body = f"""Dear {display_name},
 
-This is a final reminder that your Monthly Work Done Report for {month_display} is due TODAY ({deadline_str}).
+This is a final reminder that your Monthly Report for {month_display} is due TODAY ({deadline_str}).
 
 Please log in to the IQAC portal, generate your report, and upload the signed copy before end of day.
 
@@ -2391,9 +2353,9 @@ CHRIST (Deemed to be University)
 This is an automated reminder. Please do not reply.
 """
         else:
-            body = f"""Dear {username.title()},
+            body = f"""Dear {display_name},
 
-This is a reminder that your Monthly Work Done Report for {month_display} is due by {deadline_str}.
+This is a reminder that your Monthly Report for {month_display} is due by {deadline_str}.
 
 Please log in to the IQAC portal, fill in your monthly report, download the PDF, sign it, and upload the signed copy before the deadline.
 
@@ -2449,7 +2411,7 @@ def send_auto_iqac_reminders():
     conn = get_db_connection()
     cursor = get_cursor(conn)
     cursor.execute(
-        "SELECT username, email FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')"
+        "SELECT username, email, full_name FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')"
     )
     coordinators = cursor.fetchall()
 
@@ -2462,9 +2424,10 @@ def send_auto_iqac_reminders():
         if cursor.fetchone():
             continue
 
-        body = f"""Dear {coord['username'].title()},
+        display_name = (coord['full_name'] or coord['username']).title()
+        body = f"""Dear {display_name},
 
-This is an automated reminder that your Monthly Work Done Report for {month_display} has not yet been submitted.
+This is an automated reminder that your Monthly Report for {month_display} has not yet been submitted.
 
 Deadline: {deadline_date} ({days_left_str})
 
@@ -2494,26 +2457,6 @@ def trigger_auto_iqac_reminders():
     result = send_auto_iqac_reminders()
     return result, 200
 
-
-@app.route("/admin_trigger_iqac_reminder", methods=["POST"])
-def admin_trigger_iqac_reminder():
-    """Admin manually triggers IQAC reminder emails."""
-    if "username" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-    cursor = get_cursor(conn)
-    cursor.execute("SELECT * FROM users WHERE username=%s", (session["username"],))
-    admin = cursor.fetchone()
-    conn.close()
-
-    if not admin or admin["role"].lower() != "admin":
-        flash("Access denied.", "danger")
-        return redirect("/dashboard")
-
-    result = send_iqac_report_reminder(is_deadline=False)
-    flash(result, "success")
-    return redirect("/admin_signed_reports")
 
 
 # ------------------ IQAC COORDINATOR DASHBOARD ------------------
@@ -3343,11 +3286,12 @@ def iqac_upload_signed_report():
         recipients = notify_cur.fetchall()
         notify_conn.close()
 
+        display_name = (user.get('full_name') or username).strip().title()
         reporting_month_display = datetime.strptime(reporting_month, "%Y-%m").strftime("%m-%Y")
-        subject = f"IQAC Report Submitted – {username.title()} ({reporting_month_display})"
+        subject = f"IQAC Report Submitted – {display_name} ({reporting_month_display})"
         body = (
             f"Dear Admin/Secretary,\n\n"
-            f"{username.title()} ({user.get('designation', '')}, {user.get('department', '')}) "
+            f"{display_name} ({user.get('designation', '')}, {user.get('department', '')}) "
             f"has submitted their signed IQAC report for {reporting_month_display}.\n\n"
             f"Please log in to review and authorise the report.\n\n"
             f"Regards,\n"
@@ -3619,11 +3563,6 @@ scheduler = BackgroundScheduler()
 # Daily at 6 PM — sends report submission reminder to coordinators who haven't submitted (days 1–5 of month)
 scheduler.add_job(send_auto_iqac_reminders, 'cron', hour=18, minute=0, id='iqac_report_reminder')
 
-# 29th of every month at 9 AM — worklog missing entries reminder to employees
-scheduler.add_job(send_29th_reminder, 'cron', day=29, hour=9, minute=0, id='worklog_29th_reminder')
-
-# 1st of every month at 9 AM — final worklog deadline reminder to employees
-scheduler.add_job(send_1st_deadline_reminder, 'cron', day=1, hour=9, minute=0, id='worklog_1st_reminder')
 
 scheduler.start()
 

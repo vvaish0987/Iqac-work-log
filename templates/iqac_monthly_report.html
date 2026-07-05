@@ -769,13 +769,19 @@
         const anyFilled = vals.some(v => v) || respVal;
         if (anyFilled) {
           let rowOk = true;
-          fields.forEach(f => { if (!f.value.trim()) { highlight(f); rowOk = false; } });
+          let missingFields = [];
+          if (!date.value.trim()) { highlight(date); rowOk = false; missingFields.push("Meeting Date"); }
+          if (!dept.value.trim()) { highlight(dept); rowOk = false; missingFields.push("Department Name"); }
+          if (!parts.value.trim()) { highlight(parts); rowOk = false; missingFields.push("Participants"); }
+          if (!topics.value.trim()) { highlight(topics); rowOk = false; missingFields.push("Topics Discussed"); }
+          if (!action.value.trim()) { highlight(action); rowOk = false; missingFields.push("Action Points"); }
           if (!respVal) {
             const display = row.querySelector('.resp-area-display');
             if (display) display.style.border = '2px solid red';
             rowOk = false;
+            missingFields.push("Responsibility Area");
           }
-          if (!rowOk) errors.push(`Section (a) row ${i + 1}: please fill all fields.`);
+          if (!rowOk) errors.push(`Section (a) row ${i + 1}: please fill missing fields [${missingFields.join(', ')}].`);
         }
       });
 
@@ -792,13 +798,18 @@
         const anyFilled = vals.some(v => v) || respVal;
         if (anyFilled) {
           let rowOk = true;
-          fields.forEach(f => { if (!f.value.trim()) { highlight(f); rowOk = false; } });
+          let missingFields = [];
+          if (!date.value.trim()) { highlight(date); rowOk = false; missingFields.push("Activity Date"); }
+          if (!venue.value.trim()) { highlight(venue); rowOk = false; missingFields.push("Venue"); }
+          if (!title.value.trim()) { highlight(title); rowOk = false; missingFields.push("Activity Title"); }
+          if (!resource.value.trim()) { highlight(resource); rowOk = false; missingFields.push("Resource Person"); }
           if (!respVal) {
             const display = row.querySelector('.resp-area-display');
             if (display) display.style.border = '2px solid red';
             rowOk = false;
+            missingFields.push("Responsibility Area");
           }
-          if (!rowOk) errors.push(`Section (b) row ${i + 1}: please fill all fields.`);
+          if (!rowOk) errors.push(`Section (b) row ${i + 1}: please fill missing fields [${missingFields.join(', ')}].`);
         }
       });
 
