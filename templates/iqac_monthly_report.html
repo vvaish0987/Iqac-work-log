@@ -571,9 +571,8 @@
                       <td><input type="text" name="participants[]" class="form-control form-control-sm" placeholder="Names / Designations" value="{{ participants_val }}"></td>
                       <td style="min-width:200px;">
                         <div class="resp-area-wrapper">
-                          <input type="hidden" name="responsibility_area[]" class="resp-area-hidden" value="{{ responsibility_area_val }}">
-                          <textarea name="topics[]" class="form-control form-control-sm topics-field mb-1" rows="2" placeholder="Type here or select verticals below">{{ topics_val }}</textarea>
-                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:28px; cursor:pointer; font-size:0.78rem; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
+                          <input type="hidden" name="topics[]" class="resp-area-hidden topics-field" value="{{ responsibility_area_val }}">
+                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
                             <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.75rem;">Select IQAC Verticals…</span>
                           </div>
                           <div class="resp-area-checklist border rounded p-2 mt-1 shadow-sm" style="display:none; max-height:220px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:260px;">
@@ -819,24 +818,6 @@
       return checked;
     }
 
-    // Helper: append/remove a vertical value from the topics textarea
-    function updateTopicsTextarea(topicsField, value, isChecked) {
-      if (!topicsField) return;
-      let current = topicsField.value;
-      if (isChecked) {
-        // Append if not already present
-        const entries = current.split(',').map(s => s.trim()).filter(Boolean);
-        if (!entries.includes(value)) {
-          entries.push(value);
-          topicsField.value = entries.join(', ');
-        }
-      } else {
-        // Remove the value
-        const entries = current.split(',').map(s => s.trim()).filter(Boolean);
-        topicsField.value = entries.filter(s => s !== value).join(', ');
-      }
-    }
-
     // ── On load: close all checklists and sync any browser-restored checkbox state ──
     function applyDateMax(root) {
       const reportingMonth = "{{ reporting_month_str }}"; // "YYYY-MM"
@@ -923,11 +904,10 @@
       }
     });
 
-    // ── Checkbox change: sync display + hidden + append/remove from topics textarea ──
+    // ── Checkbox change: sync display + hidden topics[] field ──
     document.addEventListener('change', function (e) {
       if (!e.target.classList.contains('resp-cb')) return;
       const wrapper = e.target.closest('.resp-area-wrapper');
-      const row = e.target.closest('tr');
 
       // Toggle Others text box
       if (e.target.classList.contains('resp-others-cb')) {
@@ -936,31 +916,14 @@
         if (!e.target.checked && othersText) othersText.value = '';
       }
 
-      const checked = syncRespArea(wrapper);
-      const topicsField = row ? row.querySelector('.topics-field') : null;
-      // For Others checkbox, we don't auto-update the textarea (user types in the text box)
-      if (!e.target.classList.contains('resp-others-cb')) {
-        updateTopicsTextarea(topicsField, e.target.value, e.target.checked);
-      }
+      syncRespArea(wrapper);
     });
 
-    // ── Sync others text into hidden field + append/update in Topics Discussed on input ──
+    // ── Others text input: re-sync hidden topics[] field and display ──
     document.addEventListener('input', function (e) {
       if (!e.target.classList.contains('resp-others-text')) return;
       const wrapper = e.target.closest('.resp-area-wrapper');
-      const row = e.target.closest('tr');
-      const topicsField = row ? row.querySelector('.topics-field') : null;
-      const newVal = e.target.value.trim() || 'Others';
-      // Re-sync display and hidden
       syncRespArea(wrapper);
-      // Update topics textarea: replace any existing 'Others...' entry
-      if (topicsField) {
-        let entries = topicsField.value.split(',').map(s => s.trim()).filter(Boolean);
-        // Remove old Others entry
-        entries = entries.filter(s => s !== 'Others' && !s.startsWith('Others:'));
-        if (e.target.value.trim()) entries.push(e.target.value.trim());
-        topicsField.value = entries.join(', ');
-      }
     });
 
     // ── Dynamic table row management ──

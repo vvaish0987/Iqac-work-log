@@ -80,7 +80,7 @@ def sort_list_fields(form_data, report_type, ws_files=None):
         sort_section("act_date[]", ["act_date[]", "act_task[]", "act_area[]", "act_area_other[]", "act_stakeholders[]", "act_outcome[]", "act_status[]"])
         sort_section("meet_date[]", ["meet_date[]", "meet_programme[]", "meet_role[]", "meet_outcome[]"])
     elif report_type == "standard":
-        sort_section("meeting_date[]", ["meeting_date[]", "dept_name[]", "participants[]", "topics[]", "action_points[]", "responsibility_area[]"])
+        sort_section("meeting_date[]", ["meeting_date[]", "dept_name[]", "participants[]", "topics[]", "action_points[]"])
         sorted_ws_files = sort_section("ws_date[]", ["ws_date[]", "ws_venue[]", "ws_title[]", "ws_participants[]", "ws_resource[]", "ws_responsibility[]", "ws_existing_file[]"])
         return sorted_ws_files
     return None
@@ -428,7 +428,6 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
     participants = form_data.getlist('participants[]')
     topics = form_data.getlist('topics[]')
     action_pts = form_data.getlist('action_points[]')
-    resp_areas = form_data.getlist('responsibility_area[]')
 
     pa_headers = ['Date of\nMeeting', 'Department\nName', "Participants'\nDetails",
                   'Topics\nDiscussed', 'Action Points\n/ Plan']
