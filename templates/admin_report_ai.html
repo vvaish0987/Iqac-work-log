@@ -845,7 +845,7 @@
         <div class="text-center worklog-header mb-3">
           <h5>CHRIST (Deemed to be University), Bengaluru</h5>
           <h6>Internal Quality Assurance Cell (IQAC)</h6>
-          <h6 class="fw-bold text-primary mt-3">Worklog of {{ selected_user.title() }}</h6>
+          <h6 class="fw-bold text-primary mt-3">Worklog of {{ logs[0]['full_name'] or selected_user.title() }}</h6>
         </div>
         <div class="report-summary">
           <div><strong>Report Type:</strong>

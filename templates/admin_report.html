@@ -388,7 +388,7 @@
                 <option value="All" {% if selected_user == 'All' %}selected{% endif %}>All Users</option>
                 {% for u in users %}
                   <option value="{{ u['username'] }}" {% if selected_user == u['username'] %}selected{% endif %}>
-                    {{ u['username'] }} ({{ u['emp_id'] }})
+                    {{ u['full_name'] or u['username'] }} ({{ u['emp_id'] or 'No ID' }})
                   </option>
                 {% endfor %}
               </select>
@@ -517,7 +517,7 @@
               <div class="text-center worklog-header mb-3">
                 <h5>CHRIST (Deemed to be University), Bengaluru</h5>
                 <h6>Internal Quality Assurance Cell (IQAC)</h6>
-                <h6 class="fw-bold text-primary mt-3">Worklog of {{ selected_user.title() }}</h6>
+                <h6 class="fw-bold text-primary mt-3">Worklog of {{ logs[0]['full_name'] or selected_user.title() }}</h6>
               </div>
               <div class="report-summary">
                 <div><strong>Report Type:</strong>

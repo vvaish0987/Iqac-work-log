@@ -731,11 +731,12 @@ def login():
 
         if user and check_password_hash(user["password"], password):
             session["username"] = username
+            session["full_name"] = user.get("full_name") or username
             available_roles = [r.strip() for r in user["role"].split(",")]
             session["available_roles"] = available_roles
             session["role"] = available_roles[0]
             session["must_change_password"] = user.get("must_change_password", False)
-            flash(f"Welcome, {username}!", "success")
+            flash(f"Welcome, {session['full_name']}!", "success")
             
             if session["must_change_password"]:
                 return redirect("/change_password")
@@ -1495,7 +1496,7 @@ def admin_panel():
 
         if coord_user == "All":
             cursor.execute("""
-                SELECT sr.*, u.designation, u.department, u.role
+                SELECT sr.*, u.designation, u.department, u.role, u.full_name
                 FROM signed_reports sr
                 JOIN users u ON sr.username = u.username
                 WHERE sr.status = 'reviewed' AND sr.reporting_month BETWEEN %s AND %s
@@ -1503,7 +1504,7 @@ def admin_panel():
             """, (start_m, end_m))
         else:
             cursor.execute("""
-                SELECT sr.*, u.designation, u.department, u.role
+                SELECT sr.*, u.designation, u.department, u.role, u.full_name
                 FROM signed_reports sr
                 JOIN users u ON sr.username = u.username
                 WHERE sr.status = 'reviewed' AND sr.username = %s AND sr.reporting_month BETWEEN %s AND %s
@@ -3620,7 +3621,7 @@ def secretary_dashboard():
 
         if coord_user == "All":
             cursor.execute("""
-                SELECT sr.*, u.designation, u.department, u.role
+                SELECT sr.*, u.designation, u.department, u.role, u.full_name
                 FROM signed_reports sr
                 JOIN users u ON sr.username = u.username
                 WHERE sr.status = 'reviewed' AND sr.reporting_month BETWEEN %s AND %s
@@ -3628,7 +3629,7 @@ def secretary_dashboard():
             """, (start_m, end_m))
         else:
             cursor.execute("""
-                SELECT sr.*, u.designation, u.department, u.role
+                SELECT sr.*, u.designation, u.department, u.role, u.full_name
                 FROM signed_reports sr
                 JOIN users u ON sr.username = u.username
                 WHERE sr.status = 'reviewed' AND sr.username = %s AND sr.reporting_month BETWEEN %s AND %s
