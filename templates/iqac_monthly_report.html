@@ -545,9 +545,8 @@
                   <th style="width:12%;">Date of Meeting <span class="text-danger">*</span></th>
                   <th style="width:14%;">Department / School Name <span class="text-danger">*</span></th>
                   <th style="width:16%;">Participants' Details <span class="text-danger">*</span></th>
-                  <th style="width:20%;">Topics Discussed <span class="text-danger">*</span></th>
-                  <th style="width:20%;">Action Points / Plan / Outcome</th>
-                  <th style="width:14%;">IQAC VERTICALS <span class="text-danger">*</span></th>
+                  <th style="width:30%;">Topics Discussed <span class="text-danger">*</span></th>
+                  <th style="width:24%;">Action Points / Plan / Outcome</th>
                   <th style="width:4%;"></th>
                 </tr>
               </thead>
@@ -570,13 +569,12 @@
                       <td><input type="date" name="meeting_date[]" class="form-control form-control-sm" value="{{ meeting_date_val }}"></td>
                       <td><input type="text" name="dept_name[]" class="form-control form-control-sm" placeholder="Department / School" value="{{ dept_name_val }}"></td>
                       <td><input type="text" name="participants[]" class="form-control form-control-sm" placeholder="Names / Designations" value="{{ participants_val }}"></td>
-                      <td><textarea name="topics[]" class="form-control form-control-sm topics-field" rows="2" placeholder="Auto-filled or type here">{{ topics_val }}</textarea></td>
-                      <td><textarea name="action_points[]" class="form-control form-control-sm" rows="2" placeholder="Action points / Outcome">{{ action_points_val }}</textarea></td>
-                      <td style="min-width:180px;">
+                      <td style="min-width:200px;">
                         <div class="resp-area-wrapper">
                           <input type="hidden" name="responsibility_area[]" class="resp-area-hidden" value="{{ responsibility_area_val }}">
-                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem;  display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
-                            <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>
+                          <textarea name="topics[]" class="form-control form-control-sm topics-field mb-1" rows="2" placeholder="Type here or select verticals below">{{ topics_val }}</textarea>
+                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:28px; cursor:pointer; font-size:0.78rem; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
+                            <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.75rem;">Select IQAC Verticals…</span>
                           </div>
                           <div class="resp-area-checklist border rounded p-2 mt-1 shadow-sm" style="display:none; max-height:220px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:260px;">
                             <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Documentation & Audits" {% if 'Documentation & Audits' in selected_areas %}checked{% endif %}> Documentation &amp; Audits</label>
@@ -587,11 +585,11 @@
                             <label class="d-flex align-items-start gap-1 mb-1 resp-others-label"><input type="checkbox" class="resp-cb resp-others-cb mt-1" value="Others"> Others</label>
                             <input type="text" class="resp-others-text form-control form-control-sm mt-1" placeholder="Please specify" style="display:none; font-size:0.76rem;">
                           </div>
-        </div>
-        </td>
-        <td class="text-center"><button type="button" class="btn btn-danger btn-del-row" onclick="delRow(this)"><i
-              class="bi bi-trash"></i></button></td>
-        </tr>
+                        </div>
+                      </td>
+                      <td><textarea name="action_points[]" class="form-control form-control-sm" rows="2" placeholder="Action points / Outcome">{{ action_points_val }}</textarea></td>
+                      <td class="text-center"><button type="button" class="btn btn-danger btn-del-row" onclick="delRow(this)"><i class="bi bi-trash"></i></button></td>
+                    </tr>
         {% endfor %}
         </tbody>
         </table>
@@ -808,7 +806,7 @@
       if (!display) return;
       display.innerHTML = '';
       if (checked.length === 0) {
-        display.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>';
+        display.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.75rem;">Select IQAC Verticals…</span>';
       } else {
         checked.forEach(val => {
           const badge = document.createElement('span');
@@ -819,6 +817,24 @@
         });
       }
       return checked;
+    }
+
+    // Helper: append/remove a vertical value from the topics textarea
+    function updateTopicsTextarea(topicsField, value, isChecked) {
+      if (!topicsField) return;
+      let current = topicsField.value;
+      if (isChecked) {
+        // Append if not already present
+        const entries = current.split(',').map(s => s.trim()).filter(Boolean);
+        if (!entries.includes(value)) {
+          entries.push(value);
+          topicsField.value = entries.join(', ');
+        }
+      } else {
+        // Remove the value
+        const entries = current.split(',').map(s => s.trim()).filter(Boolean);
+        topicsField.value = entries.filter(s => s !== value).join(', ');
+      }
     }
 
     // ── On load: close all checklists and sync any browser-restored checkbox state ──
@@ -850,6 +866,23 @@
       applyDateMax();
       document.querySelectorAll('.resp-area-wrapper').forEach(wrapper => {
         wrapper.querySelector('.resp-area-checklist').style.display = 'none';
+        // Restore checkbox state from the saved hidden field value
+        const hidden = wrapper.querySelector('.resp-area-hidden');
+        if (hidden && hidden.value) {
+          const savedVals = hidden.value.split(',').map(s => s.trim()).filter(Boolean);
+          wrapper.querySelectorAll('.resp-cb').forEach(cb => {
+            if (cb.classList.contains('resp-others-cb')) {
+              const othersVals = savedVals.filter(v => !['Documentation & Audits','Rankings, Accreditations & Awards','Training & Development','Publications','Strategic Initiatives'].includes(v));
+              if (othersVals.length) {
+                cb.checked = true;
+                const othersText = wrapper.querySelector('.resp-others-text');
+                if (othersText) { othersText.value = othersVals[0]; othersText.style.display = 'block'; }
+              }
+            } else {
+              cb.checked = savedVals.includes(cb.value);
+            }
+          });
+        }
         syncRespArea(wrapper);
       });
     });
@@ -890,7 +923,7 @@
       }
     });
 
-    // ── Checkbox change: sync display + hidden + topics ──
+    // ── Checkbox change: sync display + hidden + append/remove from topics textarea ──
     document.addEventListener('change', function (e) {
       if (!e.target.classList.contains('resp-cb')) return;
       const wrapper = e.target.closest('.resp-area-wrapper');
@@ -905,20 +938,28 @@
 
       const checked = syncRespArea(wrapper);
       const topicsField = row ? row.querySelector('.topics-field') : null;
-      if (topicsField && checked) {
-        topicsField.value = checked.join(', ');
+      // For Others checkbox, we don't auto-update the textarea (user types in the text box)
+      if (!e.target.classList.contains('resp-others-cb')) {
+        updateTopicsTextarea(topicsField, e.target.value, e.target.checked);
       }
     });
 
-    // ── Sync others text into hidden field + Topics Discussed on input ──
+    // ── Sync others text into hidden field + append/update in Topics Discussed on input ──
     document.addEventListener('input', function (e) {
       if (!e.target.classList.contains('resp-others-text')) return;
       const wrapper = e.target.closest('.resp-area-wrapper');
       const row = e.target.closest('tr');
-      const checked = syncRespArea(wrapper);
       const topicsField = row ? row.querySelector('.topics-field') : null;
-      if (topicsField && checked) {
-        topicsField.value = checked.join(', ');
+      const newVal = e.target.value.trim() || 'Others';
+      // Re-sync display and hidden
+      syncRespArea(wrapper);
+      // Update topics textarea: replace any existing 'Others...' entry
+      if (topicsField) {
+        let entries = topicsField.value.split(',').map(s => s.trim()).filter(Boolean);
+        // Remove old Others entry
+        entries = entries.filter(s => s !== 'Others' && !s.startsWith('Others:'));
+        if (e.target.value.trim()) entries.push(e.target.value.trim());
+        topicsField.value = entries.join(', ');
       }
     });
 
@@ -952,7 +993,7 @@
       newRow.querySelectorAll('.resp-area-checklist').forEach(cl => cl.style.display = 'none');
       newRow.querySelectorAll('.resp-others-text').forEach(t => { t.value = ''; t.style.display = 'none'; });
       newRow.querySelectorAll('.resp-area-display').forEach(d => {
-        d.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>';
+        d.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.75rem;">Select IQAC Verticals…</span>';
       });
       tbody.appendChild(newRow);
     }
@@ -970,7 +1011,7 @@
         row.querySelectorAll('.resp-others-text').forEach(t => { t.value = ''; t.style.display = 'none'; });
         // Reset the visual tag display
         row.querySelectorAll('.resp-area-display').forEach(d => {
-          d.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>';
+          d.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.75rem;">Select IQAC Verticals…</span>';
         });
         // Reset attachment: hide file name, link, reset button to paperclip
         row.querySelectorAll('.ws-file-name').forEach(el => el.textContent = '');
