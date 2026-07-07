@@ -1488,7 +1488,7 @@ def admin_panel():
         year_int = int(coord_year)
         if coord_report_type == "yearly":
             start_m = f"{year_int}-01"
-            end_m = f"{year_int}-12"
+            end_m = f"{now.year}-12"
         else:
             start_m = coord_from_month or f"{year_int}-01"
             end_m = coord_to_month or f"{year_int}-{now.month:02d}"
@@ -3613,7 +3613,7 @@ def secretary_dashboard():
         year_int = int(coord_year)
         if coord_report_type == "yearly":
             start_m = f"{year_int}-01"
-            end_m = f"{year_int}-12"
+            end_m = f"{now.year}-12"
         else:
             start_m = coord_from_month or f"{year_int}-01"
             end_m = coord_to_month or f"{year_int}-{now.month:02d}"
