@@ -239,11 +239,14 @@
         </div>
         <div class="d-flex align-items-center gap-2">
           <a href="/dashboard" class="btn btn-light btn-sm"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
-          <span class="text-light me-2 fw-semibold">{{ session.get('full_name', username or session.get('username', '')).title() }}</span>
           <!-- User Dropdown Menu -->
           <div class="dropdown">
-            <button class="btn btn-outline-light rounded-circle p-0 d-flex align-items-center justify-content-center" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="width: 38px; height: 38px;" title="User Menu">
-              <i class="bi bi-person-fill fs-5"></i>
+            <button class="btn btn-outline-light d-flex align-items-center gap-2 px-3 py-1 rounded-pill shadow-sm" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="height: 38px;">
+              <div class="d-flex align-items-center justify-content-center bg-white text-primary rounded-circle" style="width: 26px; height: 26px;">
+                <i class="bi bi-person-fill fs-6"></i>
+              </div>
+              <span class="fw-semibold text-white small me-1">{{ session.get('full_name', username or session.get('username', '')).title() }}</span>
+              <i class="bi bi-chevron-down text-white opacity-75 small"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuDropdown">
               <li class="dropdown-header text-dark border-bottom pb-2 mb-2">
