@@ -247,15 +247,36 @@
             </div>
 
             <!-- Others -->
+            {% set ns = namespace(has_others=false, others_specify_val='', others_task_val='') %}
+            {% if tasks_dict %}
+              {% for key, val in tasks_dict.items() %}
+                {% if key.startswith('Others') %}
+                  {% set ns.has_others = true %}
+                  {% set ns.others_task_val = val %}
+                  {% if '(' in key and ')' in key %}
+                    {% set parts = key.split('(') %}
+                    {% set specify = parts[1].split(')')[0] %}
+                    {% set ns.others_specify_val = specify %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
             <div class="category-section">
               <div class="category-header">
                 <input type="checkbox" id="cat_others" name="categories" value="Others"
-                       {% if tasks_dict and 'Others' in tasks_dict %}checked{% endif %}
+                       {% if ns.has_others %}checked{% endif %}
                        onchange="toggleTask('others')">
                 <label for="cat_others">Others</label>
               </div>
-              <div id="task_others" class="task-textarea {% if tasks_dict and 'Others' in tasks_dict %}show{% endif %}">
-                <textarea name="task_others" class="form-control" rows="3" placeholder="Enter other tasks...">{{ tasks_dict.get('Others', '') if tasks_dict else '' }}</textarea>
+              <div id="task_others" class="task-textarea {% if ns.has_others %}show{% endif %}">
+                <div class="mb-2">
+                  <label class="form-label small fw-semibold text-muted">Specify Category Name <span class="text-danger">*</span></label>
+                  <input type="text" name="others_specify" id="others_specify" class="form-control form-control-sm mb-2" placeholder="e.g., NAAC Audit, Special Seminar, Web Support..." value="{{ ns.others_specify_val }}" {% if not ns.has_others %}disabled{% endif %}>
+                </div>
+                <div>
+                  <label class="form-label small fw-semibold text-muted">Tasks/Activities <span class="text-danger">*</span></label>
+                  <textarea name="task_others" class="form-control" rows="3" placeholder="Enter other tasks..." {% if ns.has_others %}required{% endif %}>{{ ns.others_task_val }}</textarea>
+                </div>
               </div>
             </div>
 
@@ -271,10 +292,31 @@
       function toggleTask(category) {
         const taskDiv = document.getElementById('task_' + category);
         const checkbox = document.getElementById('cat_' + category);
+        const textarea = taskDiv.querySelector('textarea');
         if (checkbox.checked) {
           taskDiv.classList.add('show');
+          if (textarea) textarea.required = true;
+          if (category === 'others') {
+            const specifyInput = document.getElementById('others_specify');
+            if (specifyInput) {
+              specifyInput.required = true;
+              specifyInput.disabled = false;
+            }
+          }
         } else {
           taskDiv.classList.remove('show');
+          if (textarea) {
+            textarea.required = false;
+            textarea.value = '';
+          }
+          if (category === 'others') {
+            const specifyInput = document.getElementById('others_specify');
+            if (specifyInput) {
+              specifyInput.required = false;
+              specifyInput.disabled = true;
+              specifyInput.value = '';
+            }
+          }
         }
       }
     </script>

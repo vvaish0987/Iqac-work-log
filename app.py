@@ -994,7 +994,15 @@ def user_add_entry():
                         if field_name:
                             task_text = request.form.get(field_name, "").strip()
                             if task_text:
-                                category_tasks[cat] = task_text
+                                if cat == "Others":
+                                    others_specify = request.form.get("others_specify", "").strip()
+                                    if others_specify:
+                                        key_name = f"Others ({others_specify})"
+                                    else:
+                                        key_name = "Others"
+                                else:
+                                    key_name = cat
+                                category_tasks[key_name] = task_text
 
                     if not category_tasks:
                         flash("Please select at least one category and enter tasks.", "danger")
@@ -1084,9 +1092,14 @@ def user_view_entries():
         
         # Apply category filter
         if category_filter and category_filter != "All":
-            if category_filter in tasks_dict:
+            matched_key = None
+            for key in tasks_dict.keys():
+                if key == category_filter or (category_filter == "Others" and key.startswith("Others (")):
+                    matched_key = key
+                    break
+            if matched_key:
                 # Only show the selected category's task
-                tasks_dict = {category_filter: tasks_dict[category_filter]}
+                tasks_dict = {matched_key: tasks_dict[matched_key]}
             else:
                 # Skip this log if selected category not present
                 continue
@@ -1213,9 +1226,14 @@ def user_report():
         
         # Apply category filter
         if category_filter and category_filter != "All":
-            if category_filter in tasks_dict:
+            matched_key = None
+            for key in tasks_dict.keys():
+                if key == category_filter or (category_filter == "Others" and key.startswith("Others (")):
+                    matched_key = key
+                    break
+            if matched_key:
                 # Only show the selected category's task
-                tasks_dict = {category_filter: tasks_dict[category_filter]}
+                tasks_dict = {matched_key: tasks_dict[matched_key]}
             else:
                 # Skip this log if selected category not present
                 continue
@@ -1284,7 +1302,15 @@ def edit(id):
             if field_name:
                 task_text = request.form.get(field_name, "").strip()
                 if task_text:
-                    category_tasks[cat] = task_text
+                    if cat == "Others":
+                        others_specify = request.form.get("others_specify", "").strip()
+                        if others_specify:
+                            key_name = f"Others ({others_specify})"
+                        else:
+                            key_name = "Others"
+                    else:
+                        key_name = cat
+                    category_tasks[key_name] = task_text
         
         if not category_tasks:
             flash("Please select at least one category and enter tasks.", "danger")
@@ -1531,6 +1557,7 @@ def admin_panel():
                 ORDER BY count DESC
             """, (first_date, last_date))
         else:
+            like_pattern = '%"Others%' if category_filter == "Others" else f'%"{category_filter}"%'
             cursor.execute("""
                 SELECT username, COUNT(*) AS count
                 FROM worklog
@@ -1538,7 +1565,7 @@ def admin_panel():
                   AND task::text LIKE %s
                 GROUP BY username
                 ORDER BY count DESC
-            """, (first_date, last_date, f'%"{category_filter}"%'))
+            """, (first_date, last_date, like_pattern))
     else:
         if category_filter == "All":
             cursor.execute("""
@@ -1548,13 +1575,14 @@ def admin_panel():
                 GROUP BY username
             """, (first_date, last_date, selected_user))
         else:
+            like_pattern = '%"Others%' if category_filter == "Others" else f'%"{category_filter}"%'
             cursor.execute("""
                 SELECT username, COUNT(*) AS count
                 FROM worklog
                 WHERE date BETWEEN %s AND %s AND username = %s
                   AND task::text LIKE %s
                 GROUP BY username
-            """, (first_date, last_date, selected_user, f'%"{category_filter}"%'))
+            """, (first_date, last_date, selected_user, like_pattern))
 
     summary = cursor.fetchall()
     conn.close()
@@ -1865,9 +1893,14 @@ def admin_report():
 
         # Apply category filter
         if category_filter and category_filter != "All":
-            if category_filter in tasks_dict:
+            matched_key = None
+            for key in tasks_dict.keys():
+                if key == category_filter or (category_filter == "Others" and key.startswith("Others (")):
+                    matched_key = key
+                    break
+            if matched_key:
                 # Only show the selected category's task
-                tasks_dict = {category_filter: tasks_dict[category_filter]}
+                tasks_dict = {matched_key: tasks_dict[matched_key]}
             else:
                 # Skip this log if selected category not present
                 continue
@@ -2031,9 +2064,14 @@ def admin_report_ai():
 
         # Apply category filter
         if category_filter and category_filter != "All":
-            if category_filter in tasks_dict:
+            matched_key = None
+            for key in tasks_dict.keys():
+                if key == category_filter or (category_filter == "Others" and key.startswith("Others (")):
+                    matched_key = key
+                    break
+            if matched_key:
                 # Only show the selected category's task
-                tasks_dict = {category_filter: tasks_dict[category_filter]}
+                tasks_dict = {matched_key: tasks_dict[matched_key]}
             else:
                 # Skip this log if selected category not present
                 continue

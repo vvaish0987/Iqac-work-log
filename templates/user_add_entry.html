@@ -316,7 +316,14 @@
                 <label for="cat_others">Others</label>
               </div>
               <div id="task_others" class="task-textarea">
-                <textarea name="task_others" class="form-control" rows="3" placeholder="Enter other tasks..."></textarea>
+                <div class="mb-2">
+                  <label class="form-label small fw-semibold text-muted">Specify Category Name <span class="text-danger">*</span></label>
+                  <input type="text" name="others_specify" id="others_specify" class="form-control form-control-sm mb-2" placeholder="e.g., NAAC Audit, Special Seminar, Web Support...">
+                </div>
+                <div>
+                  <label class="form-label small fw-semibold text-muted">Tasks/Activities <span class="text-danger">*</span></label>
+                  <textarea name="task_others" class="form-control" rows="3" placeholder="Enter other tasks..."></textarea>
+                </div>
               </div>
             </div>
             </div>
@@ -341,10 +348,27 @@
       function toggleTask(category) {
         const taskDiv = document.getElementById('task_' + category);
         const checkbox = document.getElementById('cat_' + category);
+        const textarea = taskDiv.querySelector('textarea');
         if (checkbox.checked) {
           taskDiv.classList.add('show');
+          if (textarea) textarea.required = true;
+          if (category === 'others') {
+            const specifyInput = document.getElementById('others_specify');
+            if (specifyInput) specifyInput.required = true;
+          }
         } else {
           taskDiv.classList.remove('show');
+          if (textarea) {
+            textarea.required = false;
+            textarea.value = '';
+          }
+          if (category === 'others') {
+            const specifyInput = document.getElementById('others_specify');
+            if (specifyInput) {
+              specifyInput.required = false;
+              specifyInput.value = '';
+            }
+          }
         }
       }
 
