@@ -102,6 +102,7 @@
         <h5 class="text-primary mb-0">Workshop Attachments — {{ selected_month }}</h5>
         <div class="d-flex align-items-center gap-2">
           <a href="/" class="btn btn-outline-secondary btn-sm">Home</a>
+          <span class="me-2 fw-semibold text-secondary">{{ session.get('full_name', username or session.get('username', '')).title() }}</span>
           <!-- User Dropdown Menu -->
           <div class="dropdown">
             <button class="btn btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="width: 38px; height: 38px;" title="User Menu">
