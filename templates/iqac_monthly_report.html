@@ -351,6 +351,29 @@
       color: var(--text-color) !important;
     }
 
+
+    /* Theme-aware dropdown checklist styles */
+    .resp-area-display {
+      background-color: #fff !important;
+      color: #212529 !important;
+      border-color: #dee2e6 !important;
+    }
+    .resp-area-checklist {
+      background-color: #fff !important;
+      color: #212529 !important;
+      border-color: #dee2e6 !important;
+    }
+    [data-theme="dark"] .resp-area-display {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .resp-area-checklist {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+
 </style>
 </head>
 
@@ -521,10 +544,10 @@
                       <td style="min-width:180px;">
                         <div class="resp-area-wrapper">
                           <input type="hidden" name="responsibility_area[]" class="resp-area-hidden" value="{{ responsibility_area_val }}">
-                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem; background:#fff; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
+                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem;  display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
                             <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>
                           </div>
-                          <div class="resp-area-checklist border rounded p-2 mt-1 bg-white shadow-sm" style="display:none; max-height:220px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:260px;">
+                          <div class="resp-area-checklist border rounded p-2 mt-1 shadow-sm" style="display:none; max-height:220px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:260px;">
                             <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Documentation & Audits" {% if 'Documentation & Audits' in selected_areas %}checked{% endif %}> Documentation &amp; Audits</label>
                             <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Rankings, Accreditations & Awards" {% if 'Rankings, Accreditations & Awards' in selected_areas %}checked{% endif %}> Rankings, Accreditations &amp; Awards</label>
                             <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Training & Development" {% if 'Training & Development' in selected_areas %}checked{% endif %}> Training &amp; Development</label>
@@ -593,10 +616,10 @@
                       <td style="min-width:180px;">
                         <div class="resp-area-wrapper">
                           <input type="hidden" name="ws_responsibility[]" class="resp-area-hidden" value="{{ ws_responsibility_val }}">
-                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem; background:#fff; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
+                          <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem;  display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
                             <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.78rem;">Click to select…</span>
                           </div>
-                          <div class="resp-area-checklist border rounded p-2 mt-1 bg-white shadow-sm" style="display:none; max-height:220px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:260px;">
+                          <div class="resp-area-checklist border rounded p-2 mt-1 shadow-sm" style="display:none; max-height:220px; overflow-y:auto; font-size:0.78rem; z-index:1000; position:absolute; left:0; min-width:260px;">
                             <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Documentation & Audits" {% if 'Documentation & Audits' in selected_ws_areas %}checked{% endif %}> Documentation &amp; Audits</label>
                             <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Rankings, Accreditations & Awards" {% if 'Rankings, Accreditations & Awards' in selected_ws_areas %}checked{% endif %}> Rankings, Accreditations &amp; Awards</label>
                             <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Training & Development" {% if 'Training & Development' in selected_ws_areas %}checked{% endif %}> Training &amp; Development</label>
