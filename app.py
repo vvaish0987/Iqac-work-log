@@ -426,9 +426,10 @@ def get_submission_window():
         cursor.execute("SELECT key, value FROM app_settings WHERE key IN ('submission_open_day', 'submission_close_day')")
         rows = {r['key']: int(r['value']) for r in cursor.fetchall()}
         conn.close()
-        return rows.get('submission_open_day', 1), rows.get('submission_close_day', 5)
+        close_day = min(rows.get('submission_close_day', 10), 10)
+        return rows.get('submission_open_day', 1), close_day
     except Exception:
-        return 1, 5
+        return 1, 10
 
 def check_submission_window():
     """
@@ -801,7 +802,7 @@ def dashboard():
 
     if user["role"].lower() == "admin":
         conn.close()
-        flash("Admins cannot access the employee dashboard.", "warning")
+        flash("Admins cannot access the user dashboard.", "warning")
         return redirect("/admin")
 
     if user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
@@ -1155,7 +1156,7 @@ def user_report():
                 last = f"{end_year}-04-30"     # April 30th of end year
 
                 cursor.execute("""
-                    SELECT w.*, u.emp_id, u.designation, u.username
+                    SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                     FROM worklog w
                     JOIN users u ON w.username=u.username
                     WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1173,7 +1174,7 @@ def user_report():
                 last = f"{year}-{month}-{calendar.monthrange(int(year), int(month))[1]}"
 
                 cursor.execute("""
-                    SELECT w.*, u.emp_id, u.designation, u.username
+                    SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                     FROM worklog w
                     JOIN users u ON w.username=u.username
                     WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1187,7 +1188,7 @@ def user_report():
                 flash("Select From and To dates.", "danger")
             else:
                 cursor.execute("""
-                    SELECT w.*, u.emp_id, u.designation, u.username
+                    SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                     FROM worklog w
                     JOIN users u ON w.username=u.username
                     WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1781,7 +1782,7 @@ def admin_report():
 
                 if selected_user == "All":
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.date BETWEEN %s AND %s
@@ -1789,7 +1790,7 @@ def admin_report():
                     """, (first, last))
                 else:
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1808,7 +1809,7 @@ def admin_report():
 
                 if selected_user == "All":
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.date BETWEEN %s AND %s
@@ -1816,7 +1817,7 @@ def admin_report():
                     """, (first, last))
                 else:
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1831,7 +1832,7 @@ def admin_report():
             else:
                 if selected_user == "All":
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.date BETWEEN %s AND %s
@@ -1839,7 +1840,7 @@ def admin_report():
                     """, (from_date, to_date))
                 else:
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1947,7 +1948,7 @@ def admin_report_ai():
 
                 if selected_user == "All":
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.date BETWEEN %s AND %s
@@ -1955,7 +1956,7 @@ def admin_report_ai():
                     """, (first, last))
                 else:
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1974,7 +1975,7 @@ def admin_report_ai():
 
                 if selected_user == "All":
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.date BETWEEN %s AND %s
@@ -1982,7 +1983,7 @@ def admin_report_ai():
                     """, (first, last))
                 else:
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1997,7 +1998,7 @@ def admin_report_ai():
             else:
                 if selected_user == "All":
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.date BETWEEN %s AND %s
@@ -2005,7 +2006,7 @@ def admin_report_ai():
                     """, (from_date, to_date))
                 else:
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -2622,6 +2623,14 @@ def iqac_monthly_report():
     can_unlock = signed_row is not None and signed_row["status"] == 'pending_upload'
     rejection_remarks = signed_row["remarks"] if (signed_row and signed_row["status"] == 'corrections_requested') else None
 
+    is_open, _, _, _, window_msg = check_submission_window()
+    is_correction_requested = signed_row is not None and signed_row["status"] == 'corrections_requested'
+    lock_reason = None
+    if not is_open and not is_correction_requested:
+        locked = True
+        can_unlock = False
+        lock_reason = "submission_window_closed"
+
     # Load existing workshop attachment filenames from DB (Cloudinary-backed)
     ws_files_map = {}
     ws_urls_map = {}
@@ -2655,6 +2664,7 @@ def iqac_monthly_report():
                                draft_data=draft_data,
                                locked=locked,
                                can_unlock=can_unlock,
+                               lock_reason=lock_reason,
                                rejection_remarks=rejection_remarks,
                                ws_files_map=ws_files_map,
                                ws_urls_map=ws_urls_map)
@@ -2665,6 +2675,7 @@ def iqac_monthly_report():
                            draft_data=draft_data,
                            locked=locked,
                            can_unlock=can_unlock,
+                           lock_reason=lock_reason,
                            rejection_remarks=rejection_remarks,
                            ws_files_map=ws_files_map,
                            ws_urls_map=ws_urls_map)
@@ -2768,6 +2779,12 @@ def iqac_report_save_draft():
         signed_row = cursor.fetchone()
         if signed_row and signed_row["status"] in ('pending_upload', 'uploaded', 'reviewed'):
             return {"success": False, "error": "This report is locked because the PDF has been generated/submitted. No modifications are allowed."}, 400
+
+        is_correction_requested = signed_row and signed_row.get("status") == "corrections_requested"
+        is_open, _, _, _, window_msg = check_submission_window()
+        if not is_open and not is_correction_requested:
+            conn.close()
+            return {"success": False, "error": "Saving draft is locked. The submission window closed after the 10th of the month."}, 400
 
         # Sort the fields on the backend first
         sorted_ws_files = None

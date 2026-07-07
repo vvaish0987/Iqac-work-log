@@ -211,8 +211,8 @@
               {% else %}
               <div class="border rounded p-3 bg-light">
                 <div class="form-check mb-2">
-                  <input class="form-check-input role-cb" type="checkbox" name="roles" value="Employee" id="roleEmployee" {% if 'Employee' in user_roles %}checked{% endif %}>
-                  <label class="form-check-label" for="roleEmployee">Employee</label>
+                  <input class="form-check-input role-cb" type="checkbox" name="roles" value="IQAC Office" id="roleEmployee" {% if 'IQAC Office' in user_roles or 'Employee' in user_roles %}checked{% endif %}>
+                  <label class="form-check-label" for="roleEmployee">IQAC Office</label>
                 </div>
                 <div class="form-check mb-2">
                   <input class="form-check-input role-cb" type="checkbox" name="roles" value="Intern" id="roleIntern" {% if 'Intern' in user_roles %}checked{% endif %}>

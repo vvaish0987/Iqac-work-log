@@ -477,11 +477,38 @@
       <div class="header-title">
         <h5>INTERNAL QUALITY ASSURANCE CELL (IQAC)</h5>
       </div>
-      <div>
-        <a href="/admin_report" class="btn btn-light btn-sm me-2"><i class="bi bi-file-earmark-text"></i> Standard
-          Report</a>
-        <a href="/admin" class="btn btn-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Back to Admin</a>
-        <button class="btn btn-outline-light btn-sm me-1" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Dark/Light Mode" type="button"><i class="bi bi-moon-fill" id="themeIcon"></i></button><a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="/admin_report" class="btn btn-light btn-sm"><i class="bi bi-file-earmark-text"></i> Standard Report</a>
+        <a href="/admin" class="btn btn-light btn-sm"><i class="bi bi-arrow-left"></i> Back to Admin</a>
+        <!-- User Dropdown Menu -->
+        <div class="dropdown">
+          <button class="btn btn-outline-light rounded-circle p-0 d-flex align-items-center justify-content-center" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="width: 38px; height: 38px;" title="User Menu">
+            <i class="bi bi-person-fill fs-5"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuDropdown">
+            <li class="dropdown-header text-dark border-bottom pb-2 mb-2">
+              <div class="fw-bold">{{ session.get('full_name', username or session.get('username', '')).title() }}</div>
+              <div class="text-muted small">{{ session.get('role', 'User') }}</div>
+            </li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0);" onclick="toggleTheme(); event.stopPropagation();">
+                <i class="bi bi-moon-fill" id="themeIcon"></i>
+                <span>Toggle Dark Mode</span>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2" href="/change_password">
+                <i class="bi bi-key-fill"></i> Change Password
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="/logout">
+                <i class="bi bi-box-arrow-right"></i> Logout
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
     </header>
 
@@ -622,7 +649,7 @@
         <div class="text-center worklog-header mb-3">
           <h5>CHRIST (Deemed to be University), Bengaluru</h5>
           <h6>Internal Quality Assurance Cell (IQAC)</h6>
-          <h6 class="fw-bold text-primary mt-3">Worklog of {{ uname.title() }}</h6>
+          <h6 class="fw-bold text-primary mt-3">Worklog of {{ entries[0]['full_name'] or uname.title() }}</h6>
         </div>
         <div class="report-summary">
           <div><strong>Report Type:</strong>
@@ -637,8 +664,7 @@
           <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
         </div>
         <div class="report-info">
-          <div><strong>Name:</strong> {{ uname.title() }} <strong>(Employee ID:</strong> {{ entries[0]['emp_id'] or '—'
-            }})</div>
+          <div><strong>Name:</strong> {{ entries[0]['full_name'] or uname.title() }} <strong>(Employee ID:</strong> {{ entries[0]['emp_id'] or '—' }})</div>
           <div><strong>No. of Entries:</strong> {{ entries|length }}</div>
         </div>
         <table class="table table-bordered table-striped">

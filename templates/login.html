@@ -152,7 +152,12 @@
         </div>
         <div class="mb-3">
           <label class="form-label">Password</label>
-          <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+          <div class="input-group">
+            <input type="password" name="password" id="passwordInput" class="form-control" placeholder="Enter your password" required>
+            <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility('passwordInput', 'togglePasswordIcon')">
+              <i class="bi bi-eye-slash" id="togglePasswordIcon"></i>
+            </button>
+          </div>
         </div>
         <button type="submit" class="btn btn-primary w-100 mb-2">Login</button>
       </form>
@@ -207,6 +212,20 @@
           setTimeout(() => alert.remove(), 1000);
         });
       }, 6000);
+
+      function togglePasswordVisibility(inputId, iconId) {
+        const passwordInput = document.getElementById(inputId);
+        const toggleIcon = document.getElementById(iconId);
+        if (passwordInput && toggleIcon) {
+          if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.className = 'bi bi-eye';
+          } else {
+            passwordInput.type = 'password';
+            toggleIcon.className = 'bi bi-eye-slash';
+          }
+        }
+      }
     </script>
   
   <script>
