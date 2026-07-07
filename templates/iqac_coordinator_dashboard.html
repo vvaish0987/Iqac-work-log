@@ -127,6 +127,21 @@
       background: #003366 !important;
       color: #fff !important;
     }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed:hover {
+      color: #475569 !important;
+      background: transparent !important;
+      border-color: transparent !important;
+      cursor: not-allowed !important;
+      opacity: 0.4 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay {
+      color: #475569 !important;
+    }
+
 
 
     html { height: 100%; background-color: var(--bg-color); }
