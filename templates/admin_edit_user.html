@@ -357,9 +357,9 @@
       const icon = document.getElementById('themeIcon');
       if (icon) {
         if (theme === 'dark') {
-          icon.className = 'bi bi-sun-fill';
+          icon.className = 'bi bi-sun-fill text-warning';
         } else {
-          icon.className = 'bi bi-moon-fill';
+          icon.className = 'bi bi-moon-fill text-primary';
         }
       }
       localStorage.setItem('theme', theme);

@@ -461,17 +461,17 @@
       })();
 
       function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        const icon = document.getElementById('themeIcon');
-        if (icon) {
-          if (theme === 'dark') {
-            icon.className = 'bi bi-sun-fill';
-          } else {
-            icon.className = 'bi bi-moon-fill';
-          }
+      document.documentElement.setAttribute('data-theme', theme);
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        if (theme === 'dark') {
+          icon.className = 'bi bi-sun-fill text-warning';
+        } else {
+          icon.className = 'bi bi-moon-fill text-primary';
         }
-        localStorage.setItem('theme', theme);
       }
+      localStorage.setItem('theme', theme);
+    }
 
       function toggleTheme() {
         const currentTheme = localStorage.getItem('theme') || 'light';
