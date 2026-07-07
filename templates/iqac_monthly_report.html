@@ -1050,28 +1050,25 @@
 
       // Section (a)
       document.querySelectorAll('#tableA-body tr').forEach((row, i) => {
-        const date = row.querySelector('input[name="meeting_date[]"]');
-        const dept = row.querySelector('input[name="dept_name[]"]');
+        const date  = row.querySelector('input[name="meeting_date[]"]');
+        const dept  = row.querySelector('input[name="dept_name[]"]');
         const parts = row.querySelector('input[name="participants[]"]');
-        const topics = row.querySelector('textarea[name="topics[]"]');
+        const topicsHidden = row.querySelector('input[name="topics[]"]');
         const action = row.querySelector('textarea[name="action_points[]"]');
-        const resp = row.querySelector('input[name="responsibility_area[]"]');
-        const fields = [date, dept, parts, topics]; // action_points is optional
-        const vals = fields.map(f => f.value.trim());
-        const respVal = resp ? resp.value.trim() : '';
-        const anyFilled = vals.some(v => v) || respVal;
+        const fields = [date, dept, parts].filter(Boolean);
+        const topicsVal = topicsHidden ? topicsHidden.value.trim() : '';
+        const anyFilled = fields.some(f => f && f.value.trim()) || topicsVal;
         if (anyFilled) {
           let rowOk = true;
           let missingFields = [];
-          if (!date.value.trim()) { highlight(date); rowOk = false; missingFields.push("Meeting Date"); }
-          if (!dept.value.trim()) { highlight(dept); rowOk = false; missingFields.push("Department Name"); }
-          if (!parts.value.trim()) { highlight(parts); rowOk = false; missingFields.push("Participants"); }
-          if (!topics.value.trim()) { highlight(topics); rowOk = false; missingFields.push("Topics Discussed"); }
-          if (!respVal) {
+          if (!date || !date.value.trim()) { if (date) highlight(date); rowOk = false; missingFields.push("Meeting Date"); }
+          if (!dept || !dept.value.trim()) { if (dept) highlight(dept); rowOk = false; missingFields.push("Department Name"); }
+          if (!parts || !parts.value.trim()) { if (parts) highlight(parts); rowOk = false; missingFields.push("Participants"); }
+          if (!topicsVal) {
             const display = row.querySelector('.resp-area-display');
             if (display) display.style.border = '2px solid red';
             rowOk = false;
-            missingFields.push("Responsibility Area");
+            missingFields.push("Topics Discussed");
           }
           if (!rowOk) errors.push(`Section (a) row ${i + 1}: please fill missing fields [${missingFields.join(', ')}].`);
         }
