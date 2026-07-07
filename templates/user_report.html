@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
       <script>
     (function() {
       const savedTheme = localStorage.getItem('theme') || 'light';
@@ -478,8 +479,29 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+
+      // Initialize Month Picker flatpickr
+      document.querySelectorAll('input[type="month"]').forEach(el => {
+        flatpickr(el, {
+          plugins: [
+            new monthSelectPlugin({
+              shorthand: true,
+              dateFormat: "Y-m",
+              altInput: true,
+              altFormat: "F Y"
+            })
+          ],
+          defaultDate: el.value || null,
+          onChange: function (selectedDates, dateStr) {
+            el.value = dateStr;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+
         const modeSelect = document.getElementById("filter_mode");
         const dateFields = document.getElementById("date_range_fields");
         const monthField = document.getElementById("month_field");

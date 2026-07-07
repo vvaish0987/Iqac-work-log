@@ -219,7 +219,9 @@
     }
 
 </style>
-  </head>
+  
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+</head>
   <body>
     <div class="container py-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -327,5 +329,30 @@
       applyTheme(savedTheme);
     })();
   </script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+<script>
+
+      // Initialize Month Picker flatpickr
+      document.querySelectorAll('input[type="month"]').forEach(el => {
+        flatpickr(el, {
+          plugins: [
+            new monthSelectPlugin({
+              shorthand: true,
+              dateFormat: "Y-m",
+              altInput: true,
+              altFormat: "F Y"
+            })
+          ],
+          defaultDate: el.value || null,
+          onChange: function (selectedDates, dateStr) {
+            el.value = dateStr;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+
+</script>
 </body>
 </html>
