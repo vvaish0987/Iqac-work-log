@@ -320,6 +320,15 @@
       color: var(--text-color) !important;
     }
 
+
+    .bg-light-blue-custom {
+      background-color: #f0f4f8 !important;
+    }
+    [data-theme="dark"] .bg-light-blue-custom {
+      background-color: var(--bg-color) !important;
+      border: 1px solid var(--border-color) !important;
+    }
+
 </style>
 </head>
 
@@ -615,8 +624,7 @@
                         </div>
                         <div class="modal-body text-start">
                           {% for f in workshop_attachments[r.reporting_month] %}
-                          <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded"
-                            style="background:#f0f4f8;">
+                          <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded bg-light-blue-custom">
                             <span class="small text-truncate me-2" style="max-width:200px;" title="{{ f.name }}">{{
                               f.name }}</span>
                             <div class="d-flex gap-2 flex-shrink-0">

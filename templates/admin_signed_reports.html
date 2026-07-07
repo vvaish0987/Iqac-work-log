@@ -248,6 +248,15 @@
       color: var(--text-color) !important;
     }
 
+
+    .bg-light-blue-custom {
+      background-color: #f0f4f8 !important;
+    }
+    [data-theme="dark"] .bg-light-blue-custom {
+      background-color: var(--bg-color) !important;
+      border: 1px solid var(--border-color) !important;
+    }
+
 </style>
   
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -324,7 +333,7 @@
           </div>
 
           <!-- Month filter -->
-          <form method="GET" action="/admin_signed_reports" class="d-flex align-items-center gap-3 mb-4 p-3 rounded" style="background-color:#f0f4f8;">
+          <form method="GET" action="/admin_signed_reports" class="d-flex align-items-center gap-3 mb-4 p-3 rounded bg-light-blue-custom">
             <label class="form-label mb-0 fw-semibold text-primary" style="white-space:nowrap;">Reporting Month:</label>
             <input type="month" name="month" class="form-control" style="max-width:200px;" value="{{ selected_month }}">
             <button type="submit" class="btn btn-primary btn-sm px-4">Filter</button>
@@ -405,7 +414,7 @@
                                 </div>
                                 <div class="modal-body">
                                   {% for f in workshop_attachments[r.username] %}
-                                  <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded" style="background:#f0f4f8;">
+                                  <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded bg-light-blue-custom">
                                     <span class="small text-truncate me-2" style="max-width:200px;" title="{{ f.name }}">{{ f.name }}</span>
                                     <div class="d-flex gap-2 flex-shrink-0">
                                       <a href="/view_attachment/{{ f.id }}" target="_blank" class="btn btn-outline-primary btn-sm">
