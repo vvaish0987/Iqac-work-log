@@ -577,16 +577,14 @@
                   [])[i] if (draft_data and i < draft_data.get('topics[]', [])|length) else '' %} {% set
                   action_points_val=draft_data.get('action_points[]', [])[i] if (draft_data and i <
                   draft_data.get('action_points[]', [])|length) else '' %} {% set
-                  responsibility_area_val=draft_data.get('responsibility_area[]', [])[i] if (draft_data and i <
-                  draft_data.get('responsibility_area[]', [])|length) else '' %} {% set
-                  selected_areas=responsibility_area_val.split(', ') if responsibility_area_val else [] %}
+                  selected_areas=topics_val.split(', ') if topics_val else [] %}
                     <tr class="row-template-a">
                       <td><input type="date" name="meeting_date[]" class="form-control form-control-sm" value="{{ meeting_date_val }}"></td>
                       <td><input type="text" name="dept_name[]" class="form-control form-control-sm" placeholder="Department / School" value="{{ dept_name_val }}"></td>
                       <td><input type="text" name="participants[]" class="form-control form-control-sm" placeholder="Names / Designations" value="{{ participants_val }}"></td>
                       <td style="min-width:200px;">
                         <div class="resp-area-wrapper">
-                          <input type="hidden" name="topics[]" class="resp-area-hidden topics-field" value="{{ responsibility_area_val }}">
+                          <input type="hidden" name="topics[]" class="resp-area-hidden topics-field" value="{{ topics_val }}">
                           <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.78rem; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
                             <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.75rem;">Select IQAC Verticals…</span>
                           </div>
