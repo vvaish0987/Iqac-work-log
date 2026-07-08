@@ -575,6 +575,19 @@
     </div>
     {% endif %}
 
+    {% if is_current_month %}
+    <div class="alert alert-info d-flex align-items-center gap-3 mb-4"
+      style="border-left: 5px solid #0dcaf0; background-color: #e2f7fd;">
+      <i class="bi bi-info-circle-fill fs-3 text-info"></i>
+      <div>
+        <strong style="font-size: 1.05rem; color:#087990;">Drafting Period</strong><br>
+        <span style="font-size: 0.92rem; color:#087990;">
+          You are currently preparing the report for <strong>{{ reporting_month_display }}</strong>. You can fill out details and save as draft, but final submission/download will open on the 1st of next month.
+        </span>
+      </div>
+    </div>
+    {% endif %}
+
     <form method="POST" action="/iqac_monthly_report/download" id="reportForm" enctype="multipart/form-data">
 
       <!-- ── Report Header ── -->
@@ -621,7 +634,7 @@
                   <th style="width:14%;">Department / School Name <span class="text-danger">*</span></th>
                   <th style="width:16%;">Participants' Details <span class="text-danger">*</span></th>
                   <th style="width:30%;">Topics Discussed <span class="text-danger">*</span></th>
-                  <th style="width:24%;">Action Points / Plan / Outcome</th>
+                  <th style="width:24%;">Action Points / Outcomes</th>
                   <th style="width:4%;"></th>
                 </tr>
               </thead>
@@ -659,7 +672,7 @@
                           </div>
                         </div>
                       </td>
-                      <td><textarea name="action_points[]" class="form-control form-control-sm" rows="2" placeholder="Action points / Outcome">{{ action_points_val }}</textarea></td>
+                      <td><textarea name="action_points[]" class="form-control form-control-sm" rows="2" placeholder="Action points / Outcomes">{{ action_points_val }}</textarea></td>
                       <td class="text-center"><button type="button" class="btn btn-danger btn-del-row" onclick="delRow(this)"><i class="bi bi-trash"></i></button></td>
                     </tr>
         {% endfor %}
@@ -838,9 +851,11 @@
 
   <!-- Download/Save Buttons -->
   <div class="d-flex gap-2 mb-4">
+    {% if not is_current_month %}
     <button type="submit" class="btn btn-primary btn-lg px-5">
       <i class="bi bi-file-earmark-pdf me-2"></i>Download as PDF
     </button>
+    {% endif %}
     <button type="button" id="saveDraftBtn" class="btn btn-warning btn-lg px-5 text-dark fw-bold">
       <i class="bi bi-journal-bookmark me-2"></i>Save as Draft
     </button>

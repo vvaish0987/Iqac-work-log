@@ -13,6 +13,12 @@ def esc(s):
         return ''
     return _html.escape(str(s))
 
+def is_coordinator(role_str):
+    if not role_str:
+        return False
+    roles = [r.strip().lower() for r in role_str.split(',')]
+    return 'school iqac coordinator' in roles or 'campus iqac coordinator' in roles
+
 def _cloudinary_upload_ws(file_obj, username, reporting_month, index):
     public_id = f"{username}/{reporting_month}/workshop_{index + 1}"
     result = cloudinary.uploader.upload(file_obj, folder="iqac/workshop_attachments", public_id=public_id, resource_type="auto", access_mode="public", overwrite=True)
@@ -99,7 +105,7 @@ def iqac_monthly_report_download():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -110,6 +116,12 @@ def iqac_monthly_report_download():
         return redirect("/iqac_monthly_report")
 
     reporting_month = request.form.get("reporting_month", "report")
+
+    today_str = datetime.now().strftime("%Y-%m")
+    if reporting_month == today_str:
+        conn.close()
+        flash("Downloading the report PDF for the current month is not allowed during the drafting phase.", "danger")
+        return redirect("/iqac_monthly_report")
 
     # Check if report is locked
     cursor.execute("""
@@ -430,7 +442,7 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
     action_pts = form_data.getlist('action_points[]')
 
     pa_headers = ['Date of\nMeeting', 'Department\nName', "Participants'\nDetails",
-                  'Topics\nDiscussed', 'Action Points\n/ Plan']
+                  'Topics\nDiscussed', 'Action Points\n/ Outcomes']
     pa_cols = [w * 0.13, w * 0.20, w * 0.22, w * 0.225, w * 0.225]
 
     pa_rows_filled = [(meet_dates[i] if i < len(meet_dates) else '').strip() or
@@ -638,7 +650,7 @@ def iqac_coordinator_report_preview():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -710,7 +722,7 @@ def iqac_coordinator_report_submit():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         return {"success": False, "error": "Access denied"}
 
@@ -1017,7 +1029,7 @@ def iqac_coordinator_report_download():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -1028,6 +1040,12 @@ def iqac_coordinator_report_download():
         return redirect("/iqac_monthly_report")
 
     reporting_month = request.form.get("reporting_month", "report")
+
+    today_str = datetime.now().strftime("%Y-%m")
+    if reporting_month == today_str:
+        conn.close()
+        flash("Downloading the report PDF for the current month is not allowed during the drafting phase.", "danger")
+        return redirect("/iqac_monthly_report")
 
     # Check if report is locked
     cursor.execute("""

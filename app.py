@@ -67,6 +67,12 @@ def inline_url(url):
         return url.replace('/upload/', '/upload/fl_attachment:false/')
     return url
 
+def is_coordinator(role_str):
+    if not role_str:
+        return False
+    roles = [r.strip().lower() for r in role_str.split(',')]
+    return 'school iqac coordinator' in roles or 'campus iqac coordinator' in roles
+
 # Make datetime and timedelta available in all templates
 app.jinja_env.globals['datetime'] = datetime
 app.jinja_env.globals['timedelta'] = timedelta
@@ -434,8 +440,8 @@ def get_submission_window():
 def check_submission_window():
     """
     Returns (is_open, reporting_month_str, open_day, close_day, window_msg).
-    The window for last month's report opens on open_day and closes on close_day
-    of the current month.
+    - Days 1-10: Evaluates the previous month's report.
+    - Days 11-31: Rolls over to the current calendar month for drafting.
     """
     import calendar
     open_day, close_day = get_submission_window()
@@ -447,37 +453,33 @@ def check_submission_window():
     effective_open_day = min(open_day, last_day)
     effective_close_day = min(close_day, last_day)
 
-    # The report being submitted is always for the previous month
-    if today.month == 1:
-        report_year, report_month = today.year - 1, 12
-    else:
-        report_year, report_month = today.year, today.month - 1
-
-    reporting_month_str = f"{report_year}-{report_month:02d}"
-    month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
-
-    is_open = effective_open_day <= current_day <= effective_close_day
-
-    if is_open:
-        close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
-        window_msg = f"Submission window for {month_name} is open until {close_date}."
-    elif current_day < effective_open_day:
-        open_date = today.replace(day=effective_open_day).strftime("%d-%m-%Y")
-        window_msg = f"Submission window for {month_name} opens on {open_date}."
-    else:
-        # Past the close day — next window is next month
-        if today.month == 12:
-            next_year = today.year + 1
-            next_month = 1
+    if current_day <= 8:
+        # Days 1 to 8: report is for the previous month
+        if today.month == 1:
+            report_year, report_month = today.year - 1, 12
         else:
-            next_year = today.year
-            next_month = today.month + 1
-
-        next_month_last_day = calendar.monthrange(next_year, next_month)[1]
-        effective_next_open_day = min(open_day, next_month_last_day)
-        next_open = datetime(next_year, next_month, effective_next_open_day).strftime("%d-%m-%Y")
-        close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
-        window_msg = (f"Submission window for {month_name} is closed. ")
+            report_year, report_month = today.year, today.month - 1
+            
+        reporting_month_str = f"{report_year}-{report_month:02d}"
+        month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
+        
+        is_open = effective_open_day <= current_day <= effective_close_day
+        
+        if is_open:
+            close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
+            window_msg = f"Submission window for {month_name} is open until {close_date}."
+        elif current_day < effective_open_day:
+            open_date = today.replace(day=effective_open_day).strftime("%d-%m-%Y")
+            window_msg = f"Submission window for {month_name} opens on {open_date}."
+        else:
+            window_msg = f"Submission window for {month_name} is closed."
+    else:
+        # Days 11 onwards: drafting window for the current month
+        report_year, report_month = today.year, today.month
+        reporting_month_str = f"{report_year}-{report_month:02d}"
+        month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
+        is_open = False
+        window_msg = f"Drafting period for {month_name}. Submission window will open next month."
 
     return is_open, reporting_month_str, open_day, close_day, window_msg
 
@@ -501,12 +503,12 @@ def init_postgres():
             id SERIAL PRIMARY KEY,
             username VARCHAR(255) UNIQUE NOT NULL,
             password VARCHAR(255) NOT NULL,
-            emp_id VARCHAR(50),
+            emp_id VARCHAR(255),
             email VARCHAR(255),
-            gender VARCHAR(20),
+            gender VARCHAR(255),
             designation VARCHAR(255),
             department VARCHAR(255),
-            role VARCHAR(50),
+            role VARCHAR(255),
             full_name VARCHAR(255)
         )
     """)
@@ -637,6 +639,16 @@ def to_ist(value):
     if not value:
         return value
     try:
+        # Determine local timezone offset in minutes
+        now_local = datetime.now()
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        diff_minutes = round((now_local - now_utc).total_seconds() / 60)
+        
+        # If the server is already in IST, do not add the offset again
+        if 320 <= diff_minutes <= 340:
+            return value.strftime('%d-%m-%Y %I:%M %p')
+            
+        # Otherwise (e.g. UTC server), add 5.5 hours
         return (value + timedelta(hours=5, minutes=30)).strftime('%d-%m-%Y %I:%M %p')
     except Exception:
         return value
@@ -806,7 +818,7 @@ def dashboard():
         flash("Admins cannot access the user dashboard.", "warning")
         return redirect("/admin")
 
-    if user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+    if is_coordinator(user["role"]):
         conn.close()
         return redirect("/iqac_dashboard")
 
@@ -893,7 +905,7 @@ def user_add_entry():
         flash("Admins cannot access this page.", "warning")
         return redirect("/admin")
 
-    if user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+    if is_coordinator(user["role"]):
         conn.close()
         flash("IQAC Coordinators do not have access to worklog entries.", "warning")
         return redirect("/iqac_dashboard")
@@ -1057,7 +1069,7 @@ def user_view_entries():
         flash("Admins cannot access this page.", "warning")
         return redirect("/admin")
 
-    if user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+    if is_coordinator(user["role"]):
         conn.close()
         flash("IQAC Coordinators do not have access to worklog entries.", "warning")
         return redirect("/iqac_dashboard")
@@ -1139,7 +1151,7 @@ def user_report():
         flash("Admins should use the Admin Report page.", "warning")
         return redirect("/admin")
 
-    if user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+    if is_coordinator(user["role"]):
         conn.close()
         flash("IQAC Coordinators do not have worklog reports.", "warning")
         return redirect("/iqac_dashboard")
@@ -1392,7 +1404,7 @@ def admin_panel():
         return redirect("/dashboard")
 
     # Fetch employees for dropdown (exclude Admin and Coordinators)
-    cursor.execute("SELECT username, emp_id FROM users WHERE role NOT IN ('Admin', 'School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     # Get stats for dashboard cards
@@ -1412,14 +1424,14 @@ def admin_panel():
     # IQAC Coordinator report submission progress — reports are for the previous month
     prev = now.replace(day=1) - timedelta(days=1)
     current_report_month = prev.strftime("%Y-%m")
-    cursor.execute("SELECT COUNT(*) as count FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')")
+    cursor.execute("SELECT COUNT(*) as count FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0")
     total_coordinators = cursor.fetchone()['count']
     cursor.execute("""
         SELECT COUNT(DISTINCT sr.username) as count FROM signed_reports sr
         JOIN users u ON sr.username = u.username
         WHERE sr.reporting_month = %s
         AND sr.status IN ('uploaded', 'reviewed')
-        AND u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        AND (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
     """, (current_report_month,))
     submitted_coordinators = cursor.fetchone()['count']
     submission_pct = int((submitted_coordinators / total_coordinators * 100) if total_coordinators > 0 else 0)
@@ -1428,7 +1440,7 @@ def admin_panel():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('uploaded', 'reviewed')
     """, (current_report_month,))
     submitted_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
@@ -1437,14 +1449,14 @@ def admin_panel():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('pending_upload', 'corrections_requested')
     """, (current_report_month,))
     draft_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     # Coordinators with nothing done
     cursor.execute("""
-        SELECT username, full_name FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        SELECT username, full_name FROM users WHERE (strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0)
         AND username NOT IN (
             SELECT DISTINCT username FROM signed_reports WHERE reporting_month = %s
         )
@@ -1467,7 +1479,7 @@ def admin_panel():
         return redirect("/admin")
 
     # Fetch coordinators for dropdown
-    cursor.execute("SELECT username, role FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
 
     # Coordinator summary form handling
@@ -1776,7 +1788,7 @@ def admin_report():
         return redirect("/dashboard")
 
     # Fetch users
-    cursor.execute("SELECT username, emp_id FROM users WHERE role NOT IN ('Admin', 'School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     logs = []
@@ -1945,7 +1957,7 @@ def admin_report_ai():
         return redirect("/dashboard")
 
     # Fetch users
-    cursor.execute("SELECT username, emp_id FROM users WHERE role NOT IN ('Admin', 'School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     logs = []
@@ -2399,7 +2411,7 @@ def send_iqac_report_reminder(is_deadline=False):
     cursor = get_cursor(conn)
 
     # Get all IQAC Coordinators
-    cursor.execute("SELECT username, email, full_name FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')")
+    cursor.execute("SELECT username, email, full_name FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0")
     coordinators = cursor.fetchall()
 
     sent_count = 0
@@ -2466,11 +2478,41 @@ This is an automated reminder. Please do not reply.
 
 def send_auto_iqac_reminders():
     """Daily auto-reminder: fires on days 3–close_day of each month for pending coordinators."""
-    today = datetime.now().date()
+    import pytz
+    ist = pytz.timezone('Asia/Kolkata')
+    today = datetime.now(ist).date()
     open_day, close_day = get_submission_window()
 
     if not (open_day <= today.day <= close_day):
         return f"Not a reminder day (today is {today.day}). Reminders fire on days {open_day}–{close_day}."
+
+    conn = get_db_connection()
+    cursor = get_cursor(conn)
+
+    try:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sent_reminders_log (
+                sent_date DATE PRIMARY KEY
+            )
+        """)
+        conn.commit()
+
+        cursor.execute("SELECT 1 FROM sent_reminders_log WHERE sent_date = %s", (today,))
+        if cursor.fetchone():
+            conn.close()
+            return f"Reminders already sent today ({today}). Skipping."
+
+        try:
+            cursor.execute("INSERT INTO sent_reminders_log (sent_date) VALUES (%s)", (today,))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            conn.close()
+            return f"Another process already sent reminders for today ({today}). Skipping."
+    except Exception as e:
+        conn.rollback()
+        print(f"Warning: Database check for sent_reminders_log failed: {e}")
+        # Proceed anyway using the current connection to ensure emails are not blocked in case of log table issues
 
     # Reporting month is always the previous month
     if today.month == 1:
@@ -2493,10 +2535,8 @@ def send_auto_iqac_reminders():
         days_left_str = f"{days_left} days left"
         subject = f"IQAC Report Reminder — {days_left} Days Left — {month_display}"
 
-    conn = get_db_connection()
-    cursor = get_cursor(conn)
     cursor.execute(
-        "SELECT username, email, full_name FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')"
+        "SELECT username, email, full_name FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0"
     )
     coordinators = cursor.fetchall()
 
@@ -2557,7 +2597,7 @@ def iqac_dashboard():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -2635,7 +2675,7 @@ def iqac_monthly_report():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -2662,13 +2702,25 @@ def iqac_monthly_report():
     can_unlock = signed_row is not None and signed_row["status"] == 'pending_upload'
     rejection_remarks = signed_row["remarks"] if (signed_row and signed_row["status"] == 'corrections_requested') else None
 
+    # Check if this is the current calendar month (drafting period)
+    today = datetime.now().date()
+    current_calendar_month_str = f"{today.year}-{today.month:02d}"
+    is_current_month = (reporting_month_str == current_calendar_month_str)
+
     is_open, _, _, _, window_msg = check_submission_window()
     is_correction_requested = signed_row is not None and signed_row["status"] == 'corrections_requested'
     lock_reason = None
-    if not is_open and not is_correction_requested:
-        locked = True
-        can_unlock = False
-        lock_reason = "submission_window_closed"
+    
+    if is_current_month:
+        # Never locked for drafting current calendar month (submission window closed does not apply)
+        locked = signed_row is not None and signed_row["status"] in ('pending_upload', 'uploaded', 'reviewed')
+        can_unlock = signed_row is not None and signed_row["status"] == 'pending_upload'
+    else:
+        # Standard locking for previous months when window is closed
+        if not is_open and not is_correction_requested:
+            locked = True
+            can_unlock = False
+            lock_reason = "submission_window_closed"
 
     # Load existing workshop attachment filenames from DB (Cloudinary-backed)
     ws_files_map = {}
@@ -2706,7 +2758,8 @@ def iqac_monthly_report():
                                lock_reason=lock_reason,
                                rejection_remarks=rejection_remarks,
                                ws_files_map=ws_files_map,
-                               ws_urls_map=ws_urls_map)
+                               ws_urls_map=ws_urls_map,
+                               is_current_month=is_current_month)
 
     return render_template("iqac_monthly_report.html", username=username, user=user,
                            reporting_month_str=reporting_month_str,
@@ -2717,7 +2770,8 @@ def iqac_monthly_report():
                            lock_reason=lock_reason,
                            rejection_remarks=rejection_remarks,
                            ws_files_map=ws_files_map,
-                           ws_urls_map=ws_urls_map)
+                           ws_urls_map=ws_urls_map,
+                           is_current_month=is_current_month)
 
 
 def sort_list_fields(form_data, report_type, ws_files=None):
@@ -2785,7 +2839,7 @@ def iqac_report_save_draft():
     try:
         cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
         user = cursor.fetchone()
-        if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+        if not user or not is_coordinator(user["role"]):
             return {"success": False, "error": "Access denied"}, 403
 
         if request.is_json:
@@ -2819,9 +2873,13 @@ def iqac_report_save_draft():
         if signed_row and signed_row["status"] in ('pending_upload', 'uploaded', 'reviewed'):
             return {"success": False, "error": "This report is locked because the PDF has been generated/submitted. No modifications are allowed."}, 400
 
+        today = datetime.now().date()
+        current_calendar_month_str = f"{today.year}-{today.month:02d}"
+        is_current_month = (reporting_month == current_calendar_month_str)
+
         is_correction_requested = signed_row and signed_row.get("status") == "corrections_requested"
         is_open, _, _, _, window_msg = check_submission_window()
-        if not is_open and not is_correction_requested:
+        if not is_current_month and not is_open and not is_correction_requested:
             conn.close()
             return {"success": False, "error": "Saving draft is locked. The submission window closed after the 10th of the month."}, 400
 
@@ -3294,7 +3352,7 @@ def iqac_upload_signed_report():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -3554,7 +3612,7 @@ def secretary_dashboard():
     prev = now.replace(day=1) - timedelta(days=1)
     current_report_month = prev.strftime("%Y-%m")
 
-    cursor.execute("SELECT COUNT(*) as count FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')")
+    cursor.execute("SELECT COUNT(*) as count FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0")
     total_coordinators = cursor.fetchone()['count']
 
     cursor.execute("""
@@ -3562,7 +3620,7 @@ def secretary_dashboard():
         JOIN users u ON sr.username = u.username
         WHERE sr.reporting_month = %s
         AND sr.status IN ('uploaded', 'reviewed')
-        AND u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        AND (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
     """, (current_report_month,))
     submitted_coordinators = cursor.fetchone()['count']
 
@@ -3571,7 +3629,7 @@ def secretary_dashboard():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('uploaded', 'reviewed')
     """, (current_report_month,))
     submitted_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
@@ -3579,13 +3637,13 @@ def secretary_dashboard():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('pending_upload', 'corrections_requested')
     """, (current_report_month,))
     draft_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     cursor.execute("""
-        SELECT username, full_name FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        SELECT username, full_name FROM users WHERE (strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0)
         AND username NOT IN (
             SELECT DISTINCT username FROM signed_reports WHERE reporting_month = %s
         )
@@ -3593,7 +3651,7 @@ def secretary_dashboard():
     pending_coordinators = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     # Coordinators list for Quick Summary dropdown
-    cursor.execute("SELECT username, role FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
 
     # Quick Summary form handling
@@ -3660,10 +3718,12 @@ def secretary_dashboard():
 
 # ------------------ SCHEDULER ------------------
 from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
 
-scheduler = BackgroundScheduler()
+ist = pytz.timezone('Asia/Kolkata')
+scheduler = BackgroundScheduler(timezone=ist)
 
-# Daily at 6 PM — sends report submission reminder to coordinators who haven't submitted (days 1–5 of month)
+# Daily at 6 PM IST — sends report submission reminder to coordinators who haven't submitted (days 1–5 of month)
 scheduler.add_job(send_auto_iqac_reminders, 'cron', hour=18, minute=0, id='iqac_report_reminder')
 
 

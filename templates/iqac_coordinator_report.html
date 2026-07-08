@@ -436,6 +436,18 @@
       </div>
       {% endif %}
 
+      {% if is_current_month %}
+      <div class="alert alert-info d-flex align-items-center gap-3 mb-4" style="border-left: 5px solid #0dcaf0; background-color: #e2f7fd;">
+        <i class="bi bi-info-circle-fill fs-3 text-info"></i>
+        <div>
+          <strong style="font-size: 1.05rem; color:#087990;">Drafting Period</strong><br>
+          <span style="font-size: 0.92rem; color:#087990;">
+            You are currently preparing the report for <strong>{{ reporting_month_display }}</strong>. You can fill out details and save as draft, but final submission will open on the 1st of next month.
+          </span>
+        </div>
+      </div>
+      {% endif %}
+
       <form method="POST" id="reportForm">
 
         <!-- ── Report Header / Particulars ── -->
@@ -731,9 +743,11 @@
           <button type="button" id="viewPdfBtn" class="btn btn-info btn-lg px-5 text-white fw-bold">
             <i class="bi bi-eye me-2"></i>View PDF
           </button>
+          {% if not is_current_month %}
           <button type="button" id="submitReportBtn" class="btn btn-primary btn-lg px-5 fw-bold">
             <i class="bi bi-send me-2"></i>Submit Report
           </button>
+          {% endif %}
           <button type="button" id="saveDraftBtn" class="btn btn-warning btn-lg px-5 text-dark fw-bold">
             <i class="bi bi-journal-bookmark me-2"></i>Save as Draft
           </button>
