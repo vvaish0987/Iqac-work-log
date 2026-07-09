@@ -3753,6 +3753,21 @@ def secretary_dashboard():
     cursor.execute("SELECT username, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
 
+    # Handle submission window settings update
+    if request.method == "POST" and "update_window" in request.form:
+        new_close = request.form.get("submission_close_day", "5").strip()
+        if new_close.isdigit():
+            close_i = int(new_close)
+            if 1 <= close_i <= 31:
+                cursor.execute("UPDATE app_settings SET value='1' WHERE key='submission_open_day'")
+                cursor.execute("UPDATE app_settings SET value=%s WHERE key='submission_close_day'", (new_close,))
+                conn.commit()
+                flash(f"Submission window updated: 1st to {close_i}th of each month.", "success")
+            else:
+                flash("Invalid close day. Must be between 1 and 31.", "danger")
+        conn.close()
+        return redirect("/secretary_dashboard")
+
     # Quick Summary form handling
     coord_reports = None
     coord_user = "All"
@@ -3798,13 +3813,14 @@ def secretary_dashboard():
 
     return render_template("secretary_dashboard.html",
         username=session["username"],
-        current_report_month=current_report_month,
+        current_report_month=datetime.strptime(current_report_month, "%Y-%m").strftime("%m-%Y"),
         total_coordinators=total_coordinators,
         submitted_coordinators=submitted_coordinators,
         submission_pct=submission_pct,
         pending_coordinators=pending_coordinators,
         submitted_coordinator_names=submitted_coordinator_names,
         draft_coordinator_names=draft_coordinator_names,
+        **dict(zip(('submission_open_day', 'submission_close_day'), get_submission_window())),
         coordinators=coordinators,
         coord_reports=coord_reports,
         coord_user=coord_user,
