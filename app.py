@@ -437,11 +437,14 @@ def get_submission_window():
     except Exception:
         return 1, 10
 
-def check_submission_window():
+def check_submission_window(username=None):
     """
     Returns (is_open, reporting_month_str, open_day, close_day, window_msg).
-    - Days 1-11: Evaluates the previous month's report.
-    - Days 12-31: Rolls over to the current calendar month for drafting.
+    - Days 1-9: Evaluates the previous month's report.
+    - Days 10-31: Rolls over to the current calendar month for drafting.
+      BUT if username is provided, close_day is extended (> 9),
+      and today is within the extended window, and they have NOT submitted the previous month's report yet:
+      we let them continue working on/submitting the previous month's report!
     """
     import calendar
     open_day, close_day = get_submission_window()
@@ -453,16 +456,39 @@ def check_submission_window():
     effective_open_day = min(open_day, last_day)
     effective_close_day = min(close_day, last_day)
 
-    if current_day <= 11:
-        # Days 1 to 11: report is for the previous month
-        if today.month == 1:
-            report_year, report_month = today.year - 1, 12
-        else:
-            report_year, report_month = today.year, today.month - 1
-            
-        reporting_month_str = f"{report_year}-{report_month:02d}"
-        month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
+    # Compute previous month info
+    if today.month == 1:
+        prev_year, prev_month = today.year - 1, 12
+    else:
+        prev_year, prev_month = today.year, today.month - 1
+    prev_month_str = f"{prev_year}-{prev_month:02d}"
+    prev_month_name = datetime(prev_year, prev_month, 1).strftime("%m-%Y")
+
+    # Check if they qualify for extended deadline for previous month
+    use_prev_month = False
+    if current_day <= 9:
+        use_prev_month = True
+    elif username and current_day <= effective_close_day:
+        # Check if they have submitted previous month's report
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM signed_reports 
+                WHERE username = %s AND reporting_month = %s AND status IN ('uploaded', 'reviewed')
+            """, (username, prev_month_str))
+            row = cursor.fetchone()
+            submitted = row['count'] > 0 if row else False
+            conn.close()
+        except Exception:
+            submitted = False
         
+        if not submitted:
+            use_prev_month = True
+
+    if use_prev_month:
+        reporting_month_str = prev_month_str
+        month_name = prev_month_name
         is_open = effective_open_day <= current_day <= effective_close_day
         
         if is_open:
@@ -474,7 +500,7 @@ def check_submission_window():
         else:
             window_msg = f"Submission window for {month_name} is closed."
     else:
-        # Days 12 onwards: drafting window for the current month
+        # Days 12 onwards (or if already submitted): drafting window for the current month
         report_year, report_month = today.year, today.month
         reporting_month_str = f"{report_year}-{report_month:02d}"
         month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
@@ -2724,7 +2750,7 @@ def iqac_dashboard():
             workshop_attachments[m].append({'id': row["id"], 'name': row["filename"], 'url': row["cloudinary_url"]})
         ws_conn.close()
 
-    is_open, reporting_month_str, open_day, close_day, window_msg = check_submission_window()
+    is_open, reporting_month_str, open_day, close_day, window_msg = check_submission_window(username)
 
     # Check if a draft exists for the active window's reporting month
     has_draft = False
@@ -2779,7 +2805,7 @@ def iqac_monthly_report():
         flash("Access denied.", "danger")
         return redirect("/login")
 
-    _, reporting_month_str, _, _, _ = check_submission_window()
+    _, reporting_month_str, _, _, _ = check_submission_window(username)
     reporting_month_display = datetime.strptime(reporting_month_str, "%Y-%m").strftime("%m-%Y")
 
     report_type = "aqar_coordinator" if is_aqar_coordinator(user) else "standard"
@@ -2806,7 +2832,7 @@ def iqac_monthly_report():
     current_calendar_month_str = f"{today.year}-{today.month:02d}"
     is_current_month = (reporting_month_str == current_calendar_month_str)
 
-    is_open, _, _, _, window_msg = check_submission_window()
+    is_open, _, _, _, window_msg = check_submission_window(username)
     is_correction_requested = signed_row is not None and signed_row["status"] == 'corrections_requested'
     lock_reason = None
     
@@ -2977,7 +3003,7 @@ def iqac_report_save_draft():
         is_current_month = (reporting_month == current_calendar_month_str)
 
         is_correction_requested = signed_row and signed_row.get("status") == "corrections_requested"
-        is_open, _, _, _, window_msg = check_submission_window()
+        is_open, _, _, _, window_msg = check_submission_window(username)
         if not is_current_month and not is_open and not is_correction_requested:
             conn.close()
             return {"success": False, "error": "Saving draft is locked. The submission window closed after the 10th of the month."}, 400
@@ -3473,7 +3499,7 @@ def iqac_upload_signed_report():
     is_correction_requested = report_row and report_row.get("status") == "corrections_requested"
 
     # Enforce submission window only if NOT a requested correction
-    is_open, _, _, _, window_msg = check_submission_window()
+    is_open, _, _, _, window_msg = check_submission_window(username)
     if not is_open and not is_correction_requested:
         conn.close()
         flash("Upload window is currently closed. " + window_msg, "danger")

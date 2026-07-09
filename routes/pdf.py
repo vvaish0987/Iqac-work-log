@@ -595,7 +595,7 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
 # AQAR-ALIGNED IQAC COORDINATOR REPORT
 # ============================================================================
 
-def _check_submission_window():
+def _check_submission_window(username=None):
     """Returns (is_open, reporting_month_str, open_day, close_day, window_msg)."""
     import calendar
     try:
@@ -615,25 +615,56 @@ def _check_submission_window():
     effective_open_day = min(open_day, last_day)
     effective_close_day = min(close_day, last_day)
 
+    # Compute previous month info
     if today.month == 1:
-        report_year, report_month = today.year - 1, 12
+        prev_year, prev_month = today.year - 1, 12
     else:
-        report_year, report_month = today.year, today.month - 1
+        prev_year, prev_month = today.year, today.month - 1
+    prev_month_str = f"{prev_year}-{prev_month:02d}"
+    prev_month_name = datetime(prev_year, prev_month, 1).strftime("%m-%Y")
 
-    reporting_month_str = f"{report_year}-{report_month:02d}"
-    month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
+    # Check if they qualify for extended deadline for previous month
+    use_prev_month = False
+    if current_day <= 9:
+        use_prev_month = True
+    elif username and current_day <= effective_close_day:
+        # Check if they have submitted previous month's report
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM signed_reports 
+                WHERE username = %s AND reporting_month = %s AND status IN ('uploaded', 'reviewed')
+            """, (username, prev_month_str))
+            row = cursor.fetchone()
+            submitted = row['count'] > 0 if row else False
+            conn.close()
+        except Exception:
+            submitted = False
+        
+        if not submitted:
+            use_prev_month = True
 
-    is_open = effective_open_day <= current_day <= effective_close_day
-
-    if is_open:
-        close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
-        window_msg = f"Submission window for {month_name} is open until {close_date}."
-    elif current_day < effective_open_day:
-        open_date = today.replace(day=effective_open_day).strftime("%d-%m-%Y")
-        window_msg = f"Submission window for {month_name} opens on {open_date}."
+    if use_prev_month:
+        reporting_month_str = prev_month_str
+        month_name = prev_month_name
+        is_open = effective_open_day <= current_day <= effective_close_day
+        
+        if is_open:
+            close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
+            window_msg = f"Submission window for {month_name} is open until {close_date}."
+        elif current_day < effective_open_day:
+            open_date = today.replace(day=effective_open_day).strftime("%d-%m-%Y")
+            window_msg = f"Submission window for {month_name} opens on {open_date}."
+        else:
+            window_msg = f"Submission window for {month_name} is closed."
     else:
-        open_date = today.replace(day=effective_open_day).strftime("%d-%m-%Y")
-        window_msg = f"Submission window for {month_name} is closed (was open {open_date} to {today.replace(day=effective_close_day).strftime('%d-%m-%Y')})."
+        # Days 10 onwards (or if already submitted): drafting window for the current month
+        report_year, report_month = today.year, today.month
+        reporting_month_str = f"{report_year}-{report_month:02d}"
+        month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
+        is_open = False
+        window_msg = f"Drafting period for {month_name}. Submission window will open next month."
 
     return is_open, reporting_month_str, open_day, close_day, window_msg
 
@@ -744,7 +775,7 @@ def iqac_coordinator_report_submit():
     is_correction_requested = report_row and report_row.get("status") == "corrections_requested"
 
     # Enforce submission window only if NOT a requested correction
-    is_open, _, _, _, window_msg = _check_submission_window()
+    is_open, _, _, _, window_msg = _check_submission_window(username)
     if not is_open and not is_correction_requested:
         conn.close()
         return {"success": False, "error": "Submission window is closed. " + window_msg}
@@ -993,12 +1024,12 @@ def iqac_coordinator_report_submit():
                 print(f"Failed to notify {r['email']}: {e}")
 
         # 2. Notify Director
-        director_emails = ["director.iqac@christuniversity.in", "darshanheble@gmail.com", "darshanheble@gmai.com"]
-        director_subject = f"Monthly Work Done Report Submitted – {coordinator_name} ({reporting_month_display})"
+        director_emails = ["director.iqac@christuniversity.in", "arnavnarula25@gmail.com"]
+        director_subject = f"Monthly Report Submitted – {coordinator_name} ({reporting_month_display})"
         director_body = (
             f"Dear Director,\n\n"
             f"IQAC Coordinator {coordinator_name} ({user.get('designation', '')}, {user.get('department', '')}) "
-            f"has submitted their Monthly Work Done Report (AQAR Aligned) for {reporting_month_display}.\n\n"
+            f"has submitted their Monthly Report (AQAR Aligned) for {reporting_month_display}.\n\n"
             f"Please log in to review the report.\n\n"
             f"Regards,\n"
             f"Internal Quality Assurance Cell (IQAC)\n"
@@ -1247,7 +1278,7 @@ def _generate_aqar_coordinator_pdf(form_data, aqar_names=None):
 
     # ── Title ──
     elements.append(Paragraph('INTERNAL QUALITY ASSURANCE CELL (IQAC)', make_style('aqar_h1', size=13, bold=True, align=TA_CENTER, space_after=4)))
-    elements.append(Paragraph('Monthly Work Done Report', make_style('aqar_h2', size=10, bold=True, align=TA_CENTER, space_after=4)))
+    elements.append(Paragraph('Monthly Report', make_style('aqar_h2', size=10, bold=True, align=TA_CENTER, space_after=4)))
     elements.append(Paragraph('(AQAR | NAAC | Rankings/Awards | Quality Assurance Activities)', make_style('aqar_h3', size=8, align=TA_CENTER, space_after=4, italic=True)))
 
     elements.append(HRFlowable(width=usable_width, thickness=2, color=accent, spaceAfter=10))

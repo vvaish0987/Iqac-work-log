@@ -484,6 +484,13 @@
                     <td style="position: relative;">
                       {% set resp_areas_val = draft_data.get('responsibility_areas', '') if (draft_data and draft_data.get('responsibility_areas') is not none) else '' %}
                       {% set selected_resp_areas = resp_areas_val.split(', ') if resp_areas_val else [] %}
+                      {% set custom_others_val = "" %}
+                      {% for area in selected_resp_areas %}
+                        {% if area not in ['AQAR', 'NAAC', 'Rankings/Awards', 'Audits', 'Documentation', 'Others'] %}
+                          {% set custom_others_val = area %}
+                        {% endif %}
+                      {% endfor %}
+                      {% set has_custom_others = custom_others_val != "" %}
                       <div class="resp-area-wrapper">
                         <input type="hidden" name="responsibility_areas" class="resp-area-hidden" value="{{ resp_areas_val }}">
                         <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.85rem;  display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
@@ -495,7 +502,8 @@
                           <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Rankings/Awards" {% if 'Rankings/Awards' in selected_resp_areas %}checked{% endif %}> Rankings/Awards</label>
                           <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Audits" {% if 'Audits' in selected_resp_areas %}checked{% endif %}> Audits</label>
                           <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Documentation" {% if 'Documentation' in selected_resp_areas %}checked{% endif %}> Documentation</label>
-                          <label class="d-flex align-items-start gap-1 mb-0"><input type="checkbox" class="resp-cb mt-1" value="Others" {% if 'Others' in selected_resp_areas %}checked{% endif %}> Others</label>
+                          <label class="d-flex align-items-start gap-1 mb-0"><input type="checkbox" id="resp-others-cb" class="resp-cb mt-1" value="Others" {% if 'Others' in selected_resp_areas or has_custom_others %}checked{% endif %}> Others</label>
+                          <input type="text" id="resp-others-text" class="form-control form-control-sm mt-1" placeholder="Please specify" style="{% if has_custom_others %}display:block;{% else %}display:none;{% endif %} font-size:0.8rem;" value="{{ custom_others_val }}">
                         </div>
                       </div>
                     </td>
@@ -771,16 +779,29 @@
     <script>
       function syncRespArea(wrapper) {
         const checked = Array.from(wrapper.querySelectorAll('.resp-cb:checked')).map(c => c.value);
+        const othersText = wrapper.querySelector('#resp-others-text');
+        
+        const finalValues = [];
+        checked.forEach(val => {
+          if (val === 'Others') {
+            if (othersText && othersText.value.trim()) {
+              finalValues.push(othersText.value.trim());
+            }
+          } else {
+            finalValues.push(val);
+          }
+        });
+
         const hidden = wrapper.querySelector('.resp-area-hidden');
-        if (hidden) hidden.value = checked.join(', ');
+        if (hidden) hidden.value = finalValues.join(', ');
         const display = wrapper.querySelector('.resp-area-display');
         if (!display) return;
         display.innerHTML = '';
-        if (checked.length === 0) {
+        if (finalValues.length === 0) {
           display.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.85rem;">Click to select…</span>';
         } else {
           display.classList.remove('is-invalid-custom');
-          checked.forEach(val => {
+          finalValues.forEach(val => {
             const badge = document.createElement('span');
             badge.className = 'badge rounded-pill text-bg-primary me-1 mb-1';
             badge.style.cssText = 'font-size:0.75rem; font-weight:500; white-space:normal; text-align:left;';
@@ -841,9 +862,25 @@
 
       // ── Checkbox change: sync display + hidden ──
       document.addEventListener('change', function(e) {
-        if (!e.target.classList.contains('resp-cb')) return;
-        const wrapper = e.target.closest('.resp-area-wrapper');
-        if (wrapper) syncRespArea(wrapper);
+        if (e.target.classList.contains('resp-cb')) {
+          const wrapper = e.target.closest('.resp-area-wrapper');
+          if (e.target.id === 'resp-others-cb') {
+            const othersText = wrapper.querySelector('#resp-others-text');
+            if (othersText) {
+              othersText.style.display = e.target.checked ? 'block' : 'none';
+              if (!e.target.checked) othersText.value = '';
+            }
+          }
+          if (wrapper) syncRespArea(wrapper);
+        }
+      });
+
+      // ── Others text input keyup/change: sync display + hidden ──
+      document.addEventListener('input', function(e) {
+        if (e.target.id === 'resp-others-text') {
+          const wrapper = e.target.closest('.resp-area-wrapper');
+          if (wrapper) syncRespArea(wrapper);
+        }
       });
 
       // ── "Others" area toggle ──
