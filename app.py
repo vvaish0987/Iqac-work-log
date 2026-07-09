@@ -440,8 +440,8 @@ def get_submission_window():
 def check_submission_window():
     """
     Returns (is_open, reporting_month_str, open_day, close_day, window_msg).
-    - Days 1-10: Evaluates the previous month's report.
-    - Days 11-31: Rolls over to the current calendar month for drafting.
+    - Days 1-11: Evaluates the previous month's report.
+    - Days 12-31: Rolls over to the current calendar month for drafting.
     """
     import calendar
     open_day, close_day = get_submission_window()
@@ -453,8 +453,8 @@ def check_submission_window():
     effective_open_day = min(open_day, last_day)
     effective_close_day = min(close_day, last_day)
 
-    if current_day <= 8:
-        # Days 1 to 8: report is for the previous month
+    if current_day <= 11:
+        # Days 1 to 11: report is for the previous month
         if today.month == 1:
             report_year, report_month = today.year - 1, 12
         else:
@@ -474,7 +474,7 @@ def check_submission_window():
         else:
             window_msg = f"Submission window for {month_name} is closed."
     else:
-        # Days 11 onwards: drafting window for the current month
+        # Days 12 onwards: drafting window for the current month
         report_year, report_month = today.year, today.month
         reporting_month_str = f"{report_year}-{report_month:02d}"
         month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
@@ -1791,7 +1791,20 @@ def admin_report():
     cursor.execute("SELECT username, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
+    # Fetch coordinators
+    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'Coordinator') > 0 ORDER BY username")
+    coordinators = cursor.fetchall()
+
     logs = []
+    submitted_reports = None
+    selected_coord = None
+    filter_mode_coord = "month"
+    selected_month_coord = None
+    from_date_coord = None
+    to_date_coord = None
+    selected_academic_year_coord = None
+    form_type = "worklog"
+
     selected_user = None
     filter_mode = "date"
     from_date = None
@@ -1801,94 +1814,171 @@ def admin_report():
     category_filter = "All"
 
     if request.method == "POST":
-        selected_user = request.form.get("user")
-        filter_mode = request.form.get("filter_mode")
-        from_date = request.form.get("from_date")
-        to_date = request.form.get("to_date")
-        selected_month = request.form.get("month")
-        selected_academic_year = request.form.get("academic_year")
-        category_filter = request.form.get("category_filter", "All")
+        form_type = request.form.get("form_type", "worklog")
+        if form_type == "coordinator":
+            selected_coord = request.form.get("coordinator")
+            filter_mode_coord = request.form.get("filter_mode_coord", "month")
+            selected_month_coord = request.form.get("month")
+            from_date_coord = request.form.get("from_date")
+            to_date_coord = request.form.get("to_date")
+            selected_academic_year_coord = request.form.get("academic_year")
 
-        if not selected_user:
-            flash("Please select a user.", "danger")
+            query_ok = False
+            query = """
+                SELECT sr.*, u.designation, u.department, u.full_name, u.role as user_role
+                FROM signed_reports sr
+                JOIN users u ON sr.username = u.username
+                WHERE sr.status != 'pending_upload'
+            """
+            params = []
 
-        elif filter_mode == "academic_year":
-            if not selected_academic_year:
-                flash("Please select an academic year.", "danger")
-            else:
-                # Academic year format: "2025-2026" means May 2025 to April 2026
-                start_year, end_year = selected_academic_year.split("-")
-                first = f"{start_year}-05-01"  # May 1st of start year
-                last = f"{end_year}-04-30"     # April 30th of end year
-
-                if selected_user == "All":
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.date BETWEEN %s AND %s
-                        ORDER BY w.username, w.date
-                    """, (first, last))
+            if filter_mode_coord == "month":
+                if not selected_month_coord:
+                    flash("Please select a month.", "danger")
                 else:
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.username=%s AND w.date BETWEEN %s AND %s
-                        ORDER BY w.date
-                    """, (selected_user, first, last))
-
-                logs = cursor.fetchall()
-
-        elif filter_mode == "month":
-            if not selected_month:
-                flash("Please select a month.", "danger")
-            else:
-                year, month = selected_month.split("-")
-                first = f"{year}-{month}-01"
-                last = f"{year}-{month}-{calendar.monthrange(int(year), int(month))[1]}"
-
-                if selected_user == "All":
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.date BETWEEN %s AND %s
-                        ORDER BY w.username, w.date
-                    """, (first, last))
+                    query += " AND sr.reporting_month = %s"
+                    params.append(selected_month_coord)
+                    query_ok = True
+            elif filter_mode_coord == "academic_year":
+                if not selected_academic_year_coord:
+                    flash("Please select an academic year.", "danger")
                 else:
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.username=%s AND w.date BETWEEN %s AND %s
-                        ORDER BY w.date
-                    """, (selected_user, first, last))
-
-                logs = cursor.fetchall()
-
-        elif filter_mode == "date":
-            if not from_date or not to_date:
-                flash("Select From and To dates.", "danger")
-            else:
-                if selected_user == "All":
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.date BETWEEN %s AND %s
-                        ORDER BY w.username, w.date
-                    """, (from_date, to_date))
+                    start_year, end_year = selected_academic_year_coord.split("-")
+                    start_month = f"{start_year}-05"
+                    end_month = f"{end_year}-04"
+                    query += " AND sr.reporting_month BETWEEN %s AND %s"
+                    params.extend([start_month, end_month])
+                    query_ok = True
+            elif filter_mode_coord == "date":
+                if not from_date_coord or not to_date_coord:
+                    flash("Select From and To dates.", "danger")
                 else:
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.username=%s AND w.date BETWEEN %s AND %s
-                        ORDER BY w.date
-                    """, (selected_user, from_date, to_date))
+                    # Convert date format YYYY-MM-DD to YYYY-MM
+                    start_month = from_date_coord[:7]
+                    end_month = to_date_coord[:7]
+                    query += " AND sr.reporting_month BETWEEN %s AND %s"
+                    params.extend([start_month, end_month])
+                    query_ok = True
 
-                logs = cursor.fetchall()
+            if query_ok:
+                if selected_coord != "All":
+                    query += " AND sr.username = %s"
+                    params.append(selected_coord)
+                query += " ORDER BY u.username, sr.reporting_month"
+                
+                cursor.execute(query, tuple(params))
+                reports_rows = cursor.fetchall()
+                
+                submitted_reports = []
+                for r in reports_rows:
+                    r_dict = dict(r)
+                    is_aqar = is_aqar_coordinator(r_dict)
+                    r_dict['report_type'] = "aqar_coordinator" if is_aqar else "standard"
+                    
+                    cursor.execute("""
+                        SELECT form_data FROM report_drafts 
+                        WHERE username=%s AND report_type=%s AND reporting_month=%s
+                    """, (r_dict["username"], r_dict['report_type'], r_dict['reporting_month']))
+                    draft_row = cursor.fetchone()
+                    
+                    draft_data = None
+                    if draft_row:
+                        try:
+                            draft_data = json.loads(draft_row["form_data"])
+                        except Exception:
+                            pass
+                    
+                    r_dict['draft_data'] = draft_data
+                    submitted_reports.append(r_dict)
+        else:
+            selected_user = request.form.get("user")
+            filter_mode = request.form.get("filter_mode")
+            from_date = request.form.get("from_date")
+            to_date = request.form.get("to_date")
+            selected_month = request.form.get("month")
+            selected_academic_year = request.form.get("academic_year")
+            category_filter = request.form.get("category_filter", "All")
+
+            if not selected_user:
+                flash("Please select a user.", "danger")
+
+            elif filter_mode == "academic_year":
+                if not selected_academic_year:
+                    flash("Please select an academic year.", "danger")
+                else:
+                    # Academic year format: "2025-2026" means May 2025 to April 2026
+                    start_year, end_year = selected_academic_year.split("-")
+                    first = f"{start_year}-05-01"  # May 1st of start year
+                    last = f"{end_year}-04-30"     # April 30th of end year
+
+                    if selected_user == "All":
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.date BETWEEN %s AND %s
+                            ORDER BY w.username, w.date
+                        """, (first, last))
+                    else:
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.username=%s AND w.date BETWEEN %s AND %s
+                            ORDER BY w.date
+                        """, (selected_user, first, last))
+
+                    logs = cursor.fetchall()
+
+            elif filter_mode == "month":
+                if not selected_month:
+                    flash("Please select a month.", "danger")
+                else:
+                    year, month = selected_month.split("-")
+                    first = f"{year}-{month}-01"
+                    last = f"{year}-{month}-{calendar.monthrange(int(year), int(month))[1]}"
+
+                    if selected_user == "All":
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.date BETWEEN %s AND %s
+                            ORDER BY w.username, w.date
+                        """, (first, last))
+                    else:
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.username=%s AND w.date BETWEEN %s AND %s
+                            ORDER BY w.date
+                        """, (selected_user, first, last))
+
+                    logs = cursor.fetchall()
+
+            elif filter_mode == "date":
+                if not from_date or not to_date:
+                    flash("Select From and To dates.", "danger")
+                else:
+                    if selected_user == "All":
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.date BETWEEN %s AND %s
+                            ORDER BY w.username, w.date
+                        """, (from_date, to_date))
+                    else:
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.username=%s AND w.date BETWEEN %s AND %s
+                            ORDER BY w.date
+                        """, (selected_user, from_date, to_date))
+
+                    logs = cursor.fetchall()
 
     # Process logs to parse JSON tasks and filter by category
     processed_logs = []
@@ -1927,6 +2017,15 @@ def admin_report():
         "admin_report.html",
         users=users,
         logs=processed_logs,
+        coordinators=coordinators,
+        submitted_reports=submitted_reports,
+        selected_coord=selected_coord,
+        selected_month_coord=selected_month_coord,
+        filter_mode_coord=filter_mode_coord,
+        from_date_coord=from_date_coord,
+        to_date_coord=to_date_coord,
+        selected_academic_year_coord=selected_academic_year_coord,
+        form_type=form_type,
         selected_user=selected_user,
         from_date=from_date,
         to_date=to_date,

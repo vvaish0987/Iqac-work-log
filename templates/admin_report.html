@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin Report - IQAC Worklog</title>
+    <title>{% if form_type == 'coordinator' %}IQAC Monthly Report{% else %}Admin Report - IQAC Worklog{% endif %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -272,20 +272,60 @@
       .print-header-logo img { height:50px; width:auto; }
       .print-header-title { flex:1; text-align:center; font-size:18px; font-weight:bold; letter-spacing:0.5px; color:#fff !important; }
       @media print {
-        .print-header { display:block !important; background-color:#003366 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-        .print-header-content { display:flex; align-items:center; justify-content:space-between; }
-        .print-header-logo { display:flex; align-items:center; }
-        .print-header-title { color:#fff !important; }
-        .no-print { display:none !important; }
-        body { background:white; font-size:11px; margin:0; padding:0; display:block !important; }
+        /* Force light mode colors for printing */
+        *, *::before, *::after {
+          color: #000 !important;
+          background-color: transparent !important;
+          background-image: none !important;
+          box-shadow: none !important;
+          text-shadow: none !important;
+        }
+        .print-header { 
+          display:block !important; 
+          background-color:#003366 !important; 
+          background:#003366 !important; 
+          -webkit-print-color-adjust:exact; 
+          print-color-adjust:exact; 
+        }
+        .print-header * {
+          color: #fff !important;
+        }
+        .print-header-logo, .print-header-logo img {
+          background-color: #fff !important;
+          background: #fff !important;
+        }
+        .section-header, .info-label, .table th {
+          background-color: #BDD7EE !important;
+          color: #1F497D !important;
+          -webkit-print-color-adjust:exact;
+          print-color-adjust:exact;
+        }
+        .section-subheader {
+          color: #1F497D !important;
+        }
+        html, body {
+          height: auto !important;
+          min-height: auto !important;
+          overflow: visible !important;
+          background: white !important;
+          font-size: 11px;
+          margin: 0;
+          padding: 0;
+          display: block !important;
+        }
         .main-container { display:block !important; }
         .container { max-width:100%; padding:0; margin:0; }
-        .card { box-shadow:none; border:none; padding:0; margin:0 0 0.25rem 0; }
+        .card, .card-body { 
+          display: block !important; 
+          box-shadow: none !important; 
+          border: none !important; 
+          padding: 0 !important; 
+          margin: 0 0 0.5rem 0 !important; 
+        }
         .worklog-header { display:none; }
         table { page-break-inside:auto; width:100%; border-collapse:collapse; }
         tr { page-break-inside:avoid; page-break-after:auto; break-inside:avoid; }
-        table th, table td { border:1px solid #000; padding:6px 8px; text-align:left; }
-        table th { background:none; color:#000; font-weight:bold; }
+        table th, table td { border:1px solid #000 !important; padding:6px 8px; text-align:left; }
         .report-info, .report-summary, .ai-summary { background:none; border:none; padding:0; margin:0.5rem 0; }
         .worklog-header { text-align:center; }
         .worklog-header h5, .worklog-header h6 { margin:0.25rem 0; }
@@ -295,6 +335,7 @@
         .page-break { page-break-before:auto; break-before:auto; }
         .page-break + .page-break { page-break-before:always; break-before:page; }
         footer { display: none !important; }
+        .no-print, .no-print * { display: none !important; }
       }
     
     .card {
@@ -382,6 +423,83 @@
       color: var(--text-color) !important;
     }
 
+    .report-card {
+      padding: 2rem !important;
+    }
+    .section-header {
+      background-color: #BDD7EE;
+      color: #1F497D;
+      font-weight: bold;
+      padding: 6px 12px;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid #AAAAAA;
+      border-radius: 4px;
+      font-size: 1rem;
+      text-align: left;
+    }
+    .section-subheader {
+      font-weight: bold;
+      color: #1F497D;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+      text-align: left;
+    }
+    .table th {
+      background-color: #BDD7EE !important;
+      color: #1F497D !important;
+      font-weight: bold;
+      border: 1px solid #AAAAAA !important;
+      font-size: 0.85rem;
+    }
+    .table td {
+      border: 1px solid #CCCCCC !important;
+      font-size: 0.85rem;
+      vertical-align: top;
+      text-align: left;
+    }
+    .info-table {
+      width: 100%;
+      margin-bottom: 1rem;
+      border: 1px solid #AAAAAA;
+    }
+    .info-table td {
+      padding: 8px;
+      border: 1px solid #CCCCCC;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+    .info-label {
+      background-color: #BDD7EE;
+      font-weight: bold;
+      color: #1F497D;
+      width: 25%;
+    }
+    .info-value {
+      width: 25%;
+    }
+    .text-area-display {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 8px 12px;
+      white-space: pre-line;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    [data-theme="dark"] .section-header, 
+    [data-theme="dark"] .section-subheader,
+    [data-theme="dark"] .info-label,
+    [data-theme="dark"] .table th {
+      color: #0f172a !important;
+    }
+    [data-theme="dark"] .text-area-display {
+      background-color: #1e293b;
+      border-color: #334155;
+      color: #f1f5f9;
+    }
 </style>
   </head>
   <body>
@@ -456,6 +574,7 @@
         <div class="card-body">
           <h6 class="mb-3 text-primary">Generate Worklog Report</h6>
           <form method="post" action="/admin_report" class="row g-3 align-items-end">
+            <input type="hidden" name="form_type" value="worklog">
             <div class="col-md-3">
               <label class="form-label">User</label>
               <select name="user" class="form-select" required>
@@ -526,23 +645,273 @@
         </div>
       </div>
 
-      {% if logs and logs|length > 0 %}
-        {% if selected_user == 'All' %}
-          {% set grouped_logs = {} %}
-          {% for log in logs %}
-            {% set uname = log['username'] %}
-            {% if uname not in grouped_logs %}
-              {% set _ = grouped_logs.update({uname: []}) %}
-            {% endif %}
-            {% set _ = grouped_logs[uname].append(log) %}
-          {% endfor %}
-          {% for uname, entries in grouped_logs.items() %}
-            <div class="card mb-5 page-break">
+      <!-- Generate Coordinator Report Card -->
+      <div class="card mb-4 no-print shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-3 text-primary fw-bold">Generate Coordinator Report</h6>
+          <form method="post" action="/admin_report" class="row g-3 align-items-end">
+            <input type="hidden" name="form_type" value="coordinator">
+            <div class="col-md-3">
+              <label class="form-label">Coordinator</label>
+              <select name="coordinator" class="form-select" required>
+                <option value="All" {% if selected_coord == 'All' or not selected_coord %}selected{% endif %}>All Coordinators</option>
+                {% for c in coordinators %}
+                  <option value="{{ c['username'] }}" {% if selected_coord == c['username'] %}selected{% endif %}>
+                    {{ c['full_name'] or c['username'].title() }} ({{ c['role'] }})
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Report Type</label>
+              <select name="filter_mode_coord" id="filter_mode_coord" class="form-select">
+                <option value="date" {% if filter_mode_coord == 'date' %}selected{% endif %}>Custom Date Range</option>
+                <option value="month" {% if filter_mode_coord == 'month' or not filter_mode_coord %}selected{% endif %}>Month-wise</option>
+                <option value="academic_year" {% if filter_mode_coord == 'academic_year' %}selected{% endif %}>Academic Year (May-Apr)</option>
+              </select>
+            </div>
+            <div id="date_range_fields_coord" class="col-md-4 d-flex gap-2" style="{% if filter_mode_coord == 'date' %}display:flex !important;{% else %}display:none !important;{% endif %}">
+              <div class="flex-fill">
+                <label class="form-label">From Date</label>
+                <input type="date" name="from_date" id="from_date_coord" class="form-control" placeholder="MM/DD/YYYY" value="{{ from_date_coord or '' }}">
+              </div>
+              <div class="flex-fill">
+                <label class="form-label">To Date</label>
+                <input type="date" name="to_date" id="to_date_coord" class="form-control" placeholder="MM/DD/YYYY" value="{{ to_date_coord or '' }}">
+              </div>
+            </div>
+            <div id="month_field_coord" class="col-md-3" style="{% if filter_mode_coord == 'month' or not filter_mode_coord %}display:block !important;{% else %}display:none !important;{% endif %}">
+              <label class="form-label">Select Month & Year</label>
+              <input type="month" name="month" id="month_input_coord" class="form-control" value="{{ selected_month_coord or '' }}" placeholder="YYYY-MM">
+            </div>
+            <div id="academic_year_field_coord" class="col-md-3" style="{% if filter_mode_coord == 'academic_year' %}display:block !important;{% else %}display:none !important;{% endif %}">
+              <label class="form-label">Select Academic Year</label>
+              <select name="academic_year" id="academic_year_input_coord" class="form-select">
+                <option value="" disabled {% if not selected_academic_year_coord %}selected{% endif %}>This Academic Year</option>
+                {% set current_year = datetime.now().year %}
+                {% set current_month = datetime.now().month %}
+                {% set start_year = current_year if current_month >= 5 else current_year - 1 %}
+                {% for i in range(5) %}
+                  {% set year = start_year - i %}
+                  <option value="{{ year }}-{{ year + 1 }}" {% if selected_academic_year_coord == (year|string ~ '-' ~ (year+1)|string) %}selected{% endif %}>
+                    {{ year }}-{{ year + 1 }} (May {{ year }} - Apr {{ year + 1 }})
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-12 d-flex gap-2 mt-3">
+              <button class="btn btn-primary px-4" type="submit">Generate</button>
+              <button type="button" class="btn btn-outline-secondary px-4" onclick="printAndRedirect()">Print</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% if form_type == 'coordinator' %}
+        {% if submitted_reports is not none %}
+          {% if submitted_reports|length > 0 %}
+            {% for r in submitted_reports %}
+              <div class="card mb-5 page-break report-card">
+                <div class="card-body">
+                  <div class="text-center mb-4">
+                    <h5 class="fw-bold" style="color: #1F497D;">CHRIST (Deemed to be University), Bengaluru</h5>
+                    <h6 class="fw-semibold text-secondary">Internal Quality Assurance Cell (IQAC)</h6>
+                    <h6 class="fw-bold text-primary mt-2">
+                      {% if r.report_type == 'aqar_coordinator' %}
+                        AQAR-Aligned IQAC Coordinator Report
+                      {% else %}
+                        IQAC Coordinator Monthly Report
+                      {% endif %}
+                    </h6>
+                  </div>
+
+                  <!-- Metadata Info Block -->
+                  <table class="info-table">
+                    <tr>
+                      <td class="info-label">Name of Coordinator:</td>
+                      <td class="info-value">{{ r.full_name or r.username.title() }}</td>
+                      <td class="info-label">Reporting Month:</td>
+                      <td class="info-value">{{ r.reporting_month }}</td>
+                    </tr>
+                    <tr>
+                      <td class="info-label">Designation:</td>
+                      <td class="info-value">{{ r.designation or '—' }}</td>
+                      <td class="info-label">Department:</td>
+                      <td class="info-value">{{ r.department or '—' }}</td>
+                    </tr>
+                  </table>
+
+                  {% set data = r.draft_data %}
+                  {% if data %}
+                    <!-- Section I: Quality Assurance Initiatives -->
+                    <div class="section-header">Section I: Quality Assurance Initiatives</div>
+                    
+                    <div class="section-subheader">(a) Meetings / Activities conducted relating to IQAC Coordinator's responsibility areas</div>
+                    {% set meeting_dates = data.get('meeting_date[]', []) %}
+                    {% if meeting_dates and meeting_dates|length > 0 and meeting_dates[0] != '' %}
+                      <table class="table table-bordered table-striped">
+                        <thead>
+                          <tr>
+                            <th style="width:12%;">Date of Meeting</th>
+                            <th style="width:18%;">Department / School Name</th>
+                            <th style="width:18%;">Participants' Details</th>
+                            <th style="width:28%;">Topics Discussed</th>
+                            <th style="width:24%;">Action Points / Outcomes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for i in range(meeting_dates|length) %}
+                            {% if meeting_dates[i] != '' or data.get('dept_name[]', [])[i] != '' %}
+                              <tr>
+                                <td>{{ meeting_dates[i] }}</td>
+                                <td>{{ data.get('dept_name[]', [])[i] or '—' }}</td>
+                                <td>{{ data.get('participants[]', [])[i] or '—' }}</td>
+                                <td>{{ data.get('topics[]', [])[i] or '—' }}</td>
+                                <td>{{ data.get('action_points[]', [])[i] or '—' }}</td>
+                              </tr>
+                            {% endif %}
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    {% else %}
+                      <p class="fst-italic text-muted ms-3">No meetings reported.</p>
+                    {% endif %}
+
+                    <div class="section-subheader">(b) Workshops / Seminars / Training Programs organised by the IQAC coordinator (If any)</div>
+                    {% set ws_dates = data.get('ws_date[]', []) %}
+                    {% if ws_dates and ws_dates|length > 0 and ws_dates[0] != '' %}
+                      <table class="table table-bordered table-striped">
+                        <thead>
+                          <tr>
+                            <th style="width:12%;">Date</th>
+                            <th style="width:14%;">Venue</th>
+                            <th style="width:22%;">Title of the Program</th>
+                            <th style="width:10%;">No. of Participants</th>
+                            <th style="width:20%;">Name of the Resource Person/s</th>
+                            <th style="width:22%;">IQAC VERTICALS</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for i in range(ws_dates|length) %}
+                            {% if ws_dates[i] != '' or data.get('ws_title[]', [])[i] != '' %}
+                              <tr>
+                                <td>{{ ws_dates[i] }}</td>
+                                <td>{{ data.get('ws_venue[]', [])[i] or '—' }}</td>
+                                <td>{{ data.get('ws_title[]', [])[i] or '—' }}</td>
+                                <td>{{ data.get('ws_participants[]', [])[i] or '—' }}</td>
+                                <td>{{ data.get('ws_resource[]', [])[i] or '—' }}</td>
+                                <td>{{ data.get('ws_responsibility[]', [])[i] or '—' }}</td>
+                              </tr>
+                            {% endif %}
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    {% else %}
+                      <p class="fst-italic text-muted ms-3">No workshops reported.</p>
+                    {% endif %}
+
+                    <!-- Section II: Plans for Next Month -->
+                    <div class="section-header">Section II: Plans for Next Month</div>
+                    {% set plans = data.get('plan[]', []) %}
+                    {% if plans and plans|length > 0 and plans[0] != '' %}
+                      <ol class="list-group list-group-numbered border-0 rounded-0 bg-transparent ms-3">
+                        {% for p in plans %}
+                          {% if p != '' %}
+                            <li class="list-group-item border-0 bg-transparent py-1 px-0 text-start" style="font-size:0.9rem;">
+                              {{ p }}
+                            </li>
+                          {% endif %}
+                        {% endfor %}
+                      </ol>
+                    {% else %}
+                      <p class="fst-italic text-muted ms-3">No plan items reported.</p>
+                    {% endif %}
+
+                  {% else %}
+                    <p class="fst-italic text-muted">Raw draft data not found for this report.</p>
+                  {% endif %}
+
+                  <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <div>
+                      <small class="text-muted">Generated via IQAC Portal</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="alert alert-info">No submitted coordinator reports found for the month {{ selected_month_coord }}.</div>
+          {% endif %}
+        {% else %}
+          <div class="alert alert-info">No report data to display. Please generate a report.</div>
+        {% endif %}
+      {% else %}
+        {% if logs and logs|length > 0 %}
+          {% if selected_user == 'All' %}
+            {% set grouped_logs = {} %}
+            {% for log in logs %}
+              {% set uname = log['username'] %}
+              {% if uname not in grouped_logs %}
+                {% set _ = grouped_logs.update({uname: []}) %}
+              {% endif %}
+              {% set _ = grouped_logs[uname].append(log) %}
+            {% endfor %}
+            {% for uname, entries in grouped_logs.items() %}
+              <div class="card mb-5 page-break">
+                <div class="card-body">
+                  <div class="text-center worklog-header mb-3">
+                    <h5>CHRIST (Deemed to be University), Bengaluru</h5>
+                    <h6>Internal Quality Assurance Cell (IQAC)</h6>
+                    <h6 class="fw-bold text-primary mt-3">Worklog of {{ entries[0]['full_name'] or uname.title() }}</h6>
+                  </div>
+                  <div class="report-summary">
+                    <div><strong>Report Type:</strong>
+                      {% if filter_mode == 'month' %}
+                        Month-wise ({{ selected_month | default('—') }})
+                      {% elif filter_mode == 'academic_year' %}
+                        Academic Year ({{ selected_academic_year | default('—') }})
+                      {% else %}
+                        Custom Date Range ({{ from_date | default('—') }} to {{ to_date | default('—') }})
+                      {% endif %}
+                    </div>
+                    <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
+                  </div>
+                  <div class="report-info">
+                    <div><strong>Name:</strong> {{ entries[0]['full_name'] or uname.title() }} <strong>(Employee ID:</strong> {{ entries[0]['emp_id'] or '—' }})</div>
+                    <div><strong>No. of Entries:</strong> {{ entries|length }}</div>
+                  </div>
+                  <table class="table table-bordered table-striped">
+                    <thead><tr><th style="width:12%;">Date</th><th>Category-wise Tasks</th></tr></thead>
+                    <tbody>
+                      {% for log in entries %}
+                        <tr>
+                          <td class="text-center">{{ log['date'] | datetimeformat }}</td>
+                          <td>
+                            {% if log.tasks_dict %}
+                              {% for cat, task in log.tasks_dict.items() %}
+                                <div class="category-task-item">
+                                  <div class="category-name">{{ cat }}</div>
+                                  <div class="category-task-text">{{ task }}</div>
+                                </div>
+                              {% endfor %}
+                            {% else %}
+                              <span class="text-muted">No tasks recorded</span>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  <div class="signature">Director, IQAC</div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="card mb-5">
               <div class="card-body">
                 <div class="text-center worklog-header mb-3">
                   <h5>CHRIST (Deemed to be University), Bengaluru</h5>
                   <h6>Internal Quality Assurance Cell (IQAC)</h6>
-                  <h6 class="fw-bold text-primary mt-3">Worklog of {{ entries[0]['full_name'] or uname.title() }}</h6>
+                  <h6 class="fw-bold text-primary mt-3">Worklog of {{ logs[0]['full_name'] or selected_user.title() }}</h6>
                 </div>
                 <div class="report-summary">
                   <div><strong>Report Type:</strong>
@@ -557,13 +926,13 @@
                   <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
                 </div>
                 <div class="report-info">
-                  <div><strong>Name:</strong> {{ entries[0]['full_name'] or uname.title() }} <strong>(Employee ID:</strong> {{ entries[0]['emp_id'] or '—' }})</div>
-                  <div><strong>No. of Entries:</strong> {{ entries|length }}</div>
+                  <div><strong>Name:</strong> {{ selected_user.title() }} <strong>(Employee ID:</strong> {{ logs[0]['emp_id'] or '—' }})</div>
+                  <div><strong>No. of Entries:</strong> {{ logs|length }}</div>
                 </div>
                 <table class="table table-bordered table-striped">
                   <thead><tr><th style="width:12%;">Date</th><th>Category-wise Tasks</th></tr></thead>
                   <tbody>
-                    {% for log in entries %}
+                    {% for log in logs %}
                       <tr>
                         <td class="text-center">{{ log['date'] | datetimeformat }}</td>
                         <td>
@@ -585,59 +954,10 @@
                 <div class="signature">Director, IQAC</div>
               </div>
             </div>
-          {% endfor %}
+          {% endif %}
         {% else %}
-          <div class="card mb-5">
-            <div class="card-body">
-              <div class="text-center worklog-header mb-3">
-                <h5>CHRIST (Deemed to be University), Bengaluru</h5>
-                <h6>Internal Quality Assurance Cell (IQAC)</h6>
-                <h6 class="fw-bold text-primary mt-3">Worklog of {{ logs[0]['full_name'] or selected_user.title() }}</h6>
-              </div>
-              <div class="report-summary">
-                <div><strong>Report Type:</strong>
-                  {% if filter_mode == 'month' %}
-                    Month-wise ({{ selected_month | default('—') }})
-                  {% elif filter_mode == 'academic_year' %}
-                    Academic Year ({{ selected_academic_year | default('—') }})
-                  {% else %}
-                    Custom Date Range ({{ from_date | default('—') }} to {{ to_date | default('—') }})
-                  {% endif %}
-                </div>
-                <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
-              </div>
-              <div class="report-info">
-                <div><strong>Name:</strong> {{ selected_user.title() }} <strong>(Employee ID:</strong> {{ logs[0]['emp_id'] or '—' }})</div>
-                <div><strong>No. of Entries:</strong> {{ logs|length }}</div>
-              </div>
-              <table class="table table-bordered table-striped">
-                <thead><tr><th style="width:12%;">Date</th><th>Category-wise Tasks</th></tr></thead>
-                <tbody>
-                  {% for log in logs %}
-                    <tr>
-                      <td class="text-center">{{ log['date'] | datetimeformat }}</td>
-                      <td>
-                        {% if log.tasks_dict %}
-                          {% for cat, task in log.tasks_dict.items() %}
-                            <div class="category-task-item">
-                              <div class="category-name">{{ cat }}</div>
-                              <div class="category-task-text">{{ task }}</div>
-                            </div>
-                          {% endfor %}
-                        {% else %}
-                          <span class="text-muted">No tasks recorded</span>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-              <div class="signature">Director, IQAC</div>
-            </div>
-          </div>
+          <div class="alert alert-info">No report data to display. Please generate a report.</div>
         {% endif %}
-      {% else %}
-        <div class="alert alert-info">No report data to display. Please generate a report.</div>
       {% endif %}
     </div>
 
@@ -676,10 +996,10 @@
         const toDateInput = document.getElementById('to_date');
         const monthInput = document.getElementById('month_input');
         
-        if (!fromDateInput.value) fromDateInput.value = todayString;
-        if (!toDateInput.value) toDateInput.value = todayString;
+        if (fromDateInput && !fromDateInput.value) fromDateInput.value = todayString;
+        if (toDateInput && !toDateInput.value) toDateInput.value = todayString;
         
-        const fpFrom = flatpickr(fromDateInput, {
+        const fpFrom = fromDateInput ? flatpickr(fromDateInput, {
           dateFormat: "Y-m-d",
           altInput: true,
           altFormat: "d-m-Y",
@@ -687,27 +1007,27 @@
           defaultDate: fromDateInput.value,
           onChange: function(selectedDates, dateStr) {
             fromDateInput.value = dateStr;
-            fpTo.set('minDate', dateStr);
+            if (fpTo) fpTo.set('minDate', dateStr);
           }
-        });
+        }) : null;
         
-        const fpTo = flatpickr(toDateInput, {
+        const fpTo = toDateInput ? flatpickr(toDateInput, {
           dateFormat: "Y-m-d",
           altInput: true,
           altFormat: "d-m-Y",
           maxDate: todayString,
-          minDate: fromDateInput.value,
+          minDate: fromDateInput ? fromDateInput.value : null,
           defaultDate: toDateInput.value,
           onChange: function(selectedDates, dateStr) {
             toDateInput.value = dateStr;
           }
-        });
+        }) : null;
 
-        if (!monthInput.value) monthInput.value = currentMonthString;
+        if (monthInput && !monthInput.value) monthInput.value = currentMonthString;
         
         // Set default academic year
         const academicYearSelect = document.getElementById('academic_year_input');
-        if (!academicYearSelect.value) {
+        if (academicYearSelect && !academicYearSelect.value) {
           const currentYear = today.getFullYear();
           const currentMonth = today.getMonth() + 1;
           const startYear = currentMonth >= 5 ? currentYear : currentYear - 1;
@@ -719,7 +1039,7 @@
         const monthField = document.getElementById("month_field");
         const academicYearField = document.getElementById("academic_year_field");
         
-        function setDisplay(el, value) { el.style.setProperty('display', value, 'important'); }
+        function setDisplay(el, value) { if (el) el.style.setProperty('display', value, 'important'); }
         
         function toggleFilterFields(mode) {
           if (mode === "month") { 
@@ -737,8 +1057,78 @@
           }
         }
         
-        toggleFilterFields(modeSelect.value || "{{ filter_mode or 'date' }}");
-        modeSelect.addEventListener("change", function () { toggleFilterFields(this.value); });
+        if (modeSelect) {
+          toggleFilterFields(modeSelect.value || "{{ filter_mode or 'date' }}");
+          modeSelect.addEventListener("change", function () { toggleFilterFields(this.value); });
+        }
+
+        // Coordinator specific fields initialization
+        const fromDateInputCoord = document.getElementById('from_date_coord');
+        const toDateInputCoord = document.getElementById('to_date_coord');
+        const monthInputCoord = document.getElementById('month_input_coord');
+
+        if (fromDateInputCoord && !fromDateInputCoord.value) fromDateInputCoord.value = todayString;
+        if (toDateInputCoord && !toDateInputCoord.value) toDateInputCoord.value = todayString;
+
+        const fpFromCoord = fromDateInputCoord ? flatpickr(fromDateInputCoord, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          defaultDate: fromDateInputCoord.value,
+          onChange: function(selectedDates, dateStr) {
+            fromDateInputCoord.value = dateStr;
+            if (fpToCoord) fpToCoord.set('minDate', dateStr);
+          }
+        }) : null;
+        
+        const fpToCoord = toDateInputCoord ? flatpickr(toDateInputCoord, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          minDate: fromDateInputCoord ? fromDateInputCoord.value : null,
+          defaultDate: toDateInputCoord.value,
+          onChange: function(selectedDates, dateStr) {
+            toDateInputCoord.value = dateStr;
+          }
+        }) : null;
+
+        if (monthInputCoord && !monthInputCoord.value) monthInputCoord.value = currentMonthString;
+
+        const academicYearSelectCoord = document.getElementById('academic_year_input_coord');
+        if (academicYearSelectCoord && !academicYearSelectCoord.value) {
+          const currentYear = today.getFullYear();
+          const currentMonth = today.getMonth() + 1;
+          const startYear = currentMonth >= 5 ? currentYear : currentYear - 1;
+          academicYearSelectCoord.value = startYear + '-' + (startYear + 1);
+        }
+
+        const modeSelectCoord = document.getElementById("filter_mode_coord");
+        const dateFieldsCoord = document.getElementById("date_range_fields_coord");
+        const monthFieldCoord = document.getElementById("month_field_coord");
+        const academicYearFieldCoord = document.getElementById("academic_year_field_coord");
+
+        function toggleFilterFieldsCoord(mode) {
+          if (mode === "month") { 
+            setDisplay(monthFieldCoord, 'block'); 
+            setDisplay(dateFieldsCoord, 'none'); 
+            setDisplay(academicYearFieldCoord, 'none');
+          } else if (mode === "academic_year") {
+            setDisplay(monthFieldCoord, 'none'); 
+            setDisplay(dateFieldsCoord, 'none'); 
+            setDisplay(academicYearFieldCoord, 'block');
+          } else { 
+            setDisplay(monthFieldCoord, 'none'); 
+            setDisplay(dateFieldsCoord, 'flex'); 
+            setDisplay(academicYearFieldCoord, 'none');
+          }
+        }
+
+        if (modeSelectCoord) {
+          toggleFilterFieldsCoord(modeSelectCoord.value || "{{ filter_mode_coord or 'month' }}");
+          modeSelectCoord.addEventListener("change", function () { toggleFilterFieldsCoord(this.value); });
+        }
       });
 
       function printAndRedirect() {
