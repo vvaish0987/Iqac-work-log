@@ -629,11 +629,12 @@
             <table class="table table-bordered table-sm" id="tableA">
               <thead>
                 <tr>
-                  <th style="width:12%;">Date of Meeting <span class="text-danger">*</span></th>
-                  <th style="width:14%;">Department / School Name <span class="text-danger">*</span></th>
-                  <th style="width:16%;">Participants' Details <span class="text-danger">*</span></th>
-                  <th style="width:30%;">Topics Discussed <span class="text-danger">*</span></th>
-                  <th style="width:24%;">Action Points / Outcomes</th>
+                  <th style="width:11%;">Date of Meeting <span class="text-danger">*</span></th>
+                  <th style="width:12%;">Department / School Name <span class="text-danger">*</span></th>
+                  <th style="width:16%;">Title of meeting / Activity</th>
+                  <th style="width:15%;">Participants' Details <span class="text-danger">*</span></th>
+                  <th style="width:24%;">Topics Discussed <span class="text-danger">*</span></th>
+                  <th style="width:18%;">Action Points / Outcomes</th>
                   <th style="width:4%;"></th>
                 </tr>
               </thead>
@@ -641,18 +642,17 @@
                 {% set meeting_dates = draft_data.get('meeting_date[]', []) if draft_data else [] %}
                 {% set num_meeting_rows = meeting_dates|length if meeting_dates|length > 0 else 1 %}
                 {% for i in range(num_meeting_rows) %}
-                {% set meeting_date_val = meeting_dates[i] if i < meeting_dates|length else '' %} {% set
-                  dept_name_val=draft_data.get('dept_name[]', [])[i] if (draft_data and i <
-                  draft_data.get('dept_name[]', [])|length) else '' %} {% set
-                  participants_val=draft_data.get('participants[]', [])[i] if (draft_data and i <
-                  draft_data.get('participants[]', [])|length) else '' %} {% set topics_val=draft_data.get('topics[]',
-                  [])[i] if (draft_data and i < draft_data.get('topics[]', [])|length) else '' %} {% set
-                  action_points_val=draft_data.get('action_points[]', [])[i] if (draft_data and i <
-                  draft_data.get('action_points[]', [])|length) else '' %} {% set
-                  selected_areas=topics_val.split(', ') if topics_val else [] %}
+                {% set meeting_date_val = meeting_dates[i] if i < meeting_dates|length else '' %}
+                {% set dept_name_val=draft_data.get('dept_name[]', [])[i] if (draft_data and i < draft_data.get('dept_name[]', [])|length) else '' %}
+                {% set meeting_title_val=draft_data.get('meeting_title[]', [])[i] if (draft_data and i < draft_data.get('meeting_title[]', [])|length) else '' %}
+                {% set participants_val=draft_data.get('participants[]', [])[i] if (draft_data and i < draft_data.get('participants[]', [])|length) else '' %}
+                {% set topics_val=draft_data.get('topics[]', [])[i] if (draft_data and i < draft_data.get('topics[]', [])|length) else '' %}
+                {% set action_points_val=draft_data.get('action_points[]', [])[i] if (draft_data and i < draft_data.get('action_points[]', [])|length) else '' %}
+                {% set selected_areas=topics_val.split(', ') if topics_val else [] %}
                     <tr class="row-template-a">
                       <td><input type="date" name="meeting_date[]" class="form-control form-control-sm" value="{{ meeting_date_val }}"></td>
                       <td><input type="text" name="dept_name[]" class="form-control form-control-sm" placeholder="Department / School" value="{{ dept_name_val }}"></td>
+                      <td><input type="text" name="meeting_title[]" class="form-control form-control-sm" placeholder="Title of meeting / Activity" value="{{ meeting_title_val }}"></td>
                       <td><input type="text" name="participants[]" class="form-control form-control-sm" placeholder="Names / Designations" value="{{ participants_val }}"></td>
                       <td style="min-width:200px;">
                         <div class="resp-area-wrapper">
@@ -1127,11 +1127,12 @@
         const date  = row.querySelector('input[name="meeting_date[]"]');
         const dept  = row.querySelector('input[name="dept_name[]"]');
         const parts = row.querySelector('input[name="participants[]"]');
+        const title = row.querySelector('input[name="meeting_title[]"]');
         const topicsHidden = row.querySelector('input[name="topics[]"]');
         const action = row.querySelector('textarea[name="action_points[]"]');
         const fields = [date, dept, parts].filter(Boolean);
         const topicsVal = topicsHidden ? topicsHidden.value.trim() : '';
-        const anyFilled = fields.some(f => f && f.value.trim()) || topicsVal;
+        const anyFilled = fields.some(f => f && f.value.trim()) || topicsVal || (title && title.value.trim());
         if (anyFilled) {
           let rowOk = true;
           let missingFields = [];

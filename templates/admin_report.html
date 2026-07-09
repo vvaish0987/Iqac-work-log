@@ -751,11 +751,12 @@
                       <table class="table table-bordered table-striped">
                         <thead>
                           <tr>
-                            <th style="width:12%;">Date of Meeting</th>
-                            <th style="width:18%;">Department / School Name</th>
-                            <th style="width:18%;">Participants' Details</th>
-                            <th style="width:28%;">Topics Discussed</th>
-                            <th style="width:24%;">Action Points / Outcomes</th>
+                            <th style="width:11%;">Date of Meeting</th>
+                            <th style="width:13%;">Department / School Name</th>
+                            <th style="width:18%;">Title of meeting / Activity</th>
+                            <th style="width:16%;">Participants' Details</th>
+                            <th style="width:24%;">Topics Discussed</th>
+                            <th style="width:18%;">Action Points / Outcomes</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -764,6 +765,7 @@
                               <tr>
                                 <td>{{ meeting_dates[i] }}</td>
                                 <td>{{ data.get('dept_name[]', [])[i] or '—' }}</td>
+                                <td>{{ data.get('meeting_title[]', [])[i] or '—' }}</td>
                                 <td>{{ data.get('participants[]', [])[i] or '—' }}</td>
                                 <td>{{ data.get('topics[]', [])[i] or '—' }}</td>
                                 <td>{{ data.get('action_points[]', [])[i] or '—' }}</td>
