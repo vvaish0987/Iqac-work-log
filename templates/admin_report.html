@@ -742,90 +742,237 @@
 
                   {% set data = r.draft_data %}
                   {% if data %}
-                    <!-- Section I: Quality Assurance Initiatives -->
-                    <div class="section-header">Section I: Quality Assurance Initiatives</div>
-                    
-                    <div class="section-subheader">(a) Meetings / Activities conducted relating to IQAC Coordinator's responsibility areas</div>
-                    {% set meeting_dates = data.get('meeting_date[]', []) %}
-                    {% if meeting_dates and meeting_dates|length > 0 and meeting_dates[0] != '' %}
-                      <table class="table table-bordered table-striped">
-                        <thead>
-                          <tr>
-                            <th style="width:11%;">Date of Meeting</th>
-                            <th style="width:13%;">Department / School Name</th>
-                            <th style="width:18%;">Title of meeting / Activity</th>
-                            <th style="width:16%;">Participants' Details</th>
-                            <th style="width:24%;">Topics Discussed</th>
-                            <th style="width:18%;">Action Points / Outcomes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {% for i in range(meeting_dates|length) %}
-                            {% if meeting_dates[i] != '' or data.get('dept_name[]', [])[i] != '' %}
-                              <tr>
-                                <td>{{ meeting_dates[i] }}</td>
-                                <td>{{ data.get('dept_name[]', [])[i] or '—' }}</td>
-                                <td>{{ data.get('meeting_title[]', [])[i] or '—' }}</td>
-                                <td>{{ data.get('participants[]', [])[i] or '—' }}</td>
-                                <td>{{ data.get('topics[]', [])[i] or '—' }}</td>
-                                <td>{{ data.get('action_points[]', [])[i] or '—' }}</td>
-                              </tr>
+                    {% if r.report_type == 'aqar_coordinator' %}
+                      <!-- AQAR Aligned Coordinator Report Content -->
+                      <p class="mt-2 ms-1"><strong>Responsibility Area(s):</strong> {{ data.get('responsibility_areas', '—') }}</p>
+
+                      <!-- Section 1: Activities Undertaken -->
+                      <div class="section-header">1. Activities Undertaken During the Month</div>
+                      {% set act_dates = data.get('act_date[]', []) %}
+                      {% if act_dates and act_dates|length > 0 and act_dates[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:11%;">Date</th>
+                              <th style="width:25%;">Activity / Task Undertaken</th>
+                              <th style="width:14%;">Related Area</th>
+                              <th style="width:20%;">Department / Stakeholders</th>
+                              <th style="width:20%;">Outcome / Progress</th>
+                              <th style="width:10%;">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(act_dates|length) %}
+                              {% if act_dates[i] != '' or data.get('act_task[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ act_dates[i] }}</td>
+                                  <td>{{ data.get('act_task[]', [])[i] or '—' }}</td>
+                                  <td>
+                                    {% set area = data.get('act_area[]', [])[i] or '—' %}
+                                    {% if area == 'Others' %}
+                                      {{ data.get('act_area_other[]', [])[i] or 'Others' }}
+                                    {% else %}
+                                      {{ area }}
+                                    {% endif %}
+                                  </td>
+                                  <td>{{ data.get('act_stakeholders[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('act_outcome[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('act_status[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No activities reported.</p>
+                      {% endif %}
+
+                      <!-- Section 2: Meetings, Workshops & Training -->
+                      <div class="section-header">2. Meetings, Workshops & Training Programmes Attended/Organised</div>
+                      {% set meet_dates = data.get('meet_date[]', []) %}
+                      {% if meet_dates and meet_dates|length > 0 and meet_dates[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:12%;">Date</th>
+                              <th style="width:30%;">Programme / Meeting</th>
+                              <th style="width:25%;">Role</th>
+                              <th style="width:33%;">Key Outcome</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(meet_dates|length) %}
+                              {% if meet_dates[i] != '' or data.get('meet_programme[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ meet_dates[i] }}</td>
+                                  <td>{{ data.get('meet_programme[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('meet_role[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('meet_outcome[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No meetings/programmes reported.</p>
+                      {% endif %}
+
+                      <!-- Section 3: Key Achievements -->
+                      <div class="section-header">3. Key Achievements During the Month</div>
+                      {% set achievements = data.get('achievement[]', []) %}
+                      {% if achievements and achievements|length > 0 and achievements[0] != '' %}
+                        <ol class="list-group list-group-numbered border-0 rounded-0 bg-transparent ms-3">
+                          {% for ach in achievements %}
+                            {% if ach != '' %}
+                              <li class="list-group-item border-0 bg-transparent py-1 px-0 text-start" style="font-size:0.9rem;">
+                                {{ ach }}
+                              </li>
                             {% endif %}
                           {% endfor %}
-                        </tbody>
-                      </table>
-                    {% else %}
-                      <p class="fst-italic text-muted ms-3">No meetings reported.</p>
-                    {% endif %}
+                        </ol>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No achievements reported.</p>
+                      {% endif %}
 
-                    <div class="section-subheader">(b) Workshops / Seminars / Training Programs organised by the IQAC coordinator (If any)</div>
-                    {% set ws_dates = data.get('ws_date[]', []) %}
-                    {% if ws_dates and ws_dates|length > 0 and ws_dates[0] != '' %}
-                      <table class="table table-bordered table-striped">
-                        <thead>
-                          <tr>
-                            <th style="width:12%;">Date</th>
-                            <th style="width:14%;">Venue</th>
-                            <th style="width:22%;">Title of the Program</th>
-                            <th style="width:10%;">No. of Participants</th>
-                            <th style="width:20%;">Name of the Resource Person/s</th>
-                            <th style="width:22%;">IQAC VERTICALS</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {% for i in range(ws_dates|length) %}
-                            {% if ws_dates[i] != '' or data.get('ws_title[]', [])[i] != '' %}
-                              <tr>
-                                <td>{{ ws_dates[i] }}</td>
-                                <td>{{ data.get('ws_venue[]', [])[i] or '—' }}</td>
-                                <td>{{ data.get('ws_title[]', [])[i] or '—' }}</td>
-                                <td>{{ data.get('ws_participants[]', [])[i] or '—' }}</td>
-                                <td>{{ data.get('ws_resource[]', [])[i] or '—' }}</td>
-                                <td>{{ data.get('ws_responsibility[]', [])[i] or '—' }}</td>
-                              </tr>
+                      <!-- Section 4: Challenges -->
+                      <div class="section-header">4. Challenges / Issues Faced</div>
+                      {% set challenges = data.get('challenge[]', []) %}
+                      {% if challenges and challenges|length > 0 and challenges[0] != '' %}
+                        <ol class="list-group list-group-numbered border-0 rounded-0 bg-transparent ms-3">
+                          {% for chal in challenges %}
+                            {% if chal != '' %}
+                              <li class="list-group-item border-0 bg-transparent py-1 px-0 text-start" style="font-size:0.9rem;">
+                                {{ chal }}
+                              </li>
                             {% endif %}
                           {% endfor %}
-                        </tbody>
-                      </table>
-                    {% else %}
-                      <p class="fst-italic text-muted ms-3">No workshops reported.</p>
-                    {% endif %}
+                        </ol>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No challenges reported.</p>
+                      {% endif %}
 
-                    <!-- Section II: Plans for Next Month -->
-                    <div class="section-header">Section II: Plans for Next Month</div>
-                    {% set plans = data.get('plan[]', []) %}
-                    {% if plans and plans|length > 0 and plans[0] != '' %}
-                      <ol class="list-group list-group-numbered border-0 rounded-0 bg-transparent ms-3">
-                        {% for p in plans %}
-                          {% if p != '' %}
-                            <li class="list-group-item border-0 bg-transparent py-1 px-0 text-start" style="font-size:0.9rem;">
-                              {{ p }}
-                            </li>
-                          {% endif %}
-                        {% endfor %}
-                      </ol>
+                      <!-- Section 5: Action Plan -->
+                      <div class="section-header">5. Action Plan for Next Month</div>
+                      {% set plan_activities = data.get('plan_activity[]', []) %}
+                      {% if plan_activities and plan_activities|length > 0 and plan_activities[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:40%;">Planned Activity</th>
+                              <th style="width:25%;">Related Area</th>
+                              <th style="width:35%;">Expected Outcome</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(plan_activities|length) %}
+                              {% if plan_activities[i] != '' or data.get('plan_outcome[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ plan_activities[i] }}</td>
+                                  <td>
+                                    {% set area = data.get('plan_area[]', [])[i] or '—' %}
+                                    {% if area == 'Others' %}
+                                      {{ data.get('plan_area_other[]', [])[i] or 'Others' }}
+                                    {% else %}
+                                      {{ area }}
+                                    {% endif %}
+                                  </td>
+                                  <td>{{ data.get('plan_outcome[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No action plan items reported.</p>
+                      {% endif %}
+
                     {% else %}
-                      <p class="fst-italic text-muted ms-3">No plan items reported.</p>
+                      <!-- Standard Coordinator Report Content -->
+                      <!-- Section I: Quality Assurance Initiatives -->
+                      <div class="section-header">Section I: Quality Assurance Initiatives</div>
+                      
+                      <div class="section-subheader">(a) Meetings / Activities conducted relating to IQAC Coordinator's responsibility areas</div>
+                      {% set meeting_dates = data.get('meeting_date[]', []) %}
+                      {% if meeting_dates and meeting_dates|length > 0 and meeting_dates[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:11%;">Date of Meeting</th>
+                              <th style="width:13%;">Department / School Name</th>
+                              <th style="width:18%;">Title of meeting / Activity</th>
+                              <th style="width:16%;">Participants' Details</th>
+                              <th style="width:24%;">Topics Discussed</th>
+                              <th style="width:18%;">Action Points / Outcomes</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(meeting_dates|length) %}
+                              {% if meeting_dates[i] != '' or data.get('dept_name[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ meeting_dates[i] }}</td>
+                                  <td>{{ data.get('dept_name[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('meeting_title[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('participants[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('topics[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('action_points[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No meetings reported.</p>
+                      {% endif %}
+
+                      <div class="section-subheader">(b) Workshops / Seminars / Training Programs organised by the IQAC coordinator (If any)</div>
+                      {% set ws_dates = data.get('ws_date[]', []) %}
+                      {% if ws_dates and ws_dates|length > 0 and ws_dates[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:12%;">Date</th>
+                              <th style="width:14%;">Venue</th>
+                              <th style="width:22%;">Title of the Program</th>
+                              <th style="width:10%;">No. of Participants</th>
+                              <th style="width:20%;">Name of the Resource Person/s</th>
+                              <th style="width:22%;">IQAC VERTICALS</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(ws_dates|length) %}
+                              {% if ws_dates[i] != '' or data.get('ws_title[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ ws_dates[i] }}</td>
+                                  <td>{{ data.get('ws_venue[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('ws_title[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('ws_participants[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('ws_resource[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('ws_responsibility[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No workshops reported.</p>
+                      {% endif %}
+
+                      <!-- Section II: Plans for Next Month -->
+                      <div class="section-header">Section II: Plans for Next Month</div>
+                      {% set plans = data.get('plan[]', []) %}
+                      {% if plans and plans|length > 0 and plans[0] != '' %}
+                        <ol class="list-group list-group-numbered border-0 rounded-0 bg-transparent ms-3">
+                          {% for p in plans %}
+                            {% if p != '' %}
+                              <li class="list-group-item border-0 bg-transparent py-1 px-0 text-start" style="font-size:0.9rem;">
+                                {{ p }}
+                              </li>
+                            {% endif %}
+                          {% endfor %}
+                        </ol>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No plan items reported.</p>
+                      {% endif %}
                     {% endif %}
 
                   {% else %}

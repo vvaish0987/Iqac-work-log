@@ -1430,7 +1430,7 @@ def admin_panel():
         return redirect("/dashboard")
 
     # Fetch employees for dropdown (exclude Admin and Coordinators)
-    cursor.execute("SELECT username, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     # Get stats for dashboard cards
@@ -1505,7 +1505,7 @@ def admin_panel():
         return redirect("/admin")
 
     # Fetch coordinators for dropdown
-    cursor.execute("SELECT username, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
 
     # Coordinator summary form handling
@@ -1589,38 +1589,42 @@ def admin_panel():
     if selected_user == "All":
         if category_filter == "All":
             cursor.execute("""
-                SELECT username, COUNT(*) AS count
-                FROM worklog
-                WHERE date BETWEEN %s AND %s
-                GROUP BY username
+                SELECT w.username, COALESCE(u.full_name, w.username) AS display_name, COUNT(*) AS count
+                FROM worklog w
+                LEFT JOIN users u ON w.username = u.username
+                WHERE w.date BETWEEN %s AND %s
+                GROUP BY w.username, u.full_name
                 ORDER BY count DESC
             """, (first_date, last_date))
         else:
             like_pattern = '%"Others%' if category_filter == "Others" else f'%"{category_filter}"%'
             cursor.execute("""
-                SELECT username, COUNT(*) AS count
-                FROM worklog
-                WHERE date BETWEEN %s AND %s
-                  AND task::text LIKE %s
-                GROUP BY username
+                SELECT w.username, COALESCE(u.full_name, w.username) AS display_name, COUNT(*) AS count
+                FROM worklog w
+                LEFT JOIN users u ON w.username = u.username
+                WHERE w.date BETWEEN %s AND %s
+                  AND w.task::text LIKE %s
+                GROUP BY w.username, u.full_name
                 ORDER BY count DESC
             """, (first_date, last_date, like_pattern))
     else:
         if category_filter == "All":
             cursor.execute("""
-                SELECT username, COUNT(*) AS count
-                FROM worklog
-                WHERE date BETWEEN %s AND %s AND username = %s
-                GROUP BY username
+                SELECT w.username, COALESCE(u.full_name, w.username) AS display_name, COUNT(*) AS count
+                FROM worklog w
+                LEFT JOIN users u ON w.username = u.username
+                WHERE w.date BETWEEN %s AND %s AND w.username = %s
+                GROUP BY w.username, u.full_name
             """, (first_date, last_date, selected_user))
         else:
             like_pattern = '%"Others%' if category_filter == "Others" else f'%"{category_filter}"%'
             cursor.execute("""
-                SELECT username, COUNT(*) AS count
-                FROM worklog
-                WHERE date BETWEEN %s AND %s AND username = %s
-                  AND task::text LIKE %s
-                GROUP BY username
+                SELECT w.username, COALESCE(u.full_name, w.username) AS display_name, COUNT(*) AS count
+                FROM worklog w
+                LEFT JOIN users u ON w.username = u.username
+                WHERE w.date BETWEEN %s AND %s AND w.username = %s
+                  AND w.task::text LIKE %s
+                GROUP BY w.username, u.full_name
             """, (first_date, last_date, selected_user, like_pattern))
 
     summary = cursor.fetchall()
@@ -1814,7 +1818,7 @@ def admin_report():
         return redirect("/dashboard")
 
     # Fetch users
-    cursor.execute("SELECT username, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     # Fetch coordinators
@@ -1851,7 +1855,7 @@ def admin_report():
 
             query_ok = False
             query = """
-                SELECT sr.*, u.designation, u.department, u.full_name, u.role as user_role
+                SELECT sr.*, u.designation, u.department, u.full_name, u.email, u.role as user_role
                 FROM signed_reports sr
                 JOIN users u ON sr.username = u.username
                 WHERE sr.status != 'pending_upload'
@@ -2082,7 +2086,7 @@ def admin_report_ai():
         return redirect("/dashboard")
 
     # Fetch users
-    cursor.execute("SELECT username, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     logs = []
@@ -3776,7 +3780,7 @@ def secretary_dashboard():
     pending_coordinators = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     # Coordinators list for Quick Summary dropdown
-    cursor.execute("SELECT username, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
 
     # Handle submission window settings update

@@ -680,9 +680,6 @@
           <div class="col-md-3">
             <button type="submit" class="btn btn-primary">Extend Deadline</button>
           </div>
-          <div class="col-md-4 text-muted small d-flex align-items-center">
-            e.g. Close: 7 → coordinators can upload from the 1st to 7th of each month.
-          </div>
         </form>
       </div>
     </div>
@@ -699,7 +696,7 @@
               <option value="All" {% if coord_user=='All' %}selected{% endif %}>All Coordinators</option>
               {% for c in coordinators %}
               <option value="{{ c['username'] }}" {% if coord_user==c['username'] %}selected{% endif %}>
-                {{ c['username'].title() }} ({{ c['role'] }})
+                {{ c['full_name'] or c['username'].title() }} ({{ c['role'] }})
               </option>
               {% endfor %}
             </select>
@@ -798,7 +795,7 @@
               </option>
               {% for u in users %}
               <option value="{{ u['username'] }}" {% if selected_user==u['username'] %}selected{% endif %}>
-                {{ u['username'].title() }}
+                {{ u['full_name'] or u['username'].title() }}
               </option>
               {% endfor %}
             </select>
@@ -914,7 +911,7 @@
   <script>
     {% if summary %}
     const ctx = document.getElementById('summaryChart');
-    const labels = [{% for row in summary %}'{{ row["username"].title() }}', {% endfor %}];
+    const labels = [{% for row in summary %}'{{ row["display_name"].title() }}', {% endfor %}];
     const dataValues = [{% for row in summary %}{{ row["count"] }}, {% endfor %}];
 
     // Generate distinct HSL colors
