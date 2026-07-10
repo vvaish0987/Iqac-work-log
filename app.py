@@ -17,6 +17,22 @@ load_dotenv(override=True)
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "your_secret_key")
 
+# Monkeypatch psycopg Cursor fetchone to inject active session role
+import psycopg
+_orig_fetchone = psycopg.Cursor.fetchone
+def _patched_fetchone(self):
+    row = _orig_fetchone(self)
+    if row and isinstance(row, dict) and "role" in row and "username" in row:
+        try:
+            from flask import session
+            if session and "username" in session and row["username"] == session["username"]:
+                if "role" in session:
+                    row["role"] = session["role"]
+        except Exception:
+            pass
+    return row
+psycopg.Cursor.fetchone = _patched_fetchone
+
 from routes.pdf import pdf_bp
 app.register_blueprint(pdf_bp)
 
@@ -50,6 +66,12 @@ def inline_url(url):
     if url and 'cloudinary.com' in url and '/upload/' in url:
         return url.replace('/upload/', '/upload/fl_attachment:false/')
     return url
+
+def is_coordinator(role_str):
+    if not role_str:
+        return False
+    roles = [r.strip().lower() for r in role_str.split(',')]
+    return 'school iqac coordinator' in roles or 'campus iqac coordinator' in roles
 
 # Make datetime and timedelta available in all templates
 app.jinja_env.globals['datetime'] = datetime
@@ -119,6 +141,17 @@ def notify_admins_and_secretaries(username, reporting_month):
 
     conn = get_db_connection()
     cursor = get_cursor(conn)
+    
+    # Fetch full name of the coordinator
+    full_name = username.title()
+    try:
+        cursor.execute("SELECT full_name FROM users WHERE username = %s", (username,))
+        row = cursor.fetchone()
+        if row and row.get("full_name"):
+            full_name = row["full_name"].strip().title()
+    except Exception as e:
+        print("Error fetching coordinator full name:", str(e))
+
     try:
         cursor.execute("""
             SELECT email FROM users 
@@ -140,10 +173,10 @@ def notify_admins_and_secretaries(username, reporting_month):
         print("No admin or secretary emails found to send notification.")
         return
 
-    subject = f"Signed IQAC Monthly Report Uploaded - {username.title()} ({reporting_month})"
+    subject = f"Signed IQAC Monthly Report Uploaded - {full_name} ({reporting_month})"
     body = (
         f"Hello,\n\n"
-        f"IQAC Coordinator '{username.title()}' has uploaded the signed monthly report for the month '{reporting_month}'.\n\n"
+        f"IQAC Coordinator '{full_name}' has uploaded the signed monthly report for the month '{reporting_month}'.\n\n"
         f"Please log in to the IQAC Portal to review and authorise this submission.\n\n"
         f"Regards,\n"
         f"Internal Quality Assurance Cell (IQAC)\n"
@@ -296,103 +329,7 @@ def format_dates_by_month(dates):
     
     return ' / '.join(formatted_parts)
 
-def send_29th_reminder():
-    """Send reminder on 29th of month about missing entries"""
-    conn = get_db_connection()
-    cursor = get_cursor(conn)
-    
-    # Get all Employee/Intern users (exclude Admin and Coordinators)
-    cursor.execute("SELECT username, email FROM users WHERE LOWER(role) NOT IN ('admin', 'school iqac coordinator', 'campus iqac coordinator')")
-    users = cursor.fetchall()
-    conn.close()
 
-    today = datetime.now().date()
-    current_year = today.year
-    current_month = today.month
-    
-    for user in users:
-        username = user['username']
-        email = user['email']
-        
-        missing_dates = get_missing_entries(username, current_year, current_month)
-        
-        if missing_dates:
-            month_display = datetime(current_year, current_month, 1).strftime('%B %Y')
-            # Get deadline date (2nd of next month)
-            if current_month == 12:
-                deadline_date = datetime(current_year + 1, 1, 2).date()
-            else:
-                deadline_date = datetime(current_year, current_month + 1, 2).date()
-            deadline_str = deadline_date.strftime('%d-%m-%Y')
-
-            subject = f"IQAC Connect Reminder - Missing Entries"
-            body = f"""Dear {username},
-
-This is a kind reminder to complete and submit your work logs for the month of {month_display}.
-
-The final date to submit your log is {deadline_str}. Please log in to the portal and complete the submission before the deadline.
-
-If you have already submitted the work logs, kindly disregard this email.
-
-Regards,
-Internal Quality Assurance Cell (IQAC)
-CHRIST (Deemed to be University)
-
----
-This is an auto-generated email. Please do not reply to this message.
-"""
-            send_reminder_email(email, subject, body)
-    
-    return f"29th reminder sent to {len(users)} users"
-
-def send_1st_deadline_reminder():
-    """Send final reminder on 1st of month - deadline is today midnight"""
-    conn = get_db_connection()
-    cursor = get_cursor(conn)
-    
-    # Get all Employee/Intern users (exclude Admin and Coordinators)
-    cursor.execute("SELECT username, email FROM users WHERE LOWER(role) NOT IN ('admin', 'school iqac coordinator', 'campus iqac coordinator')")
-    users = cursor.fetchall()
-    conn.close()
-
-    today = datetime.now().date()
-    # Previous month
-    if today.month == 1:
-        prev_month = 12
-        prev_year = today.year - 1
-    else:
-        prev_month = today.month - 1
-        prev_year = today.year
-    
-    for user in users:
-        username = user['username']
-        email = user['email']
-        
-        missing_dates = get_missing_entries(username, prev_year, prev_month)
-        
-        if missing_dates:
-            month_display = datetime(prev_year, prev_month, 1).strftime('%B %Y')
-            deadline_str = today.strftime('%d-%m-%Y')
-
-            subject = f"URGENT: IQAC Connect Submission Deadline - TODAY"
-            body = f"""Dear {username},
-
-This is a final reminder to complete and submit your work logs for the month of {month_display}.
-
-The deadline to submit your log is TODAY ({deadline_str}). Please log in to the portal and complete the submission immediately.
-
-If you have already submitted the work logs, kindly disregard this email.
-
-Regards,
-Internal Quality Assurance Cell (IQAC)
-CHRIST (Deemed to be University)
-
----
-This is an auto-generated email. Please do not reply to this message.
-"""
-            send_reminder_email(email, subject, body)
-    
-    return f"1st deadline reminder sent to {len(users)} users"
 
 # ------------------ AI SETTINGS (NVIDIA & GEMINI) ------------------
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
@@ -495,15 +432,19 @@ def get_submission_window():
         cursor.execute("SELECT key, value FROM app_settings WHERE key IN ('submission_open_day', 'submission_close_day')")
         rows = {r['key']: int(r['value']) for r in cursor.fetchall()}
         conn.close()
-        return rows.get('submission_open_day', 1), rows.get('submission_close_day', 5)
+        close_day = min(rows.get('submission_close_day', 10), 10)
+        return rows.get('submission_open_day', 1), close_day
     except Exception:
-        return 1, 5
+        return 1, 10
 
-def check_submission_window():
+def check_submission_window(username=None):
     """
     Returns (is_open, reporting_month_str, open_day, close_day, window_msg).
-    The window for last month's report opens on open_day and closes on close_day
-    of the current month.
+    - Days 1-9: Evaluates the previous month's report.
+    - Days 10-31: Rolls over to the current calendar month for drafting.
+      BUT if username is provided, close_day is extended (> 9),
+      and today is within the extended window, and they have NOT submitted the previous month's report yet:
+      we let them continue working on/submitting the previous month's report!
     """
     import calendar
     open_day, close_day = get_submission_window()
@@ -515,40 +456,56 @@ def check_submission_window():
     effective_open_day = min(open_day, last_day)
     effective_close_day = min(close_day, last_day)
 
-    # The report being submitted is always for the previous month
+    # Compute previous month info
     if today.month == 1:
-        report_year, report_month = today.year - 1, 12
+        prev_year, prev_month = today.year - 1, 12
     else:
-        report_year, report_month = today.year, today.month - 1
+        prev_year, prev_month = today.year, today.month - 1
+    prev_month_str = f"{prev_year}-{prev_month:02d}"
+    prev_month_name = datetime(prev_year, prev_month, 1).strftime("%m-%Y")
 
-    reporting_month_str = f"{report_year}-{report_month:02d}"
-    month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
+    # Check if they qualify for extended deadline for previous month
+    use_prev_month = False
+    if current_day <= 9:
+        use_prev_month = True
+    elif username and current_day <= effective_close_day:
+        # Check if they have submitted previous month's report
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM signed_reports 
+                WHERE username = %s AND reporting_month = %s AND status IN ('uploaded', 'reviewed')
+            """, (username, prev_month_str))
+            row = cursor.fetchone()
+            submitted = row['count'] > 0 if row else False
+            conn.close()
+        except Exception:
+            submitted = False
+        
+        if not submitted:
+            use_prev_month = True
 
-    is_open = effective_open_day <= current_day <= effective_close_day
-
-    if is_open:
-        close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
-        window_msg = f"Submission window for {month_name} is open until {close_date}."
-    elif current_day < effective_open_day:
-        open_date = today.replace(day=effective_open_day).strftime("%d-%m-%Y")
-        window_msg = f"Submission window for {month_name} opens on {open_date}."
-    else:
-        # Past the close day — next window is next month
-        if today.month == 12:
-            next_year = today.year + 1
-            next_month = 1
+    if use_prev_month:
+        reporting_month_str = prev_month_str
+        month_name = prev_month_name
+        is_open = effective_open_day <= current_day <= effective_close_day
+        
+        if is_open:
+            close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
+            window_msg = f"Submission window for {month_name} is open until {close_date}."
+        elif current_day < effective_open_day:
+            open_date = today.replace(day=effective_open_day).strftime("%d-%m-%Y")
+            window_msg = f"Submission window for {month_name} opens on {open_date}."
         else:
-            next_year = today.year
-            next_month = today.month + 1
-            
-        next_month_last_day = calendar.monthrange(next_year, next_month)[1]
-        effective_next_open_day = min(open_day, next_month_last_day)
-        next_open = datetime(next_year, next_month, effective_next_open_day).strftime("%d-%m-%Y")
-        close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
-        window_msg = (f"Submission window for {month_name} is closed. ")
-
-        # window_msg = (f"Submission window for {month_name} closed on {close_date}. "
-        #               f"Next window opens {next_open}.")
+            window_msg = f"Submission window for {month_name} is closed."
+    else:
+        # Days 12 onwards (or if already submitted): drafting window for the current month
+        report_year, report_month = today.year, today.month
+        reporting_month_str = f"{report_year}-{report_month:02d}"
+        month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
+        is_open = False
+        window_msg = f"Drafting period for {month_name}. Submission window will open next month."
 
     return is_open, reporting_month_str, open_day, close_day, window_msg
 
@@ -572,12 +529,12 @@ def init_postgres():
             id SERIAL PRIMARY KEY,
             username VARCHAR(255) UNIQUE NOT NULL,
             password VARCHAR(255) NOT NULL,
-            emp_id VARCHAR(50),
+            emp_id VARCHAR(255),
             email VARCHAR(255),
-            gender VARCHAR(20),
+            gender VARCHAR(255),
             designation VARCHAR(255),
             department VARCHAR(255),
-            role VARCHAR(50),
+            role VARCHAR(255),
             full_name VARCHAR(255)
         )
     """)
@@ -596,6 +553,7 @@ def init_postgres():
     """)
     cursor.execute("ALTER TABLE worklog ADD COLUMN IF NOT EXISTS attachment TEXT")
     cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255)")
+    cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT FALSE")
 
     # Create signed_reports table for IQAC Coordinator uploaded reports
     cursor.execute("""
@@ -669,8 +627,8 @@ def init_postgres():
     cursor.execute("SELECT * FROM users WHERE username='admin'")
     if not cursor.fetchone():
         cursor.execute("""
-            INSERT INTO users (username, password, emp_id, email, gender, designation, department, role)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO users (username, password, emp_id, email, gender, designation, department, role, must_change_password)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
         """, (
             'admin',
             generate_password_hash('admin123'),
@@ -707,6 +665,16 @@ def to_ist(value):
     if not value:
         return value
     try:
+        # Determine local timezone offset in minutes
+        now_local = datetime.now()
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        diff_minutes = round((now_local - now_utc).total_seconds() / 60)
+        
+        # If the server is already in IST, do not add the offset again
+        if 320 <= diff_minutes <= 340:
+            return value.strftime('%d-%m-%Y %I:%M %p')
+            
+        # Otherwise (e.g. UTC server), add 5.5 hours
         return (value + timedelta(hours=5, minutes=30)).strftime('%d-%m-%Y %I:%M %p')
     except Exception:
         return value
@@ -729,6 +697,61 @@ def datetimeformat(value):
 def home():
     return redirect("/login")
     
+@app.before_request
+def enforce_password_change():
+    allowed_routes = ['login', 'logout', 'change_password', 'static']
+    if request.endpoint in allowed_routes or not request.endpoint:
+        return
+        
+    if 'username' in session and session.get('must_change_password'):
+        flash("For security reasons, you must change your temporary password before proceeding.", "warning")
+        return redirect(url_for('change_password'))
+
+# ------------------ CHANGE PASSWORD ------------------
+@app.route("/change_password", methods=["GET", "POST"])
+def change_password():
+    if 'username' not in session:
+        return redirect("/login")
+        
+    if request.method == "POST":
+        new_pw = request.form.get("new_password")
+        confirm_pw = request.form.get("confirm_password")
+        
+        if not new_pw or len(new_pw) < 6:
+            flash("Password must be at least 6 characters long.", "danger")
+            return render_template("change_password.html")
+            
+        if new_pw != confirm_pw:
+            flash("Passwords do not match.", "danger")
+            return render_template("change_password.html")
+            
+        hashed = generate_password_hash(new_pw)
+        username = session["username"]
+        
+        conn = get_db_connection()
+        cursor = get_cursor(conn)
+        try:
+            cursor.execute("UPDATE users SET password=%s, must_change_password=FALSE WHERE username=%s", (hashed, username))
+            conn.commit()
+            session["must_change_password"] = False
+            flash("Password updated successfully!", "success")
+            
+            role = session.get("role", "").lower()
+            if role == "admin":
+                return redirect("/admin")
+            elif role in ("school iqac coordinator", "campus iqac coordinator"):
+                return redirect("/iqac_dashboard")
+            elif role == "secretary":
+                return redirect("/secretary_dashboard")
+            else:
+                return redirect("/dashboard")
+        except Exception as e:
+            flash(f"Database error updating password: {e}", "danger")
+        finally:
+            conn.close()
+            
+    return render_template("change_password.html")
+
 # ------------------ LOGIN ------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -746,13 +769,22 @@ def login():
 
         if user and check_password_hash(user["password"], password):
             session["username"] = username
-            session["role"] = user["role"]
-            flash(f"Welcome, {username}!", "success")
-            if user["role"].lower() == "admin":
+            session["full_name"] = user.get("full_name") or username
+            available_roles = [r.strip() for r in user["role"].split(",")]
+            session["available_roles"] = available_roles
+            session["role"] = available_roles[0]
+            session["must_change_password"] = user.get("must_change_password", False)
+            flash(f"Welcome, {session['full_name']}!", "success")
+            
+            if session["must_change_password"]:
+                return redirect("/change_password")
+                
+            active_role_lower = session["role"].lower()
+            if active_role_lower == "admin":
                 return redirect("/admin")
-            elif user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+            elif active_role_lower in ("school iqac coordinator", "campus iqac coordinator"):
                 return redirect("/iqac_dashboard")
-            elif user["role"].lower() == "secretary":
+            elif active_role_lower == "secretary":
                 return redirect("/secretary_dashboard")
             else:
                 return redirect("/dashboard")
@@ -760,6 +792,30 @@ def login():
             flash("Invalid username or password.", "danger")
 
     return render_template("login.html")
+
+
+@app.route("/switch_role/<role>")
+def switch_role(role):
+    if "username" not in session:
+        return redirect("/login")
+    
+    available = session.get("available_roles", [])
+    if role in available:
+        session["role"] = role
+        flash(f"Switched role to {role}", "success")
+        
+        r_lower = role.lower()
+        if r_lower == "admin":
+            return redirect("/admin")
+        elif r_lower in ("school iqac coordinator", "campus iqac coordinator"):
+            return redirect("/iqac_dashboard")
+        elif r_lower == "secretary":
+            return redirect("/secretary_dashboard")
+        else:
+            return redirect("/dashboard")
+    else:
+        flash("Invalid role selection.", "danger")
+        return redirect("/dashboard")
 
 
 @app.route("/logout")
@@ -785,10 +841,10 @@ def dashboard():
 
     if user["role"].lower() == "admin":
         conn.close()
-        flash("Admins cannot access the employee dashboard.", "warning")
+        flash("Admins cannot access the user dashboard.", "warning")
         return redirect("/admin")
 
-    if user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+    if is_coordinator(user["role"]):
         conn.close()
         return redirect("/iqac_dashboard")
 
@@ -875,7 +931,7 @@ def user_add_entry():
         flash("Admins cannot access this page.", "warning")
         return redirect("/admin")
 
-    if user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+    if is_coordinator(user["role"]):
         conn.close()
         flash("IQAC Coordinators do not have access to worklog entries.", "warning")
         return redirect("/iqac_dashboard")
@@ -977,7 +1033,15 @@ def user_add_entry():
                         if field_name:
                             task_text = request.form.get(field_name, "").strip()
                             if task_text:
-                                category_tasks[cat] = task_text
+                                if cat == "Others":
+                                    others_specify = request.form.get("others_specify", "").strip()
+                                    if others_specify:
+                                        key_name = f"Others ({others_specify})"
+                                    else:
+                                        key_name = "Others"
+                                else:
+                                    key_name = cat
+                                category_tasks[key_name] = task_text
 
                     if not category_tasks:
                         flash("Please select at least one category and enter tasks.", "danger")
@@ -1031,7 +1095,7 @@ def user_view_entries():
         flash("Admins cannot access this page.", "warning")
         return redirect("/admin")
 
-    if user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+    if is_coordinator(user["role"]):
         conn.close()
         flash("IQAC Coordinators do not have access to worklog entries.", "warning")
         return redirect("/iqac_dashboard")
@@ -1067,9 +1131,14 @@ def user_view_entries():
         
         # Apply category filter
         if category_filter and category_filter != "All":
-            if category_filter in tasks_dict:
+            matched_key = None
+            for key in tasks_dict.keys():
+                if key == category_filter or (category_filter == "Others" and key.startswith("Others (")):
+                    matched_key = key
+                    break
+            if matched_key:
                 # Only show the selected category's task
-                tasks_dict = {category_filter: tasks_dict[category_filter]}
+                tasks_dict = {matched_key: tasks_dict[matched_key]}
             else:
                 # Skip this log if selected category not present
                 continue
@@ -1108,7 +1177,7 @@ def user_report():
         flash("Admins should use the Admin Report page.", "warning")
         return redirect("/admin")
 
-    if user["role"].lower() in ("school iqac coordinator", "campus iqac coordinator"):
+    if is_coordinator(user["role"]):
         conn.close()
         flash("IQAC Coordinators do not have worklog reports.", "warning")
         return redirect("/iqac_dashboard")
@@ -1139,7 +1208,7 @@ def user_report():
                 last = f"{end_year}-04-30"     # April 30th of end year
 
                 cursor.execute("""
-                    SELECT w.*, u.emp_id, u.designation, u.username
+                    SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                     FROM worklog w
                     JOIN users u ON w.username=u.username
                     WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1157,7 +1226,7 @@ def user_report():
                 last = f"{year}-{month}-{calendar.monthrange(int(year), int(month))[1]}"
 
                 cursor.execute("""
-                    SELECT w.*, u.emp_id, u.designation, u.username
+                    SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                     FROM worklog w
                     JOIN users u ON w.username=u.username
                     WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1171,7 +1240,7 @@ def user_report():
                 flash("Select From and To dates.", "danger")
             else:
                 cursor.execute("""
-                    SELECT w.*, u.emp_id, u.designation, u.username
+                    SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                     FROM worklog w
                     JOIN users u ON w.username=u.username
                     WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1196,9 +1265,14 @@ def user_report():
         
         # Apply category filter
         if category_filter and category_filter != "All":
-            if category_filter in tasks_dict:
+            matched_key = None
+            for key in tasks_dict.keys():
+                if key == category_filter or (category_filter == "Others" and key.startswith("Others (")):
+                    matched_key = key
+                    break
+            if matched_key:
                 # Only show the selected category's task
-                tasks_dict = {category_filter: tasks_dict[category_filter]}
+                tasks_dict = {matched_key: tasks_dict[matched_key]}
             else:
                 # Skip this log if selected category not present
                 continue
@@ -1267,7 +1341,15 @@ def edit(id):
             if field_name:
                 task_text = request.form.get(field_name, "").strip()
                 if task_text:
-                    category_tasks[cat] = task_text
+                    if cat == "Others":
+                        others_specify = request.form.get("others_specify", "").strip()
+                        if others_specify:
+                            key_name = f"Others ({others_specify})"
+                        else:
+                            key_name = "Others"
+                    else:
+                        key_name = cat
+                    category_tasks[key_name] = task_text
         
         if not category_tasks:
             flash("Please select at least one category and enter tasks.", "danger")
@@ -1348,7 +1430,7 @@ def admin_panel():
         return redirect("/dashboard")
 
     # Fetch employees for dropdown (exclude Admin and Coordinators)
-    cursor.execute("SELECT username, emp_id FROM users WHERE role NOT IN ('Admin', 'School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     # Get stats for dashboard cards
@@ -1368,14 +1450,14 @@ def admin_panel():
     # IQAC Coordinator report submission progress — reports are for the previous month
     prev = now.replace(day=1) - timedelta(days=1)
     current_report_month = prev.strftime("%Y-%m")
-    cursor.execute("SELECT COUNT(*) as count FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')")
+    cursor.execute("SELECT COUNT(*) as count FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0")
     total_coordinators = cursor.fetchone()['count']
     cursor.execute("""
         SELECT COUNT(DISTINCT sr.username) as count FROM signed_reports sr
         JOIN users u ON sr.username = u.username
         WHERE sr.reporting_month = %s
         AND sr.status IN ('uploaded', 'reviewed')
-        AND u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        AND (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
     """, (current_report_month,))
     submitted_coordinators = cursor.fetchone()['count']
     submission_pct = int((submitted_coordinators / total_coordinators * 100) if total_coordinators > 0 else 0)
@@ -1384,7 +1466,7 @@ def admin_panel():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('uploaded', 'reviewed')
     """, (current_report_month,))
     submitted_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
@@ -1393,14 +1475,14 @@ def admin_panel():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('pending_upload', 'corrections_requested')
     """, (current_report_month,))
     draft_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     # Coordinators with nothing done
     cursor.execute("""
-        SELECT username, full_name FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        SELECT username, full_name FROM users WHERE (strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0)
         AND username NOT IN (
             SELECT DISTINCT username FROM signed_reports WHERE reporting_month = %s
         )
@@ -1423,7 +1505,7 @@ def admin_panel():
         return redirect("/admin")
 
     # Fetch coordinators for dropdown
-    cursor.execute("SELECT username, role FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
 
     # Coordinator summary form handling
@@ -1445,14 +1527,14 @@ def admin_panel():
         year_int = int(coord_year)
         if coord_report_type == "yearly":
             start_m = f"{year_int}-01"
-            end_m = f"{year_int}-12"
+            end_m = f"{now.year}-12"
         else:
             start_m = coord_from_month or f"{year_int}-01"
             end_m = coord_to_month or f"{year_int}-{now.month:02d}"
 
         if coord_user == "All":
             cursor.execute("""
-                SELECT sr.*, u.designation, u.department, u.role
+                SELECT sr.*, u.designation, u.department, u.role, u.full_name
                 FROM signed_reports sr
                 JOIN users u ON sr.username = u.username
                 WHERE sr.status = 'reviewed' AND sr.reporting_month BETWEEN %s AND %s
@@ -1460,7 +1542,7 @@ def admin_panel():
             """, (start_m, end_m))
         else:
             cursor.execute("""
-                SELECT sr.*, u.designation, u.department, u.role
+                SELECT sr.*, u.designation, u.department, u.role, u.full_name
                 FROM signed_reports sr
                 JOIN users u ON sr.username = u.username
                 WHERE sr.status = 'reviewed' AND sr.username = %s AND sr.reporting_month BETWEEN %s AND %s
@@ -1507,37 +1589,43 @@ def admin_panel():
     if selected_user == "All":
         if category_filter == "All":
             cursor.execute("""
-                SELECT username, COUNT(*) AS count
-                FROM worklog
-                WHERE date BETWEEN %s AND %s
-                GROUP BY username
+                SELECT w.username, COALESCE(u.full_name, w.username) AS display_name, COUNT(*) AS count
+                FROM worklog w
+                LEFT JOIN users u ON w.username = u.username
+                WHERE w.date BETWEEN %s AND %s
+                GROUP BY w.username, u.full_name
                 ORDER BY count DESC
             """, (first_date, last_date))
         else:
+            like_pattern = '%"Others%' if category_filter == "Others" else f'%"{category_filter}"%'
             cursor.execute("""
-                SELECT username, COUNT(*) AS count
-                FROM worklog
-                WHERE date BETWEEN %s AND %s
-                  AND task::text LIKE %s
-                GROUP BY username
+                SELECT w.username, COALESCE(u.full_name, w.username) AS display_name, COUNT(*) AS count
+                FROM worklog w
+                LEFT JOIN users u ON w.username = u.username
+                WHERE w.date BETWEEN %s AND %s
+                  AND w.task::text LIKE %s
+                GROUP BY w.username, u.full_name
                 ORDER BY count DESC
-            """, (first_date, last_date, f'%"{category_filter}"%'))
+            """, (first_date, last_date, like_pattern))
     else:
         if category_filter == "All":
             cursor.execute("""
-                SELECT username, COUNT(*) AS count
-                FROM worklog
-                WHERE date BETWEEN %s AND %s AND username = %s
-                GROUP BY username
+                SELECT w.username, COALESCE(u.full_name, w.username) AS display_name, COUNT(*) AS count
+                FROM worklog w
+                LEFT JOIN users u ON w.username = u.username
+                WHERE w.date BETWEEN %s AND %s AND w.username = %s
+                GROUP BY w.username, u.full_name
             """, (first_date, last_date, selected_user))
         else:
+            like_pattern = '%"Others%' if category_filter == "Others" else f'%"{category_filter}"%'
             cursor.execute("""
-                SELECT username, COUNT(*) AS count
-                FROM worklog
-                WHERE date BETWEEN %s AND %s AND username = %s
-                  AND task::text LIKE %s
-                GROUP BY username
-            """, (first_date, last_date, selected_user, f'%"{category_filter}"%'))
+                SELECT w.username, COALESCE(u.full_name, w.username) AS display_name, COUNT(*) AS count
+                FROM worklog w
+                LEFT JOIN users u ON w.username = u.username
+                WHERE w.date BETWEEN %s AND %s AND w.username = %s
+                  AND w.task::text LIKE %s
+                GROUP BY w.username, u.full_name
+            """, (first_date, last_date, selected_user, like_pattern))
 
     summary = cursor.fetchall()
     conn.close()
@@ -1608,7 +1696,8 @@ def admin_add_user():
         gender = request.form["gender"]
         designation = request.form["designation"]
         department = request.form["department"]
-        role = request.form["role"]
+        roles = request.form.getlist("roles")
+        role = ", ".join(roles)
 
         password = "".join(random.choices(string.ascii_letters + string.digits, k=8))
         hashed = generate_password_hash(password)
@@ -1621,21 +1710,24 @@ def admin_add_user():
             flash("Username or email already exists.", "danger")
         else:
             cursor.execute("""
-                INSERT INTO users (username, password, emp_id, email, gender, designation, department, role, full_name)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO users (username, password, emp_id, email, gender, designation, department, role, full_name, must_change_password)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
             """, (username, hashed, emp_id, email, gender, designation, department, role, full_name or None))
             conn.commit()
 
             # Send credentials email
             try:
-                body = f"""Dear {username},
+                display_name = full_name if full_name else username
+                body = f"""Dear {display_name},
 
-Your IQAC Connect account has been created. Please find your login credentials below.
+Your IQAC Connect account has been created. Please find your temporary login credentials below.
 
 Username: {username}
 Password: {password}
 
 Login: https://iqacworklog.christuniversity.in/login
+
+Note: For security reasons, you will be required to change this temporary password upon your first login.
 
 Kindly change your password after your first login. If you have any issues, please contact the IQAC Admin.
 
@@ -1674,21 +1766,24 @@ def forgot_password():
     new_password = "".join(random.choices(string.ascii_letters + string.digits, k=8))
     hashed = generate_password_hash(new_password)
 
-    cursor.execute("UPDATE users SET password=%s WHERE username=%s", (hashed, username))
+    cursor.execute("UPDATE users SET password=%s, must_change_password=TRUE WHERE username=%s", (hashed, username))
     conn.commit()
     conn.close()
 
     # Email password
     try:
-        body = f"""Dear {username},
+        display_name = user['full_name'] if user.get('full_name') else username
+        body = f"""Dear {display_name},
 
-Your password for the IQAC Connect account has been successfully reset. Please find your updated login credentials below:
+Your password for the IQAC Connect account has been successfully reset. Please find your temporary login credentials below:
 
 Username: {username}
 New Password: {new_password}
 
 You may log in using the following link:
 https://iqacworklog.christuniversity.in/login
+
+Note: For security reasons, you will be required to change this temporary password upon logging in.
 
 If you did not request this reset or require any assistance, please contact the IQAC Admin.
 
@@ -1723,10 +1818,23 @@ def admin_report():
         return redirect("/dashboard")
 
     # Fetch users
-    cursor.execute("SELECT username, emp_id FROM users WHERE role NOT IN ('Admin', 'School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
+    # Fetch coordinators
+    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'Coordinator') > 0 ORDER BY username")
+    coordinators = cursor.fetchall()
+
     logs = []
+    submitted_reports = None
+    selected_coord = None
+    filter_mode_coord = "month"
+    selected_month_coord = None
+    from_date_coord = None
+    to_date_coord = None
+    selected_academic_year_coord = None
+    form_type = "worklog"
+
     selected_user = None
     filter_mode = "date"
     from_date = None
@@ -1736,94 +1844,171 @@ def admin_report():
     category_filter = "All"
 
     if request.method == "POST":
-        selected_user = request.form.get("user")
-        filter_mode = request.form.get("filter_mode")
-        from_date = request.form.get("from_date")
-        to_date = request.form.get("to_date")
-        selected_month = request.form.get("month")
-        selected_academic_year = request.form.get("academic_year")
-        category_filter = request.form.get("category_filter", "All")
+        form_type = request.form.get("form_type", "worklog")
+        if form_type == "coordinator":
+            selected_coord = request.form.get("coordinator")
+            filter_mode_coord = request.form.get("filter_mode_coord", "month")
+            selected_month_coord = request.form.get("month")
+            from_date_coord = request.form.get("from_date")
+            to_date_coord = request.form.get("to_date")
+            selected_academic_year_coord = request.form.get("academic_year")
 
-        if not selected_user:
-            flash("Please select a user.", "danger")
+            query_ok = False
+            query = """
+                SELECT sr.*, u.designation, u.department, u.full_name, u.email, u.role as user_role
+                FROM signed_reports sr
+                JOIN users u ON sr.username = u.username
+                WHERE sr.status != 'pending_upload'
+            """
+            params = []
 
-        elif filter_mode == "academic_year":
-            if not selected_academic_year:
-                flash("Please select an academic year.", "danger")
-            else:
-                # Academic year format: "2025-2026" means May 2025 to April 2026
-                start_year, end_year = selected_academic_year.split("-")
-                first = f"{start_year}-05-01"  # May 1st of start year
-                last = f"{end_year}-04-30"     # April 30th of end year
-
-                if selected_user == "All":
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.date BETWEEN %s AND %s
-                        ORDER BY w.username, w.date
-                    """, (first, last))
+            if filter_mode_coord == "month":
+                if not selected_month_coord:
+                    flash("Please select a month.", "danger")
                 else:
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.username=%s AND w.date BETWEEN %s AND %s
-                        ORDER BY w.date
-                    """, (selected_user, first, last))
-
-                logs = cursor.fetchall()
-
-        elif filter_mode == "month":
-            if not selected_month:
-                flash("Please select a month.", "danger")
-            else:
-                year, month = selected_month.split("-")
-                first = f"{year}-{month}-01"
-                last = f"{year}-{month}-{calendar.monthrange(int(year), int(month))[1]}"
-
-                if selected_user == "All":
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.date BETWEEN %s AND %s
-                        ORDER BY w.username, w.date
-                    """, (first, last))
+                    query += " AND sr.reporting_month = %s"
+                    params.append(selected_month_coord)
+                    query_ok = True
+            elif filter_mode_coord == "academic_year":
+                if not selected_academic_year_coord:
+                    flash("Please select an academic year.", "danger")
                 else:
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.username=%s AND w.date BETWEEN %s AND %s
-                        ORDER BY w.date
-                    """, (selected_user, first, last))
-
-                logs = cursor.fetchall()
-
-        elif filter_mode == "date":
-            if not from_date or not to_date:
-                flash("Select From and To dates.", "danger")
-            else:
-                if selected_user == "All":
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.date BETWEEN %s AND %s
-                        ORDER BY w.username, w.date
-                    """, (from_date, to_date))
+                    start_year, end_year = selected_academic_year_coord.split("-")
+                    start_month = f"{start_year}-05"
+                    end_month = f"{end_year}-04"
+                    query += " AND sr.reporting_month BETWEEN %s AND %s"
+                    params.extend([start_month, end_month])
+                    query_ok = True
+            elif filter_mode_coord == "date":
+                if not from_date_coord or not to_date_coord:
+                    flash("Select From and To dates.", "danger")
                 else:
-                    cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
-                        FROM worklog w
-                        JOIN users u ON w.username=u.username
-                        WHERE w.username=%s AND w.date BETWEEN %s AND %s
-                        ORDER BY w.date
-                    """, (selected_user, from_date, to_date))
+                    # Convert date format YYYY-MM-DD to YYYY-MM
+                    start_month = from_date_coord[:7]
+                    end_month = to_date_coord[:7]
+                    query += " AND sr.reporting_month BETWEEN %s AND %s"
+                    params.extend([start_month, end_month])
+                    query_ok = True
 
-                logs = cursor.fetchall()
+            if query_ok:
+                if selected_coord != "All":
+                    query += " AND sr.username = %s"
+                    params.append(selected_coord)
+                query += " ORDER BY u.username, sr.reporting_month"
+                
+                cursor.execute(query, tuple(params))
+                reports_rows = cursor.fetchall()
+                
+                submitted_reports = []
+                for r in reports_rows:
+                    r_dict = dict(r)
+                    is_aqar = is_aqar_coordinator(r_dict)
+                    r_dict['report_type'] = "aqar_coordinator" if is_aqar else "standard"
+                    
+                    cursor.execute("""
+                        SELECT form_data FROM report_drafts 
+                        WHERE username=%s AND report_type=%s AND reporting_month=%s
+                    """, (r_dict["username"], r_dict['report_type'], r_dict['reporting_month']))
+                    draft_row = cursor.fetchone()
+                    
+                    draft_data = None
+                    if draft_row:
+                        try:
+                            draft_data = json.loads(draft_row["form_data"])
+                        except Exception:
+                            pass
+                    
+                    r_dict['draft_data'] = draft_data
+                    submitted_reports.append(r_dict)
+        else:
+            selected_user = request.form.get("user")
+            filter_mode = request.form.get("filter_mode")
+            from_date = request.form.get("from_date")
+            to_date = request.form.get("to_date")
+            selected_month = request.form.get("month")
+            selected_academic_year = request.form.get("academic_year")
+            category_filter = request.form.get("category_filter", "All")
+
+            if not selected_user:
+                flash("Please select a user.", "danger")
+
+            elif filter_mode == "academic_year":
+                if not selected_academic_year:
+                    flash("Please select an academic year.", "danger")
+                else:
+                    # Academic year format: "2025-2026" means May 2025 to April 2026
+                    start_year, end_year = selected_academic_year.split("-")
+                    first = f"{start_year}-05-01"  # May 1st of start year
+                    last = f"{end_year}-04-30"     # April 30th of end year
+
+                    if selected_user == "All":
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.date BETWEEN %s AND %s
+                            ORDER BY w.username, w.date
+                        """, (first, last))
+                    else:
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.username=%s AND w.date BETWEEN %s AND %s
+                            ORDER BY w.date
+                        """, (selected_user, first, last))
+
+                    logs = cursor.fetchall()
+
+            elif filter_mode == "month":
+                if not selected_month:
+                    flash("Please select a month.", "danger")
+                else:
+                    year, month = selected_month.split("-")
+                    first = f"{year}-{month}-01"
+                    last = f"{year}-{month}-{calendar.monthrange(int(year), int(month))[1]}"
+
+                    if selected_user == "All":
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.date BETWEEN %s AND %s
+                            ORDER BY w.username, w.date
+                        """, (first, last))
+                    else:
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.username=%s AND w.date BETWEEN %s AND %s
+                            ORDER BY w.date
+                        """, (selected_user, first, last))
+
+                    logs = cursor.fetchall()
+
+            elif filter_mode == "date":
+                if not from_date or not to_date:
+                    flash("Select From and To dates.", "danger")
+                else:
+                    if selected_user == "All":
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.date BETWEEN %s AND %s
+                            ORDER BY w.username, w.date
+                        """, (from_date, to_date))
+                    else:
+                        cursor.execute("""
+                            SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
+                            FROM worklog w
+                            JOIN users u ON w.username=u.username
+                            WHERE w.username=%s AND w.date BETWEEN %s AND %s
+                            ORDER BY w.date
+                        """, (selected_user, from_date, to_date))
+
+                    logs = cursor.fetchall()
 
     # Process logs to parse JSON tasks and filter by category
     processed_logs = []
@@ -1841,9 +2026,14 @@ def admin_report():
 
         # Apply category filter
         if category_filter and category_filter != "All":
-            if category_filter in tasks_dict:
+            matched_key = None
+            for key in tasks_dict.keys():
+                if key == category_filter or (category_filter == "Others" and key.startswith("Others (")):
+                    matched_key = key
+                    break
+            if matched_key:
                 # Only show the selected category's task
-                tasks_dict = {category_filter: tasks_dict[category_filter]}
+                tasks_dict = {matched_key: tasks_dict[matched_key]}
             else:
                 # Skip this log if selected category not present
                 continue
@@ -1857,6 +2047,15 @@ def admin_report():
         "admin_report.html",
         users=users,
         logs=processed_logs,
+        coordinators=coordinators,
+        submitted_reports=submitted_reports,
+        selected_coord=selected_coord,
+        selected_month_coord=selected_month_coord,
+        filter_mode_coord=filter_mode_coord,
+        from_date_coord=from_date_coord,
+        to_date_coord=to_date_coord,
+        selected_academic_year_coord=selected_academic_year_coord,
+        form_type=form_type,
         selected_user=selected_user,
         from_date=from_date,
         to_date=to_date,
@@ -1887,7 +2086,7 @@ def admin_report_ai():
         return redirect("/dashboard")
 
     # Fetch users
-    cursor.execute("SELECT username, emp_id FROM users WHERE role NOT IN ('Admin', 'School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     logs = []
@@ -1924,7 +2123,7 @@ def admin_report_ai():
 
                 if selected_user == "All":
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.date BETWEEN %s AND %s
@@ -1932,7 +2131,7 @@ def admin_report_ai():
                     """, (first, last))
                 else:
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1951,7 +2150,7 @@ def admin_report_ai():
 
                 if selected_user == "All":
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.date BETWEEN %s AND %s
@@ -1959,7 +2158,7 @@ def admin_report_ai():
                     """, (first, last))
                 else:
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -1974,7 +2173,7 @@ def admin_report_ai():
             else:
                 if selected_user == "All":
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.date BETWEEN %s AND %s
@@ -1982,7 +2181,7 @@ def admin_report_ai():
                     """, (from_date, to_date))
                 else:
                     cursor.execute("""
-                        SELECT w.*, u.emp_id, u.designation, u.username
+                        SELECT w.*, u.emp_id, u.designation, u.username, u.full_name
                         FROM worklog w
                         JOIN users u ON w.username=u.username
                         WHERE w.username=%s AND w.date BETWEEN %s AND %s
@@ -2007,9 +2206,14 @@ def admin_report_ai():
 
         # Apply category filter
         if category_filter and category_filter != "All":
-            if category_filter in tasks_dict:
+            matched_key = None
+            for key in tasks_dict.keys():
+                if key == category_filter or (category_filter == "Others" and key.startswith("Others (")):
+                    matched_key = key
+                    break
+            if matched_key:
                 # Only show the selected category's task
-                tasks_dict = {category_filter: tasks_dict[category_filter]}
+                tasks_dict = {matched_key: tasks_dict[matched_key]}
             else:
                 # Skip this log if selected category not present
                 continue
@@ -2182,7 +2386,8 @@ def admin_edit_user(id):
         gender = request.form["gender"]
         designation = request.form["designation"]
         department = request.form["department"]
-        role = request.form["role"]
+        roles = request.form.getlist("roles")
+        role = ", ".join(roles)
 
         old_username = user["username"]
 
@@ -2288,21 +2493,24 @@ def admin_reset_password(id):
     new_password = "".join(random.choices(string.ascii_letters + string.digits, k=8))
     hashed = generate_password_hash(new_password)
 
-    cursor.execute("UPDATE users SET password=%s WHERE id=%s", (hashed, id))
+    cursor.execute("UPDATE users SET password=%s, must_change_password=TRUE WHERE id=%s", (hashed, id))
     conn.commit()
     conn.close()
 
     # Send email
     try:
-        body = f"""Dear {user['username']},
+        display_name = user['full_name'] if user.get('full_name') else user['username']
+        body = f"""Dear {display_name},
 
-Your password for the IQAC Connect account has been successfully reset. Please find your updated login credentials below:
+Your password for the IQAC Connect account has been successfully reset. Please find your temporary login credentials below:
 
 Username: {user['username']}
 New Password: {new_password}
 
 You may log in using the following link:
 https://iqacworklog.christuniversity.in/login
+
+Note: For security reasons, you will be required to change this temporary password upon logging in.
 
 If you did not request this reset or require any assistance, please contact the IQAC Admin.
 
@@ -2318,30 +2526,6 @@ CHRIST (Deemed to be University)"""
     return redirect("/admin_manage_users")
 
 
-# ------------------ EMAIL REMINDER ROUTES (for scheduler/cron) ------------------
-@app.route("/send_29th_reminders")
-def trigger_29th_reminders():
-    """Trigger 29th reminder emails - can be called by scheduler"""
-    today = datetime.now().date()
-    
-    # Only send on 29th of the month
-    if today.day != 29:
-        return f"Not the 29th. Today is {today.strftime('%d-%m-%Y')}", 400
-    
-    result = send_29th_reminder()
-    return result, 200
-
-@app.route("/send_1st_deadline_reminders")
-def trigger_1st_deadline_reminders():
-    """Trigger 1st deadline reminder emails - can be called by scheduler"""
-    today = datetime.now().date()
-    
-    # Only send on 1st of the month
-    if today.day != 1:
-        return f"Not the 1st. Today is {today.strftime('%d-%m-%Y')}", 400
-    
-    result = send_1st_deadline_reminder()
-    return result, 200
 
 # ------------------ IQAC COORDINATOR REPORT REMINDERS ------------------
 def send_iqac_report_reminder(is_deadline=False):
@@ -2356,13 +2540,14 @@ def send_iqac_report_reminder(is_deadline=False):
     cursor = get_cursor(conn)
 
     # Get all IQAC Coordinators
-    cursor.execute("SELECT username, email FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')")
+    cursor.execute("SELECT username, email, full_name FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0")
     coordinators = cursor.fetchall()
 
     sent_count = 0
     for coord in coordinators:
         username = coord['username']
         email = coord['email']
+        display_name = (coord['full_name'] or username).title()
 
         # Check if they've already submitted for this month
         cursor.execute("""
@@ -2376,9 +2561,9 @@ def send_iqac_report_reminder(is_deadline=False):
 
         if is_deadline:
             subject = f"URGENT: IQAC Monthly Report Due TODAY — {month_display}"
-            body = f"""Dear {username.title()},
+            body = f"""Dear {display_name},
 
-This is a final reminder that your Monthly Work Done Report for {month_display} is due TODAY ({deadline_str}).
+This is a final reminder that your Monthly Report for {month_display} is due TODAY ({deadline_str}).
 
 Please log in to the IQAC portal, generate your report, and upload the signed copy before end of day.
 
@@ -2394,9 +2579,9 @@ CHRIST (Deemed to be University)
 This is an automated reminder. Please do not reply.
 """
         else:
-            body = f"""Dear {username.title()},
+            body = f"""Dear {display_name},
 
-This is a reminder that your Monthly Work Done Report for {month_display} is due by {deadline_str}.
+This is a reminder that your Monthly Report for {month_display} is due by {deadline_str}.
 
 Please log in to the IQAC portal, fill in your monthly report, download the PDF, sign it, and upload the signed copy before the deadline.
 
@@ -2422,11 +2607,41 @@ This is an automated reminder. Please do not reply.
 
 def send_auto_iqac_reminders():
     """Daily auto-reminder: fires on days 3–close_day of each month for pending coordinators."""
-    today = datetime.now().date()
+    import pytz
+    ist = pytz.timezone('Asia/Kolkata')
+    today = datetime.now(ist).date()
     open_day, close_day = get_submission_window()
 
     if not (open_day <= today.day <= close_day):
         return f"Not a reminder day (today is {today.day}). Reminders fire on days {open_day}–{close_day}."
+
+    conn = get_db_connection()
+    cursor = get_cursor(conn)
+
+    try:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sent_reminders_log (
+                sent_date DATE PRIMARY KEY
+            )
+        """)
+        conn.commit()
+
+        cursor.execute("SELECT 1 FROM sent_reminders_log WHERE sent_date = %s", (today,))
+        if cursor.fetchone():
+            conn.close()
+            return f"Reminders already sent today ({today}). Skipping."
+
+        try:
+            cursor.execute("INSERT INTO sent_reminders_log (sent_date) VALUES (%s)", (today,))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            conn.close()
+            return f"Another process already sent reminders for today ({today}). Skipping."
+    except Exception as e:
+        conn.rollback()
+        print(f"Warning: Database check for sent_reminders_log failed: {e}")
+        # Proceed anyway using the current connection to ensure emails are not blocked in case of log table issues
 
     # Reporting month is always the previous month
     if today.month == 1:
@@ -2449,10 +2664,8 @@ def send_auto_iqac_reminders():
         days_left_str = f"{days_left} days left"
         subject = f"IQAC Report Reminder — {days_left} Days Left — {month_display}"
 
-    conn = get_db_connection()
-    cursor = get_cursor(conn)
     cursor.execute(
-        "SELECT username, email FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')"
+        "SELECT username, email, full_name FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0"
     )
     coordinators = cursor.fetchall()
 
@@ -2465,9 +2678,10 @@ def send_auto_iqac_reminders():
         if cursor.fetchone():
             continue
 
-        body = f"""Dear {coord['username'].title()},
+        display_name = (coord['full_name'] or coord['username']).title()
+        body = f"""Dear {display_name},
 
-This is an automated reminder that your Monthly Work Done Report for {month_display} has not yet been submitted.
+This is an automated reminder that your Monthly Report for {month_display} has not yet been submitted.
 
 Deadline: {deadline_date} ({days_left_str})
 
@@ -2498,26 +2712,6 @@ def trigger_auto_iqac_reminders():
     return result, 200
 
 
-@app.route("/admin_trigger_iqac_reminder", methods=["POST"])
-def admin_trigger_iqac_reminder():
-    """Admin manually triggers IQAC reminder emails."""
-    if "username" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-    cursor = get_cursor(conn)
-    cursor.execute("SELECT * FROM users WHERE username=%s", (session["username"],))
-    admin = cursor.fetchone()
-    conn.close()
-
-    if not admin or admin["role"].lower() != "admin":
-        flash("Access denied.", "danger")
-        return redirect("/dashboard")
-
-    result = send_iqac_report_reminder(is_deadline=False)
-    flash(result, "success")
-    return redirect("/admin_signed_reports")
-
 
 # ------------------ IQAC COORDINATOR DASHBOARD ------------------
 @app.route("/iqac_dashboard")
@@ -2532,7 +2726,7 @@ def iqac_dashboard():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -2560,7 +2754,7 @@ def iqac_dashboard():
             workshop_attachments[m].append({'id': row["id"], 'name': row["filename"], 'url': row["cloudinary_url"]})
         ws_conn.close()
 
-    is_open, reporting_month_str, open_day, close_day, window_msg = check_submission_window()
+    is_open, reporting_month_str, open_day, close_day, window_msg = check_submission_window(username)
 
     # Check if a draft exists for the active window's reporting month
     has_draft = False
@@ -2583,6 +2777,8 @@ def iqac_dashboard():
 
     return render_template("iqac_coordinator_dashboard.html",
         username=username,
+        user=user,
+        is_aqar_coordinator=is_aqar_coordinator(user),
         submitted_reports=submitted_reports,
         upload_open=is_open,
         reporting_month_str=reporting_month_str,
@@ -2608,12 +2804,12 @@ def iqac_monthly_report():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
 
-    _, reporting_month_str, _, _, _ = check_submission_window()
+    _, reporting_month_str, _, _, _ = check_submission_window(username)
     reporting_month_display = datetime.strptime(reporting_month_str, "%Y-%m").strftime("%m-%Y")
 
     report_type = "aqar_coordinator" if is_aqar_coordinator(user) else "standard"
@@ -2634,6 +2830,26 @@ def iqac_monthly_report():
     locked = signed_row is not None and signed_row["status"] in ('pending_upload', 'uploaded', 'reviewed')
     can_unlock = signed_row is not None and signed_row["status"] == 'pending_upload'
     rejection_remarks = signed_row["remarks"] if (signed_row and signed_row["status"] == 'corrections_requested') else None
+
+    # Check if this is the current calendar month (drafting period)
+    today = datetime.now().date()
+    current_calendar_month_str = f"{today.year}-{today.month:02d}"
+    is_current_month = (reporting_month_str == current_calendar_month_str)
+
+    is_open, _, _, _, window_msg = check_submission_window(username)
+    is_correction_requested = signed_row is not None and signed_row["status"] == 'corrections_requested'
+    lock_reason = None
+    
+    if is_current_month:
+        # Never locked for drafting current calendar month (submission window closed does not apply)
+        locked = signed_row is not None and signed_row["status"] in ('pending_upload', 'uploaded', 'reviewed')
+        can_unlock = signed_row is not None and signed_row["status"] == 'pending_upload'
+    else:
+        # Standard locking for previous months when window is closed
+        if not is_open and not is_correction_requested:
+            locked = True
+            can_unlock = False
+            lock_reason = "submission_window_closed"
 
     # Load existing workshop attachment filenames from DB (Cloudinary-backed)
     ws_files_map = {}
@@ -2668,9 +2884,11 @@ def iqac_monthly_report():
                                draft_data=draft_data,
                                locked=locked,
                                can_unlock=can_unlock,
+                               lock_reason=lock_reason,
                                rejection_remarks=rejection_remarks,
                                ws_files_map=ws_files_map,
-                               ws_urls_map=ws_urls_map)
+                               ws_urls_map=ws_urls_map,
+                               is_current_month=is_current_month)
 
     return render_template("iqac_monthly_report.html", username=username, user=user,
                            reporting_month_str=reporting_month_str,
@@ -2678,9 +2896,11 @@ def iqac_monthly_report():
                            draft_data=draft_data,
                            locked=locked,
                            can_unlock=can_unlock,
+                           lock_reason=lock_reason,
                            rejection_remarks=rejection_remarks,
                            ws_files_map=ws_files_map,
-                           ws_urls_map=ws_urls_map)
+                           ws_urls_map=ws_urls_map,
+                           is_current_month=is_current_month)
 
 
 def sort_list_fields(form_data, report_type, ws_files=None):
@@ -2731,7 +2951,7 @@ def sort_list_fields(form_data, report_type, ws_files=None):
         sort_section("act_date[]", ["act_date[]", "act_task[]", "act_area[]", "act_area_other[]", "act_stakeholders[]", "act_outcome[]", "act_status[]"])
         sort_section("meet_date[]", ["meet_date[]", "meet_programme[]", "meet_role[]", "meet_outcome[]"])
     elif report_type == "standard":
-        sort_section("meeting_date[]", ["meeting_date[]", "dept_name[]", "participants[]", "topics[]", "action_points[]", "responsibility_area[]"])
+        sort_section("meeting_date[]", ["meeting_date[]", "dept_name[]", "participants[]", "topics[]", "action_points[]"])
         sorted_ws_files = sort_section("ws_date[]", ["ws_date[]", "ws_venue[]", "ws_title[]", "ws_participants[]", "ws_resource[]", "ws_responsibility[]", "ws_existing_file[]"])
         return sorted_ws_files
     return None
@@ -2748,7 +2968,7 @@ def iqac_report_save_draft():
     try:
         cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
         user = cursor.fetchone()
-        if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+        if not user or not is_coordinator(user["role"]):
             return {"success": False, "error": "Access denied"}, 403
 
         if request.is_json:
@@ -2781,6 +3001,16 @@ def iqac_report_save_draft():
         signed_row = cursor.fetchone()
         if signed_row and signed_row["status"] in ('pending_upload', 'uploaded', 'reviewed'):
             return {"success": False, "error": "This report is locked because the PDF has been generated/submitted. No modifications are allowed."}, 400
+
+        today = datetime.now().date()
+        current_calendar_month_str = f"{today.year}-{today.month:02d}"
+        is_current_month = (reporting_month == current_calendar_month_str)
+
+        is_correction_requested = signed_row and signed_row.get("status") == "corrections_requested"
+        is_open, _, _, _, window_msg = check_submission_window(username)
+        if not is_current_month and not is_open and not is_correction_requested:
+            conn.close()
+            return {"success": False, "error": "Saving draft is locked. The submission window closed after the 10th of the month."}, 400
 
         # Sort the fields on the backend first
         sorted_ws_files = None
@@ -3251,7 +3481,7 @@ def iqac_upload_signed_report():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -3273,7 +3503,7 @@ def iqac_upload_signed_report():
     is_correction_requested = report_row and report_row.get("status") == "corrections_requested"
 
     # Enforce submission window only if NOT a requested correction
-    is_open, _, _, _, window_msg = check_submission_window()
+    is_open, _, _, _, window_msg = check_submission_window(username)
     if not is_open and not is_correction_requested:
         conn.close()
         flash("Upload window is currently closed. " + window_msg, "danger")
@@ -3346,11 +3576,12 @@ def iqac_upload_signed_report():
         recipients = notify_cur.fetchall()
         notify_conn.close()
 
+        display_name = (user.get('full_name') or username).strip().title()
         reporting_month_display = datetime.strptime(reporting_month, "%Y-%m").strftime("%m-%Y")
-        subject = f"IQAC Report Submitted – {username.title()} ({reporting_month_display})"
+        subject = f"IQAC Report Submitted – {display_name} ({reporting_month_display})"
         body = (
             f"Dear Admin/Secretary,\n\n"
-            f"{username.title()} ({user.get('designation', '')}, {user.get('department', '')}) "
+            f"{display_name} ({user.get('designation', '')}, {user.get('department', '')}) "
             f"has submitted their signed IQAC report for {reporting_month_display}.\n\n"
             f"Please log in to review and authorise the report.\n\n"
             f"Regards,\n"
@@ -3510,7 +3741,7 @@ def secretary_dashboard():
     prev = now.replace(day=1) - timedelta(days=1)
     current_report_month = prev.strftime("%Y-%m")
 
-    cursor.execute("SELECT COUNT(*) as count FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')")
+    cursor.execute("SELECT COUNT(*) as count FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0")
     total_coordinators = cursor.fetchone()['count']
 
     cursor.execute("""
@@ -3518,7 +3749,7 @@ def secretary_dashboard():
         JOIN users u ON sr.username = u.username
         WHERE sr.reporting_month = %s
         AND sr.status IN ('uploaded', 'reviewed')
-        AND u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        AND (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
     """, (current_report_month,))
     submitted_coordinators = cursor.fetchone()['count']
 
@@ -3527,7 +3758,7 @@ def secretary_dashboard():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('uploaded', 'reviewed')
     """, (current_report_month,))
     submitted_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
@@ -3535,13 +3766,13 @@ def secretary_dashboard():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE u.role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('pending_upload', 'corrections_requested')
     """, (current_report_month,))
     draft_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     cursor.execute("""
-        SELECT username, full_name FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator')
+        SELECT username, full_name FROM users WHERE (strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0)
         AND username NOT IN (
             SELECT DISTINCT username FROM signed_reports WHERE reporting_month = %s
         )
@@ -3549,8 +3780,23 @@ def secretary_dashboard():
     pending_coordinators = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     # Coordinators list for Quick Summary dropdown
-    cursor.execute("SELECT username, role FROM users WHERE role IN ('School IQAC Coordinator', 'Campus IQAC Coordinator') ORDER BY username")
+    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
+
+    # Handle submission window settings update
+    if request.method == "POST" and "update_window" in request.form:
+        new_close = request.form.get("submission_close_day", "5").strip()
+        if new_close.isdigit():
+            close_i = int(new_close)
+            if 1 <= close_i <= 31:
+                cursor.execute("UPDATE app_settings SET value='1' WHERE key='submission_open_day'")
+                cursor.execute("UPDATE app_settings SET value=%s WHERE key='submission_close_day'", (new_close,))
+                conn.commit()
+                flash(f"Submission window updated: 1st to {close_i}th of each month.", "success")
+            else:
+                flash("Invalid close day. Must be between 1 and 31.", "danger")
+        conn.close()
+        return redirect("/secretary_dashboard")
 
     # Quick Summary form handling
     coord_reports = None
@@ -3570,14 +3816,14 @@ def secretary_dashboard():
         year_int = int(coord_year)
         if coord_report_type == "yearly":
             start_m = f"{year_int}-01"
-            end_m = f"{year_int}-12"
+            end_m = f"{now.year}-12"
         else:
             start_m = coord_from_month or f"{year_int}-01"
             end_m = coord_to_month or f"{year_int}-{now.month:02d}"
 
         if coord_user == "All":
             cursor.execute("""
-                SELECT sr.*, u.designation, u.department, u.role
+                SELECT sr.*, u.designation, u.department, u.role, u.full_name
                 FROM signed_reports sr
                 JOIN users u ON sr.username = u.username
                 WHERE sr.status = 'reviewed' AND sr.reporting_month BETWEEN %s AND %s
@@ -3585,7 +3831,7 @@ def secretary_dashboard():
             """, (start_m, end_m))
         else:
             cursor.execute("""
-                SELECT sr.*, u.designation, u.department, u.role
+                SELECT sr.*, u.designation, u.department, u.role, u.full_name
                 FROM signed_reports sr
                 JOIN users u ON sr.username = u.username
                 WHERE sr.status = 'reviewed' AND sr.username = %s AND sr.reporting_month BETWEEN %s AND %s
@@ -3597,13 +3843,14 @@ def secretary_dashboard():
 
     return render_template("secretary_dashboard.html",
         username=session["username"],
-        current_report_month=current_report_month,
+        current_report_month=datetime.strptime(current_report_month, "%Y-%m").strftime("%m-%Y"),
         total_coordinators=total_coordinators,
         submitted_coordinators=submitted_coordinators,
         submission_pct=submission_pct,
         pending_coordinators=pending_coordinators,
         submitted_coordinator_names=submitted_coordinator_names,
         draft_coordinator_names=draft_coordinator_names,
+        **dict(zip(('submission_open_day', 'submission_close_day'), get_submission_window())),
         coordinators=coordinators,
         coord_reports=coord_reports,
         coord_user=coord_user,
@@ -3616,17 +3863,14 @@ def secretary_dashboard():
 
 # ------------------ SCHEDULER ------------------
 from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
 
-scheduler = BackgroundScheduler()
+ist = pytz.timezone('Asia/Kolkata')
+scheduler = BackgroundScheduler(timezone=ist)
 
-# Daily at 6 PM — sends report submission reminder to coordinators who haven't submitted (days 1–5 of month)
+# Daily at 6 PM IST — sends report submission reminder to coordinators who haven't submitted (days 1–5 of month)
 scheduler.add_job(send_auto_iqac_reminders, 'cron', hour=18, minute=0, id='iqac_report_reminder')
 
-# 29th of every month at 9 AM — worklog missing entries reminder to employees
-scheduler.add_job(send_29th_reminder, 'cron', day=29, hour=9, minute=0, id='worklog_29th_reminder')
-
-# 1st of every month at 9 AM — final worklog deadline reminder to employees
-scheduler.add_job(send_1st_deadline_reminder, 'cron', day=1, hour=9, minute=0, id='worklog_1st_reminder')
 
 scheduler.start()
 

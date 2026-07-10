@@ -7,9 +7,142 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-      html { height: 100%; }
-      body { background-color: #f8fafc; min-height: 100%; display: flex; flex-direction: column; }
+      <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #212529;
+      --border-color: #dee2e6;
+      --table-striped-bg: rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f1f5f9;
+      --border-color: #334155;
+      --table-striped-bg: rgba(255, 255, 255, 0.05);
+          color-scheme: dark;
+    }
+
+    [data-theme="dark"] .btn-outline-primary {
+      color: #38bdf8 !important;
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .btn-outline-primary:hover,
+    [data-theme="dark"] .btn-outline-primary:focus,
+    [data-theme="dark"] .btn-outline-primary:active {
+      background-color: #38bdf8 !important;
+      color: #0f172a !important;
+      border-color: #38bdf8 !important;
+    }
+
+
+    [data-theme="dark"] .input-group-text {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary:hover {
+      background-color: var(--border-color) !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .dropdown-menu {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item {
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item:hover {
+      background-color: var(--border-color) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-header {
+      color: var(--text-color) !important;
+      opacity: 0.8;
+    }
+    [data-theme="dark"] .dropdown-divider {
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] input:-webkit-autofill,
+    [data-theme="dark"] input:-webkit-autofill:hover,
+    [data-theme="dark"] input:-webkit-autofill:focus,
+    [data-theme="dark"] textarea:-webkit-autofill,
+    [data-theme="dark"] textarea:-webkit-autofill:hover,
+    [data-theme="dark"] textarea:-webkit-autofill:focus,
+    [data-theme="dark"] select:-webkit-autofill,
+    [data-theme="dark"] select:-webkit-autofill:hover,
+    [data-theme="dark"] select:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--text-color) !important;
+      -webkit-box-shadow: 0 0 0px 1000px var(--card-bg) inset !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    [data-theme="dark"] .flatpickr-calendar {
+      background: #1e293b !important;
+      color: #f1f5f9 !important;
+      border-color: #334155 !important;
+      box-shadow: 1px 0 0 #334155, -1px 0 0 #334155, 0 1px 0 #334155, 0 -1px 0 #334155, 0 3px 13px rgba(0,0,0,0.8) !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-months .flatpickr-month,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekdays,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekday,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.today {
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay:hover {
+      background: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.selected {
+      background: #003366 !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed:hover {
+      color: #475569 !important;
+      background: transparent !important;
+      border-color: transparent !important;
+      cursor: not-allowed !important;
+      opacity: 0.4 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay {
+      color: #475569 !important;
+    }
+
+
+    [data-theme="dark"] .action-btns .btn-action-outline {
+      color: #38bdf8 !important;
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .action-btns .btn-action-outline:hover {
+      background-color: #38bdf8 !important;
+      color: #0f172a !important;
+      border-color: #38bdf8 !important;
+    }
+
+
+      html { height: 100%; background-color: var(--bg-color); }
+      body { background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; min-height: 100%; display: flex; flex-direction: column; }
       .main-container { flex: 1; }
       header {
         background-color:#003366;
@@ -23,6 +156,66 @@
       .logo-container img { height: 75px; width: auto; }
       .header-title { color: #fff; margin: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
       .header-title h5 { font-size: 1.25rem; font-weight: 700; margin: 0; }
+
+    /* ── Responsive header for small screens ── */
+    @media (max-width: 576px) {
+      header {
+        padding: 0.6rem 0.75rem !important;
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+      }
+      .logo-container img {
+        height: 44px !important;
+      }
+      .header-title {
+        margin: 0 0.5rem !important;
+        min-width: 0;
+      }
+      .header-title h5, .header-title h6 {
+        font-size: 0.72rem !important;
+        line-height: 1.2 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-title small {
+        font-size: 0.65rem !important;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-title .btn-warning {
+        font-size: 0.7rem !important;
+        padding: 2px 6px !important;
+      }
+      /* Shrink user pill button on mobile */
+      #userMenuDropdown {
+        padding: 2px 8px !important;
+        height: auto !important;
+        font-size: 0.72rem !important;
+      }
+      #userMenuDropdown .fw-semibold {
+        max-width: 64px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+      }
+      #roleDropdown {
+        font-size: 0.7rem !important;
+        padding: 2px 6px !important;
+      }
+    }
+    @media (max-width: 400px) {
+      .header-title h5, .header-title h6 {
+        font-size: 0.62rem !important;
+      }
+      .logo-container img {
+        height: 36px !important;
+      }
+    }
+
       h5, h6 { margin:0; }
       .btn-primary { background-color:#003366; border-color:#003366; }
       .btn-primary:hover { background-color:#004080; border-color:#004080; }
@@ -58,7 +251,123 @@
       footer .divider { color: #ffc107; font-weight: bold; }
       footer a { color: #fff; text-decoration: none; }
       footer a:hover { text-decoration: underline; }
-    </style>
+      .action-btns {
+        white-space: nowrap;
+      }
+      @media (max-width: 768px) {
+        header {
+          flex-direction: column !important;
+          align-items: center !important;
+          gap: 1rem;
+          padding: 1rem;
+        }
+        .header-title {
+          position: static !important;
+          transform: none !important;
+          margin: 0.5rem 0 !important;
+        }
+        header div {
+          display: flex;
+          justify-content: center;
+          width: 100%;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+      }
+    
+    .card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .table {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .table td, .table th {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .table-striped tbody tr:nth-of-type(odd) td {
+      background-color: var(--table-striped-bg) !important;
+    }
+    .list-group-item {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control, .form-select {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control:focus, .form-select:focus {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+    }
+    .modal-content {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .text-primary {
+      color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .form-label {
+      color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .bg-light {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .login-card, .password-card, .forgot-card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .header h5, [data-theme="dark"] .header h6 {
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .form-control::placeholder {
+      color: #94a3b8 !important;
+      opacity: 0.8;
+    }
+    [data-theme="dark"] .text-muted {
+      color: #94a3b8 !important;
+    }
+
+    /* Profile pill button glassmorphic hover effect */
+    .dropdown #userMenuDropdown {
+      transition: all 0.2s ease-in-out !important;
+    }
+    .dropdown #userMenuDropdown:hover,
+    .dropdown #userMenuDropdown[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.15) !important;
+      border-color: rgba(255, 255, 255, 0.6) !important;
+      color: #fff !important;
+    }
+    .dropdown .btn-outline-secondary:hover,
+    .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(0, 0, 0, 0.05) !important;
+      border-color: rgba(0, 0, 0, 0.25) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown .btn-outline-secondary:hover,
+    [data-theme="dark"] .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      color: var(--text-color) !important;
+    }
+
+</style>
   </head>
   <body>
     <div class="container py-3 main-container">
@@ -92,45 +401,49 @@
       <div class="card">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="text-primary mb-0" style="color:#003366 !important;">All Registered Users ({{ users|length }})</h6>
+            <h6 class="text-primary mb-0">All Registered Users ({{ users|length }})</h6>
             <input type="text" id="searchInput" class="form-control search-box" placeholder="Search users...">
           </div>
           
           <div class="table-responsive">
-            <table class="table table-hover table-bordered" id="usersTable">
+            <table class="table table-hover table-bordered" id="usersTable" style="table-layout: fixed; width: 100%; min-width: 850px;">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Username</th>
-                  <th>Employee ID</th>
-                  <th>Email</th>
-                  <th>Gender</th>
-                  <th>Designation</th>
-                  <th>Department</th>
-                  <th>Role</th>
-                  <th>Actions</th>
+                  <th style="width: 5%;">#</th>
+                  <th style="width: 17%;">Username</th>
+                  <th style="width: 28%;">Email</th>
+                  <th style="width: 20%;">Designation</th>
+                  <th style="width: 18%;">Role</th>
+                  <th style="width: 12%;">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {% for user in users %}
-                <tr>
+                <tr style="cursor: pointer;" onclick="showUserDetailsModal(event, '{{ user.id }}')">
                   <td>{{ loop.index }}</td>
-                  <td><strong>{{ user.username }}</strong></td>
-                  <td>{{ user.emp_id }}</td>
-                  <td>{{ user.email }}</td>
-                  <td>{{ user.gender }}</td>
-                  <td>{{ user.designation }}</td>
-                  <td>{{ user.department }}</td>
                   <td>
-                    {% if user.role.lower() == 'admin' %}
-                      <span class="badge badge-admin">Admin</span>
-                    {% elif user.role.lower() == 'school iqac coordinator' %}
-                      <span class="badge bg-success">School Coordinator</span>
-                    {% elif user.role.lower() == 'campus iqac coordinator' %}
-                      <span class="badge bg-info text-dark">Campus Coordinator</span>
-                    {% else %}
-                      <span class="badge badge-employee">{{ user.role }}</span>
+                    <strong>{{ user.username }}</strong>
+                    {% if user.full_name %}
+                      <br><small class="text-muted">{{ user.full_name }}</small>
                     {% endif %}
+                  </td>
+                  <td>{{ user.email }}</td>
+                  <td>{{ user.designation }}</td>
+                  <td>
+                    {% for r in user.role.split(',') %}
+                      {% set role_clean = r.strip() %}
+                      {% if role_clean.lower() == 'admin' %}
+                        <span class="badge badge-admin d-block mb-1 text-center">{{ role_clean }}</span>
+                      {% elif role_clean.lower() == 'school iqac coordinator' %}
+                        <span class="badge bg-success d-block mb-1 text-center">School Coordinator</span>
+                      {% elif role_clean.lower() == 'campus iqac coordinator' %}
+                        <span class="badge bg-info text-dark d-block mb-1 text-center">Campus Coordinator</span>
+                      {% elif role_clean.lower() == 'secretary' %}
+                        <span class="badge bg-warning text-dark d-block mb-1 text-center">Secretary</span>
+                      {% else %}
+                        <span class="badge badge-employee d-block mb-1 text-center">{{ role_clean }}</span>
+                      {% endif %}
+                    {% endfor %}
                   </td>
                   <td class="action-btns">
                     <a href="/admin_edit_user/{{ user.id }}" class="btn btn-action btn-sm" title="Edit">
@@ -148,54 +461,120 @@
                     {% endif %}
                   </td>
                 </tr>
-
-                <!-- Delete Modal -->
-                <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1">
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header modal-header-delete">
-                        <h5 class="modal-title">Confirm Delete</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                      </div>
-                      <div class="modal-body">
-                        <p>Are you sure you want to delete user <strong>{{ user.username }}</strong>?</p>
-                        <p class="text-muted"><small>This will also delete all their worklog entries. This action cannot be undone.</small></p>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <form action="/admin_delete_user/{{ user.id }}" method="POST" style="display:inline;">
-                          <button type="submit" class="btn btn-delete-confirm">Delete User</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Reset Password Modal -->
-                <div class="modal fade" id="resetModal{{ user.id }}" tabindex="-1">
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header modal-header-theme">
-                        <h5 class="modal-title">Reset Password</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                      </div>
-                      <div class="modal-body">
-                        <p>Reset password for <strong>{{ user.username }}</strong>?</p>
-                        <p class="text-muted"><small>A new password will be generated and sent to {{ user.email }}</small></p>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <form action="/admin_reset_password/{{ user.id }}" method="POST" style="display:inline;">
-                          <button type="submit" class="btn btn-theme">Reset & Send Email</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 {% endfor %}
               </tbody>
             </table>
           </div>
+
+          <!-- Modals Container -->
+          {% for user in users %}
+            <!-- User Info Modal -->
+            <div class="modal fade" id="infoModal{{ user.id }}" tabindex="-1" aria-labelledby="infoModalLabel{{ user.id }}" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header text-white" style="background-color: #003366;">
+                    <h5 class="modal-title" id="infoModalLabel{{ user.id }}">
+                      <i class="bi bi-person-badge me-2"></i>{{ user.username }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body p-4" style="cursor: default;">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center bg-light text-primary" style="width: 60px; height: 60px; font-size: 1.8rem; font-weight: bold; border: 2px solid #003366; flex-shrink: 0;">
+                        {{ (user.full_name or user.username)[:1].upper() }}
+                      </div>
+                      <div>
+                        <h5 class="fw-bold mb-0 text-primary">{{ user.full_name or user.username.title() }}</h5>
+                        <span class="badge {% if user.role.lower() == 'admin' %}bg-primary{% elif 'coordinator' in user.role.lower() %}bg-success{% else %}bg-secondary{% endif %}">
+                          {{ user.role }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="user-details-grid" style="font-size: 0.95rem;">
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Username</div>
+                        <div class="col-sm-8">{{ user.username }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Full Name</div>
+                        <div class="col-sm-8">{{ user.full_name or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Employee ID</div>
+                        <div class="col-sm-8">{{ user.emp_id or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Email</div>
+                        <div class="col-sm-8 text-break">{{ user.email or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Gender</div>
+                        <div class="col-sm-8">{{ user.gender or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2 border-bottom">
+                        <div class="col-sm-4 text-muted fw-semibold">Designation</div>
+                        <div class="col-sm-8">{{ user.designation or 'N/A' }}</div>
+                      </div>
+                      <div class="row py-2">
+                        <div class="col-sm-4 text-muted fw-semibold">Department</div>
+                        <div class="col-sm-8">{{ user.department or 'N/A' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="/admin_edit_user/{{ user.id }}" class="btn btn-primary" style="background-color: #003366; border-color: #003366;">
+                      <i class="bi bi-pencil me-1"></i> Edit User
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delete Modal -->
+            <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header modal-header-delete">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Are you sure you want to delete user <strong>{{ user.username }}</strong>?</p>
+                    <p class="text-muted"><small>This will also delete all their worklog entries. This action cannot be undone.</small></p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="/admin_delete_user/{{ user.id }}" method="POST" style="display:inline;">
+                      <button type="submit" class="btn btn-delete-confirm">Delete User</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reset Password Modal -->
+            <div class="modal fade" id="resetModal{{ user.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header modal-header-theme">
+                    <h5 class="modal-title">Reset Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Reset password for <strong>{{ user.username }}</strong>?</p>
+                    <p class="text-muted"><small>A new password will be generated and sent to {{ user.email }}</small></p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="/admin_reset_password/{{ user.id }}" method="POST" style="display:inline;">
+                      <button type="submit" class="btn btn-theme">Reset & Send Email</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
 
           {% if not users %}
           <p class="text-muted text-center">No users found.</p>
@@ -224,6 +603,42 @@
           row.style.display = text.includes(filter) ? '' : 'none';
         });
       });
+
+      function showUserDetailsModal(event, userId) {
+        // Do not open details modal if clicking action buttons or internal modal elements
+        if (event.target.closest('.action-btns') || event.target.closest('.modal')) {
+          return;
+        }
+        const modal = new bootstrap.Modal(document.getElementById('infoModal' + userId));
+        modal.show();
+      }
     </script>
-  </body>
+  
+  <script>
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        if (theme === 'dark') {
+          icon.className = 'bi bi-sun-fill text-warning';
+        } else {
+          icon.className = 'bi bi-moon-fill text-primary';
+        }
+      }
+      localStorage.setItem('theme', theme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+    }
+
+    // Set initial icon state on load
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      applyTheme(savedTheme);
+    })();
+  </script>
+</body>
 </html>
