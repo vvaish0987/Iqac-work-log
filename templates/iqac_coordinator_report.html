@@ -7,15 +7,216 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <style>
-      html { height: 100%; }
-      body { background-color: #f8fafc; font-size: 15px; min-height: 100%; display: flex; flex-direction: column; }
+      <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #212529;
+      --border-color: #dee2e6;
+      --table-striped-bg: rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f1f5f9;
+      --border-color: #334155;
+      --table-striped-bg: rgba(255, 255, 255, 0.05);
+          color-scheme: dark;
+    }
+
+    [data-theme="dark"] .text-muted {
+      color: #94a3b8 !important;
+    }
+
+
+    [data-theme="dark"] .resp-area-placeholder {
+      color: #94a3b8 !important;
+    }
+
+
+    [data-theme="dark"] .btn-outline-primary {
+      color: #38bdf8 !important;
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .btn-outline-primary:hover,
+    [data-theme="dark"] .btn-outline-primary:focus,
+    [data-theme="dark"] .btn-outline-primary:active {
+      background-color: #38bdf8 !important;
+      color: #0f172a !important;
+      border-color: #38bdf8 !important;
+    }
+
+
+    [data-theme="dark"] .form-control::placeholder,
+    [data-theme="dark"] textarea::placeholder,
+    [data-theme="dark"] input::placeholder {
+      color: #94a3b8 !important;
+      opacity: 0.7 !important;
+    }
+
+
+    [data-theme="dark"] .input-group-text {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary:hover {
+      background-color: var(--border-color) !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .dropdown-menu {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item {
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item:hover {
+      background-color: var(--border-color) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-header {
+      color: var(--text-color) !important;
+      opacity: 0.8;
+    }
+    [data-theme="dark"] .dropdown-divider {
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] input:-webkit-autofill,
+    [data-theme="dark"] input:-webkit-autofill:hover,
+    [data-theme="dark"] input:-webkit-autofill:focus,
+    [data-theme="dark"] textarea:-webkit-autofill,
+    [data-theme="dark"] textarea:-webkit-autofill:hover,
+    [data-theme="dark"] textarea:-webkit-autofill:focus,
+    [data-theme="dark"] select:-webkit-autofill,
+    [data-theme="dark"] select:-webkit-autofill:hover,
+    [data-theme="dark"] select:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--text-color) !important;
+      -webkit-box-shadow: 0 0 0px 1000px var(--card-bg) inset !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    [data-theme="dark"] .flatpickr-calendar {
+      background: #1e293b !important;
+      color: #f1f5f9 !important;
+      border-color: #334155 !important;
+      box-shadow: 1px 0 0 #334155, -1px 0 0 #334155, 0 1px 0 #334155, 0 -1px 0 #334155, 0 3px 13px rgba(0,0,0,0.8) !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-months .flatpickr-month,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekdays,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekday,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.today {
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay:hover {
+      background: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.selected {
+      background: #003366 !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed:hover {
+      color: #475569 !important;
+      background: transparent !important;
+      border-color: transparent !important;
+      cursor: not-allowed !important;
+      opacity: 0.4 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay {
+      color: #475569 !important;
+    }
+
+
+
+      html { height: 100%; background-color: var(--bg-color); }
+      body { background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; font-size: 15px; min-height: 100%; display: flex; flex-direction: column; }
       .main-container { flex: 1; }
       header { background-color: #003366; color: #fff; padding: 1rem 1.5rem; border-radius: .5rem; margin-bottom: 1.5rem; position: relative; }
       .logo-container { background-color: #fff; padding: 8px 12px; border-radius: 8px; display: inline-block; flex-shrink: 0; }
       .logo-container img { height: 75px; width: auto; }
       .header-title { color: #fff; margin: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
       .header-title h5 { font-size: 1.15rem; font-weight: 700; margin: 0; }
+
+    /* ── Responsive header for small screens ── */
+    @media (max-width: 576px) {
+      header {
+        padding: 0.6rem 0.75rem !important;
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+      }
+      .logo-container img {
+        height: 44px !important;
+      }
+      .header-title {
+        margin: 0 0.5rem !important;
+        min-width: 0;
+      }
+      .header-title h5, .header-title h6 {
+        font-size: 0.72rem !important;
+        line-height: 1.2 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-title small {
+        font-size: 0.65rem !important;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-title .btn-warning {
+        font-size: 0.7rem !important;
+        padding: 2px 6px !important;
+      }
+      /* Shrink user pill button on mobile */
+      #userMenuDropdown {
+        padding: 2px 8px !important;
+        height: auto !important;
+        font-size: 0.72rem !important;
+      }
+      #userMenuDropdown .fw-semibold {
+        max-width: 64px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+      }
+      #roleDropdown {
+        font-size: 0.7rem !important;
+        padding: 2px 6px !important;
+      }
+    }
+    @media (max-width: 400px) {
+      .header-title h5, .header-title h6 {
+        font-size: 0.62rem !important;
+      }
+      .logo-container img {
+        height: 36px !important;
+      }
+    }
+
       .card { box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1); border: none; border-radius: 0.5rem; }
       .btn-primary { background-color: #003366; border-color: #003366; }
       .btn-primary:hover { background-color: #004080; border-color: #004080; }
@@ -35,7 +236,116 @@
       .is-invalid-custom { border: 2px solid #dc3545 !important; box-shadow: 0 0 0 0.2rem rgba(220,53,69,.25) !important; }
       .resp-area-wrapper { position: relative; }
       .table-responsive { overflow: visible !important; }
-    </style>
+    
+    .card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .table {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .table td, .table th {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .table-striped tbody tr:nth-of-type(odd) td {
+      background-color: var(--table-striped-bg) !important;
+    }
+    .list-group-item {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control, .form-select {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control:focus, .form-select:focus {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+    }
+    .modal-content {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .text-primary {
+      color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .form-label {
+      color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .bg-light {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .login-card, .password-card, .forgot-card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .header h5, [data-theme="dark"] .header h6 {
+      color: var(--text-color) !important;
+    }
+
+    /* Profile pill button glassmorphic hover effect */
+    .dropdown #userMenuDropdown {
+      transition: all 0.2s ease-in-out !important;
+    }
+    .dropdown #userMenuDropdown:hover,
+    .dropdown #userMenuDropdown[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.15) !important;
+      border-color: rgba(255, 255, 255, 0.6) !important;
+      color: #fff !important;
+    }
+    .dropdown .btn-outline-secondary:hover,
+    .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(0, 0, 0, 0.05) !important;
+      border-color: rgba(0, 0, 0, 0.25) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown .btn-outline-secondary:hover,
+    [data-theme="dark"] .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      color: var(--text-color) !important;
+    }
+
+
+    /* Theme-aware dropdown checklist styles */
+    .resp-area-display {
+      background-color: #fff !important;
+      color: #212529 !important;
+      border-color: #dee2e6 !important;
+    }
+    .resp-area-checklist {
+      background-color: #fff !important;
+      color: #212529 !important;
+      border-color: #dee2e6 !important;
+    }
+    [data-theme="dark"] .resp-area-display {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .resp-area-checklist {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+
+</style>
   </head>
   <body>
     <div class="container py-3 main-container">
@@ -48,12 +358,43 @@
         </a>
         <div class="header-title">
           <h5>INTERNAL QUALITY ASSURANCE CELL (IQAC)</h5>
-          <small style="font-size:0.8rem; font-weight:400;">Monthly Work Done Report{% if readonly %} — Read Only{% endif %}</small>
+          <small style="font-size:0.8rem; font-weight:400;">Monthly Report{% if readonly %} — Read Only{% endif %}</small>
         </div>
-        <div>
-          <span class="text-light me-3">{{ username.title() }}</span>
-          <a href="{{ back_url or '/iqac_dashboard' }}" class="btn btn-light btn-sm me-1"><i class="bi bi-arrow-left"></i> Back</a>
-          <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+        <div class="d-flex align-items-center gap-2">
+          <a href="{{ back_url or '/iqac_dashboard' }}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+          <!-- User Dropdown Menu -->
+          <div class="dropdown">
+            <button class="btn btn-outline-light d-flex align-items-center gap-2 px-3 py-1 rounded-pill shadow-sm" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="height: 38px;">
+              <div class="d-flex align-items-center justify-content-center bg-white text-primary rounded-circle" style="width: 26px; height: 26px;">
+                <i class="bi bi-person-fill fs-6"></i>
+              </div>
+              <span class="fw-semibold small me-1" style="color: #fff !important;">{{ session.get('full_name', username or session.get('username', '')).title() }}</span>
+              <i class="bi bi-chevron-down opacity-75 small" style="color: #fff !important;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuDropdown">
+              <li class="dropdown-header border-bottom pb-2 mb-2">
+              <div class="small text-secondary">Role</div>
+              <div class="fw-semibold" style="color: var(--text-color);">{{ session.get('role', 'User') }}</div>
+            </li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0);" onclick="toggleTheme(); event.stopPropagation();">
+                  <i class="bi bi-moon-fill" id="themeIcon"></i>
+                  <span>Toggle Dark Mode</span>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2" href="/change_password">
+                  <i class="bi bi-key-fill"></i> Change Password
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="/logout">
+                  <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </header>
 
@@ -74,13 +415,19 @@
           <i class="bi bi-lock-fill fs-3 text-warning text-warning-custom"></i>
           <div>
             <strong style="font-size: 1.05rem; color:#856404;">Report Locked</strong><br>
-            <span style="font-size: 0.92rem; color:#856404;">This report's raw data has been locked because a PDF has been generated. No further modifications can be made.</span>
+            <span style="font-size: 0.92rem; color:#856404;">
+              {% if lock_reason == 'submission_window_closed' %}
+                This report is locked because the monthly submission window has closed (after the 10th of the month). No further modifications can be made.
+              {% else %}
+                This report's data has been locked because it has been submitted. No further modifications can be made.
+              {% endif %}
+            </span>
           </div>
         </div>
         {% if can_unlock %}
         <div class="pe-2">
-          <form method="POST" action="/iqac_report/unlock/{{ reporting_month_str }}" onsubmit="return confirm('Are you sure you want to unlock this draft? This will invalidate the previously generated PDF and require you to download and sign a new one after making changes.');">
-            <button type="submit" class="btn btn-warning btn-sm fw-bold text-dark border-secondary">
+          <form id="unlockForm" method="POST" action="/iqac_report/unlock/{{ reporting_month_str }}">
+            <button type="button" id="unlockBtn" class="btn btn-warning btn-sm fw-bold text-dark border-secondary">
               <i class="bi bi-unlock-fill me-1"></i> Unlock for Editing
             </button>
           </form>
@@ -89,12 +436,24 @@
       </div>
       {% endif %}
 
-      <form method="POST" action="/iqac_coordinator_report/download" id="reportForm">
+      {% if is_current_month %}
+      <div class="alert alert-info d-flex align-items-center gap-3 mb-4" style="border-left: 5px solid #0dcaf0; background-color: #e2f7fd;">
+        <i class="bi bi-info-circle-fill fs-3 text-info"></i>
+        <div>
+          <strong style="font-size: 1.05rem; color:#087990;">Drafting Period</strong><br>
+          <span style="font-size: 0.92rem; color:#087990;">
+            You are currently preparing the report for <strong>{{ reporting_month_display }}</strong>. You can fill out details and save as draft, but final submission will open on the 1st of next month.
+          </span>
+        </div>
+      </div>
+      {% endif %}
+
+      <form method="POST" id="reportForm">
 
         <!-- ── Report Header / Particulars ── -->
         <div class="card mb-4">
           <div class="card-body">
-            <h6 class="text-primary mb-1">Monthly Work Done Report</h6>
+            <h6 class="text-primary mb-1">Monthly Report</h6>
             <p class="text-muted small mb-3">(AQAR | NAAC | Rankings/Awards | Quality Assurance Activities)</p>
             <div class="table-responsive">
               <table class="table table-bordered mb-0" style="font-size:0.9rem;">
@@ -121,22 +480,30 @@
                     </td>
                   </tr>
                   <tr>
-                    <td style="background:#e9ecef; font-weight:600; vertical-align: middle;">Responsibility Area(s)</td>
+                    <td style="background:#e9ecef; font-weight:600; vertical-align: middle;">Responsibility Area(s) <span class="text-danger">*</span></td>
                     <td style="position: relative;">
                       {% set resp_areas_val = draft_data.get('responsibility_areas', '') if (draft_data and draft_data.get('responsibility_areas') is not none) else '' %}
                       {% set selected_resp_areas = resp_areas_val.split(', ') if resp_areas_val else [] %}
+                      {% set custom_others_val = "" %}
+                      {% for area in selected_resp_areas %}
+                        {% if area not in ['AQAR', 'NAAC', 'Rankings/Awards', 'Audits', 'Documentation', 'Others'] %}
+                          {% set custom_others_val = area %}
+                        {% endif %}
+                      {% endfor %}
+                      {% set has_custom_others = custom_others_val != "" %}
                       <div class="resp-area-wrapper">
                         <input type="hidden" name="responsibility_areas" class="resp-area-hidden" value="{{ resp_areas_val }}">
-                        <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.85rem; background:#fff; display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
+                        <div class="resp-area-display border rounded px-2 py-1" style="min-height:34px; cursor:pointer; font-size:0.85rem;  display:flex; flex-wrap:wrap; gap:3px; align-items:center;">
                           <span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.85rem;">Click to select…</span>
                         </div>
-                        <div class="resp-area-checklist border rounded p-2 mt-1 bg-white shadow-sm" style="display:none; max-height:200px; overflow-y:auto; font-size:0.85rem; z-index:1000; position:absolute; left:0; right:0; min-width:280px;">
+                        <div class="resp-area-checklist border rounded p-2 mt-1 shadow-sm" style="display:none; max-height:200px; overflow-y:auto; font-size:0.85rem; z-index:1000; position:absolute; left:0; right:0; min-width:280px;">
                           <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="AQAR" {% if 'AQAR' in selected_resp_areas %}checked{% endif %}> AQAR</label>
                           <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="NAAC" {% if 'NAAC' in selected_resp_areas %}checked{% endif %}> NAAC</label>
                           <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Rankings/Awards" {% if 'Rankings/Awards' in selected_resp_areas %}checked{% endif %}> Rankings/Awards</label>
                           <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Audits" {% if 'Audits' in selected_resp_areas %}checked{% endif %}> Audits</label>
                           <label class="d-flex align-items-start gap-1 mb-1"><input type="checkbox" class="resp-cb mt-1" value="Documentation" {% if 'Documentation' in selected_resp_areas %}checked{% endif %}> Documentation</label>
-                          <label class="d-flex align-items-start gap-1 mb-0"><input type="checkbox" class="resp-cb mt-1" value="Others" {% if 'Others' in selected_resp_areas %}checked{% endif %}> Others</label>
+                          <label class="d-flex align-items-start gap-1 mb-0"><input type="checkbox" id="resp-others-cb" class="resp-cb mt-1" value="Others" {% if 'Others' in selected_resp_areas or has_custom_others %}checked{% endif %}> Others</label>
+                          <input type="text" id="resp-others-text" class="form-control form-control-sm mt-1" placeholder="Please specify" style="{% if has_custom_others %}display:block;{% else %}display:none;{% endif %} font-size:0.8rem;" value="{{ custom_others_val }}">
                         </div>
                       </div>
                     </td>
@@ -355,7 +722,7 @@
         <!-- ── Signatures ── -->
         <div class="card mb-4">
           <div class="card-body">
-            <h6 class="text-primary mb-3">Signatures <span class="text-muted fw-normal small">(actual signatures will be done on the printed copy)</span></h6>
+            <h6 class="text-primary mb-3">Signatures</h6>
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label">Name of the IQAC Coordinator</label>
@@ -379,11 +746,16 @@
           </div>
         </div>
 
-        <!-- Download/Save Buttons -->
+        <!-- Action Buttons -->
         <div class="d-flex gap-2 mb-4">
-          <button type="submit" class="btn btn-primary btn-lg px-5">
-            <i class="bi bi-file-earmark-pdf me-2"></i>Download as PDF
+          <button type="button" id="viewPdfBtn" class="btn btn-info btn-lg px-5 text-white fw-bold">
+            <i class="bi bi-eye me-2"></i>View PDF
           </button>
+          {% if not is_current_month %}
+          <button type="button" id="submitReportBtn" class="btn btn-primary btn-lg px-5 fw-bold">
+            <i class="bi bi-send me-2"></i>Submit Report
+          </button>
+          {% endif %}
           <button type="button" id="saveDraftBtn" class="btn btn-warning btn-lg px-5 text-dark fw-bold">
             <i class="bi bi-journal-bookmark me-2"></i>Save as Draft
           </button>
@@ -407,15 +779,29 @@
     <script>
       function syncRespArea(wrapper) {
         const checked = Array.from(wrapper.querySelectorAll('.resp-cb:checked')).map(c => c.value);
+        const othersText = wrapper.querySelector('#resp-others-text');
+        
+        const finalValues = [];
+        checked.forEach(val => {
+          if (val === 'Others') {
+            if (othersText && othersText.value.trim()) {
+              finalValues.push(othersText.value.trim());
+            }
+          } else {
+            finalValues.push(val);
+          }
+        });
+
         const hidden = wrapper.querySelector('.resp-area-hidden');
-        if (hidden) hidden.value = checked.join(', ');
+        if (hidden) hidden.value = finalValues.join(', ');
         const display = wrapper.querySelector('.resp-area-display');
         if (!display) return;
         display.innerHTML = '';
-        if (checked.length === 0) {
+        if (finalValues.length === 0) {
           display.innerHTML = '<span class="resp-area-placeholder text-muted fst-italic" style="font-size:0.85rem;">Click to select…</span>';
         } else {
-          checked.forEach(val => {
+          display.classList.remove('is-invalid-custom');
+          finalValues.forEach(val => {
             const badge = document.createElement('span');
             badge.className = 'badge rounded-pill text-bg-primary me-1 mb-1';
             badge.style.cssText = 'font-size:0.75rem; font-weight:500; white-space:normal; text-align:left;';
@@ -476,9 +862,25 @@
 
       // ── Checkbox change: sync display + hidden ──
       document.addEventListener('change', function(e) {
-        if (!e.target.classList.contains('resp-cb')) return;
-        const wrapper = e.target.closest('.resp-area-wrapper');
-        if (wrapper) syncRespArea(wrapper);
+        if (e.target.classList.contains('resp-cb')) {
+          const wrapper = e.target.closest('.resp-area-wrapper');
+          if (e.target.id === 'resp-others-cb') {
+            const othersText = wrapper.querySelector('#resp-others-text');
+            if (othersText) {
+              othersText.style.display = e.target.checked ? 'block' : 'none';
+              if (!e.target.checked) othersText.value = '';
+            }
+          }
+          if (wrapper) syncRespArea(wrapper);
+        }
+      });
+
+      // ── Others text input keyup/change: sync display + hidden ──
+      document.addEventListener('input', function(e) {
+        if (e.target.id === 'resp-others-text') {
+          const wrapper = e.target.closest('.resp-area-wrapper');
+          if (wrapper) syncRespArea(wrapper);
+        }
       });
 
       // ── "Others" area toggle ──
@@ -593,11 +995,23 @@
         return el.tagName === 'SELECT' ? el.value : el.value.trim();
       }
 
+      function getColumnHeader(el) {
+        const td = el.closest('td');
+        if (!td) return '';
+        const tr = td.closest('tr');
+        if (!tr) return '';
+        const colIndex = Array.from(tr.children).indexOf(td);
+        const table = tr.closest('table');
+        if (!table) return '';
+        const ths = table.querySelectorAll('thead th');
+        return ths[colIndex] ? ths[colIndex].textContent.trim() : `Column ${colIndex + 1}`;
+      }
+
       // Validate a table section:
       // 1. Check if the section has any data at all (i.e. at least one field in any row is filled).
       // 2. If it does, then EVERY row in the table must be completely filled.
       // 3. If it doesn't, then the entire section is considered empty (and will be discarded), so no validation errors are reported for it.
-      function validateTableRows(tbodyId, fieldSelectors, sectionLabel, errors) {
+      function validateTableRows(tbodyId, fieldSelectors, fieldLabels, sectionLabel, errors) {
         const rows = document.querySelectorAll('#' + tbodyId + ' tr');
         let sectionHasData = false;
 
@@ -616,11 +1030,13 @@
             const fields = fieldSelectors.map(sel => row.querySelector(sel)).filter(Boolean);
             const vals = fields.map(getVal);
             let rowOk = true;
+            let missingFields = [];
 
             fields.forEach((f, idx) => {
               if (!vals[idx]) {
                 markInvalid(f);
                 rowOk = false;
+                missingFields.push(fieldLabels[idx]);
               }
             });
 
@@ -631,24 +1047,46 @@
                 if (otherInput && !otherInput.value.trim()) {
                   markInvalid(otherInput);
                   rowOk = false;
+                  missingFields.push("Other Area Description");
                 }
               }
             });
 
             if (!rowOk) {
-              errors.push(`${sectionLabel} row ${i + 1}: please fill all fields.`);
+              errors.push(`${sectionLabel} row ${i + 1}: please fill missing fields [${missingFields.join(', ')}].`);
             }
           });
         }
       }
 
-      document.getElementById('reportForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+      document.getElementById('viewPdfBtn').addEventListener('click', function() {
+        const form = document.getElementById('reportForm');
+        const originalAction = form.action;
+        const originalTarget = form.target;
+        
+        form.action = '/iqac_coordinator_report/preview';
+        form.target = '_blank';
+        form.submit();
+        
+        form.action = originalAction;
+        form.target = originalTarget;
+      });
 
+      document.getElementById('submitReportBtn').addEventListener('click', function() {
         // Clear all previous highlights
         document.querySelectorAll('.is-invalid-custom').forEach(el => el.classList.remove('is-invalid-custom'));
 
         let errors = [];
+
+        // Validate Responsibility Area(s)
+        const respHidden = document.querySelector('.resp-area-hidden');
+        if (respHidden && !respHidden.value.trim()) {
+          const displayEl = document.querySelector('.resp-area-display');
+          if (displayEl) {
+            markInvalid(displayEl);
+          }
+          errors.push("Responsibility Area(s) is required.");
+        }
 
         // Section 1: Activities
         validateTableRows('tableActivities-body', [
@@ -658,6 +1096,13 @@
           'textarea[name="act_stakeholders[]"]',
           'textarea[name="act_outcome[]"]',
           'select[name="act_status[]"]'
+        ], [
+          'Date',
+          'Brief Report/Details',
+          'Key Responsibility Area',
+          'Target Stakeholders',
+          'Key Outcome/Significance',
+          'Status'
         ], 'Section 1 (Activities)', errors);
 
         // Section 2: Meetings
@@ -666,6 +1111,11 @@
           'textarea[name="meet_programme[]"]',
           'select[name="meet_role[]"]',
           'textarea[name="meet_outcome[]"]'
+        ], [
+          'Date',
+          'Programme/Event Details',
+          'Role/Activity',
+          'Key Decisions/Action Points/Outcomes'
         ], 'Section 2 (Meetings)', errors);
 
         // Section 5: Action Plan
@@ -673,47 +1123,59 @@
           'textarea[name="plan_activity[]"]',
           'select[name="plan_area[]"]',
           'textarea[name="plan_outcome[]"]'
+        ], [
+          'Proposed Activity/Topic',
+          'Key Responsibility Area',
+          'Target Outcome/Deliverable'
         ], 'Section 5 (Action Plan)', errors);
 
+        // Validation check for empty report
+        const anyFieldsFilled = Array.from(document.querySelectorAll('#reportForm input:not([type="hidden"]), #reportForm textarea, #reportForm select'))
+          .some(el => el.value.trim() !== '');
+        
+        if (!anyFieldsFilled) {
+          errors.push("The report cannot be completely empty. Please fill in at least one activity, meeting, or plan.");
+        }
+
         if (errors.length) {
-          alert('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'));
+          showCustomAlert('Please complete all required fields and partially-filled rows:\n\n' + errors.join('\n'));
           // Scroll to the first highlighted field
           const firstBad = document.querySelector('.is-invalid-custom');
           if (firstBad) firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }
 
-        // Validation passed — download PDF via fetch then redirect
-        const form = this;
-        const btn = form.querySelector('[type="submit"]');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Generating PDF…';
+        showCustomConfirm('Are you sure you want to submit this report directly? After submission, the report will be locked and sent to the administrator/secretary for review.', function() {
+          const form = document.getElementById('reportForm');
+          const btn = document.getElementById('submitReportBtn');
+          btn.disabled = true;
+          btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting…';
 
-        let _pdfFilename = 'IQAC_Report.pdf';
-        fetch(form.action, { method: 'POST', body: new FormData(form) })
-          .then(r => {
-            const ct = r.headers.get('content-type') || '';
-            if (!ct.includes('application/pdf')) throw new Error('not_pdf');
-            const cd = r.headers.get('content-disposition') || '';
-            const m = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-            if (m) _pdfFilename = m[1].replace(/['"]/g, '').trim();
-            return r.blob();
+          const formData = new FormData(form);
+
+          fetch('/iqac_coordinator_report/submit', {
+            method: 'POST',
+            body: formData
           })
-          .then(blob => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = _pdfFilename;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
-            setTimeout(() => { window.location.href = '/iqac_dashboard'; }, 1500);
+          .then(r => r.json())
+          .then(res => {
+            if (res.success) {
+              showCustomAlert('Report submitted and uploaded successfully!', 'Success', function() {
+                window.location.href = '/iqac_dashboard';
+              });
+            } else {
+              showCustomAlert('Failed to submit report: ' + res.error, 'Submission Error');
+            }
           })
-          .catch(() => {
+          .catch(err => {
+            console.error(err);
+            showCustomAlert('An error occurred while submitting the report.', 'Error');
+          })
+          .finally(() => {
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-file-earmark-pdf me-2"></i>Download as PDF';
-            alert('PDF generation failed. Please try again.');
+            btn.innerHTML = '<i class="bi bi-send me-2"></i>Submit Report';
           });
+        });
       });
 
       document.getElementById('saveDraftBtn').addEventListener('click', function() {
@@ -732,15 +1194,16 @@
         .then(r => r.json())
         .then(res => {
           if (res.success) {
-            alert('Draft saved successfully!');
-            window.location.reload();
+            showCustomAlert('Draft saved successfully!', 'Success', function() {
+              window.location.reload();
+            });
           } else {
-            alert('Failed to save draft: ' + res.error);
+            showCustomAlert('Failed to save draft: ' + res.error, 'Error');
           }
         })
         .catch(err => {
           console.error(err);
-          alert('An error occurred while saving the draft.');
+          showCustomAlert('An error occurred while saving the draft.', 'Error');
         })
         .finally(() => {
           btn.disabled = false;
@@ -748,13 +1211,72 @@
         });
       });
 
+      let customModalInstance = null;
+      function getModalInstance() {
+        if (!customModalInstance) {
+          customModalInstance = new bootstrap.Modal(document.getElementById('customModal'));
+        }
+        return customModalInstance;
+      }
+
+      function showCustomAlert(message, title = 'Validation Error', onClose = null) {
+        document.getElementById('customModalLabel').textContent = title;
+        document.getElementById('customModalBody').textContent = message;
+        document.getElementById('customModalCancelBtn').style.display = 'none';
+        
+        const confirmBtn = document.getElementById('customModalConfirmBtn');
+        confirmBtn.textContent = 'OK';
+        
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        newConfirmBtn.addEventListener('click', function() {
+          getModalInstance().hide();
+          if (onClose) onClose();
+        });
+        
+        getModalInstance().show();
+      }
+
+      function showCustomConfirm(message, onConfirm, title = 'Confirm Action') {
+        document.getElementById('customModalLabel').textContent = title;
+        document.getElementById('customModalBody').textContent = message;
+        document.getElementById('customModalCancelBtn').style.display = 'block';
+        
+        const confirmBtn = document.getElementById('customModalConfirmBtn');
+        confirmBtn.textContent = 'Confirm';
+        
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        newConfirmBtn.addEventListener('click', function() {
+          getModalInstance().hide();
+          if (onConfirm) onConfirm();
+        });
+        
+        getModalInstance().show();
+      }
+
+      const unlockBtn = document.getElementById('unlockBtn');
+      if (unlockBtn) {
+        unlockBtn.addEventListener('click', function() {
+          showCustomConfirm(
+            'Are you sure you want to unlock this draft? This will invalidate the previously submitted report, and you will need to submit it again after making changes.',
+            function() {
+              document.getElementById('unlockForm').submit();
+            },
+            'Unlock Draft'
+          );
+        });
+      }
+
       {% if locked or readonly %}
       document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll("#reportForm input, #reportForm textarea, #reportForm select, #reportForm button").forEach(el => {
+        document.querySelectorAll("#reportForm input, #reportForm textarea, #reportForm select, #reportForm button:not(#viewPdfBtn)").forEach(el => {
           el.disabled = true;
           if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.readOnly = true;
         });
-        document.querySelectorAll("#reportForm .btn-add-row, #reportForm .btn-del-row, #reportForm .btn-danger, #reportForm .ws-upload-btn, #reportForm .btn-outline-primary, #reportForm #saveDraftBtn, #reportForm #downloadBtn").forEach(el => {
+        document.querySelectorAll("#reportForm .btn-add-row, #reportForm .btn-del-row, #reportForm .btn-danger, #reportForm .ws-upload-btn, #reportForm .btn-outline-primary, #reportForm #saveDraftBtn, #reportForm #submitReportBtn").forEach(el => {
           el.style.display = "none";
         });
         const cancelBtn = document.getElementById('cancelBtn');
@@ -766,5 +1288,51 @@
       });
       {% endif %}
     </script>
-  </body>
+
+    <!-- Versatile Custom Modal -->
+    <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true" style="z-index: 1060;">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header" id="customModalHeader" style="background-color: #003366; color: #fff;">
+            <h5 class="modal-title" id="customModalLabel">Notification</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="customModalBody" style="font-size: 0.95rem; white-space: pre-line;">
+            <!-- Message goes here -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="customModalCancelBtn" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="customModalConfirmBtn" style="background-color: #003366; border-color: #003366;">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+  <script>
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        if (theme === 'dark') {
+          icon.className = 'bi bi-sun-fill text-warning';
+        } else {
+          icon.className = 'bi bi-moon-fill text-primary';
+        }
+      }
+      localStorage.setItem('theme', theme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+    }
+
+    // Set initial icon state on load
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      applyTheme(savedTheme);
+    })();
+  </script>
+</body>
 </html>
