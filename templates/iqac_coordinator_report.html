@@ -999,8 +999,10 @@
       // ── Row validation + Form submission ──
       function markInvalid(el) {
         let targetEl = el;
-        if (el.nextSibling && el.nextSibling.classList && el.nextSibling.classList.contains('flatpickr-input')) {
-          targetEl = el.nextSibling;
+        const sibling = el.parentElement.querySelector('.flatpickr-input:not([type="hidden"])') || 
+                        el.parentElement.querySelector('input.form-control[readonly]');
+        if (sibling) {
+          targetEl = sibling;
         }
         
         targetEl.classList.add('is-invalid-custom');
