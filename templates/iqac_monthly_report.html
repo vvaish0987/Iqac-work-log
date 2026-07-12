@@ -1137,9 +1137,17 @@
       document.querySelectorAll('.is-invalid-custom').forEach(el => el.classList.remove('is-invalid-custom'));
 
       function highlight(el) {
-        el.classList.add('is-invalid-custom');
-        const clear = () => el.classList.remove('is-invalid-custom');
-        el.addEventListener('input', clear, { once: true });
+        // Flatpickr creates a visible mock input class named "flatpickr-input"
+        // and hides the original input. If it has a nextSibling with "flatpickr-input", target that.
+        let targetEl = el;
+        if (el.nextSibling && el.nextSibling.classList && el.nextSibling.classList.contains('flatpickr-input')) {
+          targetEl = el.nextSibling;
+        }
+        
+        targetEl.classList.add('is-invalid-custom');
+        const clear = () => targetEl.classList.remove('is-invalid-custom');
+        targetEl.addEventListener('input', clear, { once: true });
+        targetEl.addEventListener('change', clear, { once: true });
         el.addEventListener('change', clear, { once: true });
       }
 
