@@ -1252,7 +1252,7 @@
           if (res.success) {
             if (!isAuto) {
               showToast('Draft saved successfully!', 'success');
-              setTimeout(() => { window.location.reload(); }, 1000);
+              setTimeout(() => { window.location.reload(); }, 2500);
             } else {
               const now = new Date();
               const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
