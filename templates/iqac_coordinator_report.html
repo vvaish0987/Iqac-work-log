@@ -1223,6 +1223,9 @@
         if (!isAuto) {
           saveBtn.disabled = true;
           saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving…';
+          // Clear autosave status text when saving manually
+          statusSpan.style.opacity = '0';
+          statusSpan.innerHTML = '';
         } else {
           statusSpan.style.opacity = '1';
           statusSpan.innerHTML = '<i class="bi bi-cloud-arrow-up-fill text-warning me-1"></i>Saving changes...';
