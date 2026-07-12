@@ -835,6 +835,8 @@
           <small class="text-muted">Signature: ________________________</small>
         </div>
       </div>
+        </div>
+      </div>
       <div class="row mt-3">
         <div class="col-md-3">
           <label class="form-label">Date</label>
@@ -847,6 +849,20 @@
       </div>
     </div>
   </div>
+
+  <!-- Custom Alert Toast Structure -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="customToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body d-flex align-items-center gap-2">
+          <i id="toastIcon" class="bi fs-5"></i>
+          <span id="toastMessage" style="font-size: 0.9rem; font-weight: 500; white-space: pre-line;"></span>
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- Download/Save Buttons -->
   <div class="d-flex gap-2 mb-4">
@@ -1177,8 +1193,35 @@
         }
       });
 
+      // Toast Helper function
+      function showToast(message, type = 'success') {
+        const toastEl = document.getElementById('customToast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastMsg = document.getElementById('toastMessage');
+        
+        // Reset classes
+        toastEl.className = 'toast align-items-center text-white border-0';
+        toastIcon.className = 'bi fs-5';
+        
+        if (type === 'success') {
+          toastEl.classList.add('bg-success');
+          toastIcon.classList.add('bi-check-circle-fill');
+        } else if (type === 'danger') {
+          toastEl.classList.add('bg-danger');
+          toastIcon.classList.add('bi-exclamation-triangle-fill');
+        } else {
+          toastEl.classList.add('bg-warning', 'text-dark');
+          toastIcon.classList.add('bi-exclamation-circle-fill');
+        }
+        
+        toastMsg.textContent = message;
+        
+        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        toast.show();
+      }
+
       if (errors.length) {
-        alert('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'));
+        showToast('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'), 'danger');
         return;
       }
 
@@ -1206,12 +1249,13 @@
           document.body.appendChild(a);
           a.click();
           setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
+          showToast('PDF generated successfully!', 'success');
           setTimeout(() => { window.location.href = '/iqac_dashboard'; }, 1500);
         })
         .catch(() => {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-file-earmark-pdf me-2"></i>Download as PDF';
-          alert('PDF generation failed. Please try again.');
+          showToast('PDF generation failed. Please try again.', 'danger');
         });
     });
 
@@ -1224,6 +1268,24 @@
       const formData = new FormData(form);
       formData.append('report_type', 'standard');
 
+      function showToast(message, type = 'success') {
+        const toastEl = document.getElementById('customToast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastMsg = document.getElementById('toastMessage');
+        toastEl.className = 'toast align-items-center text-white border-0';
+        toastIcon.className = 'bi fs-5';
+        if (type === 'success') {
+          toastEl.classList.add('bg-success');
+          toastIcon.classList.add('bi-check-circle-fill');
+        } else if (type === 'danger') {
+          toastEl.classList.add('bg-danger');
+          toastIcon.classList.add('bi-exclamation-triangle-fill');
+        }
+        toastMsg.textContent = message;
+        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        toast.show();
+      }
+
       fetch('/iqac_report/save_draft', {
         method: 'POST',
         body: formData
@@ -1231,21 +1293,22 @@
         .then(r => r.json())
         .then(res => {
           if (res.success) {
-            alert('Draft saved successfully!');
-            window.location.reload();
+            showToast('Draft saved successfully!', 'success');
+            setTimeout(() => { window.location.reload(); }, 1200);
           } else {
-            alert('Failed to save draft: ' + res.error);
+            showToast('Failed to save draft: ' + res.error, 'danger');
           }
         })
         .catch(err => {
           console.error(err);
-          alert('An error occurred while saving the draft.');
+          showToast('An error occurred while saving the draft.', 'danger');
         })
         .finally(() => {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-journal-bookmark me-2"></i>Save as Draft';
         });
     });
+
 
     {% if locked or readonly %}
     document.addEventListener("DOMContentLoaded", function () {
