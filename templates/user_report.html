@@ -527,7 +527,13 @@
                       {% if log.tasks_dict %}
                         {% for cat, task in log.tasks_dict.items() %}
                           <div class="category-task-item">
-                            <div class="category-name">{{ cat }}</div>
+                            <div class="category-name">
+                              {% if cat.startswith('Others (') %}
+                                Others ({{ cat[8:-1] }})
+                              {% else %}
+                                {{ cat }}
+                              {% endif %}
+                            </div>
                             <div class="category-task-text">{{ task }}</div>
                           </div>
                         {% endfor %}
