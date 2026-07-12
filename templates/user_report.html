@@ -6,15 +6,227 @@
     <title>My Report - IQAC Worklog</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-      html { height: 100%; }
-      body { background-color:#f8fafc; font-size:14px; min-height: 100%; display: flex; flex-direction: column; }
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+      <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #212529;
+      --border-color: #dee2e6;
+      --table-striped-bg: rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f1f5f9;
+      --border-color: #334155;
+      --table-striped-bg: rgba(255, 255, 255, 0.05);
+          color-scheme: dark;
+    }
+
+    [data-theme="dark"] .flatpickr-monthSelect-month {
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-monthSelect-month:hover,
+    [data-theme="dark"] .flatpickr-monthSelect-month:focus {
+      background: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-monthSelect-month.selected {
+      background: #38bdf8 !important;
+      color: #0f172a !important;
+    }
+
+
+    [data-theme="dark"] .text-muted {
+      color: #94a3b8 !important;
+    }
+
+
+    [data-theme="dark"] .btn-outline-primary {
+      color: #38bdf8 !important;
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .btn-outline-primary:hover,
+    [data-theme="dark"] .btn-outline-primary:focus,
+    [data-theme="dark"] .btn-outline-primary:active {
+      background-color: #38bdf8 !important;
+      color: #0f172a !important;
+      border-color: #38bdf8 !important;
+    }
+
+
+    [data-theme="dark"] .form-control::placeholder,
+    [data-theme="dark"] textarea::placeholder,
+    [data-theme="dark"] input::placeholder {
+      color: #94a3b8 !important;
+      opacity: 0.7 !important;
+    }
+
+
+    [data-theme="dark"] .input-group-text {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary:hover {
+      background-color: var(--border-color) !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .dropdown-menu {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item {
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item:hover {
+      background-color: var(--border-color) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-header {
+      color: var(--text-color) !important;
+      opacity: 0.8;
+    }
+    [data-theme="dark"] .dropdown-divider {
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] input:-webkit-autofill,
+    [data-theme="dark"] input:-webkit-autofill:hover,
+    [data-theme="dark"] input:-webkit-autofill:focus,
+    [data-theme="dark"] textarea:-webkit-autofill,
+    [data-theme="dark"] textarea:-webkit-autofill:hover,
+    [data-theme="dark"] textarea:-webkit-autofill:focus,
+    [data-theme="dark"] select:-webkit-autofill,
+    [data-theme="dark"] select:-webkit-autofill:hover,
+    [data-theme="dark"] select:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--text-color) !important;
+      -webkit-box-shadow: 0 0 0px 1000px var(--card-bg) inset !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    [data-theme="dark"] .flatpickr-calendar {
+      background: #1e293b !important;
+      color: #f1f5f9 !important;
+      border-color: #334155 !important;
+      box-shadow: 1px 0 0 #334155, -1px 0 0 #334155, 0 1px 0 #334155, 0 -1px 0 #334155, 0 3px 13px rgba(0,0,0,0.8) !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-months .flatpickr-month,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekdays,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekday,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.today {
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay:hover {
+      background: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.selected {
+      background: #003366 !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed:hover {
+      color: #475569 !important;
+      background: transparent !important;
+      border-color: transparent !important;
+      cursor: not-allowed !important;
+      opacity: 0.4 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay {
+      color: #475569 !important;
+    }
+
+
+
+      html { height: 100%; background-color: var(--bg-color); }
+      body { background-color:var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; font-size:14px; min-height: 100%; display: flex; flex-direction: column; }
       .main-container { flex: 1; }
       header { background-color:#003366; color:#fff; padding:1rem 1.5rem; border-radius:.5rem; margin-bottom:1.5rem; position: relative; }
       .logo-container { background-color: #fff; padding: 8px 12px; border-radius: 8px; display: inline-block; }
       .logo-container img { height: 75px; width: auto; }
       .header-title { color: #fff; margin: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
       .header-title h5 { font-size: 1.25rem; font-weight: 700; margin: 0; }
+
+    /* ── Responsive header for small screens ── */
+    @media (max-width: 576px) {
+      header {
+        padding: 0.6rem 0.75rem !important;
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+      }
+      .logo-container img {
+        height: 44px !important;
+      }
+      .header-title {
+        margin: 0 0.5rem !important;
+        min-width: 0;
+      }
+      .header-title h5, .header-title h6 {
+        font-size: 0.72rem !important;
+        line-height: 1.2 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-title small {
+        font-size: 0.65rem !important;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-title .btn-warning {
+        font-size: 0.7rem !important;
+        padding: 2px 6px !important;
+      }
+      /* Shrink user pill button on mobile */
+      #userMenuDropdown {
+        padding: 2px 8px !important;
+        height: auto !important;
+        font-size: 0.72rem !important;
+      }
+      #userMenuDropdown .fw-semibold {
+        max-width: 64px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+      }
+      #roleDropdown {
+        font-size: 0.7rem !important;
+        padding: 2px 6px !important;
+      }
+    }
+    @media (max-width: 400px) {
+      .header-title h5, .header-title h6 {
+        font-size: 0.62rem !important;
+      }
+      .logo-container img {
+        height: 36px !important;
+      }
+    }
+
       h5, h6 { margin:0; }
       .card { box-shadow:0 0.5rem 1rem rgba(0,0,0,.1); border:none; }
       .btn-primary { background-color:#003366; border-color:#003366; }
@@ -66,7 +278,93 @@
         th { background-color: #003366 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .category-task-item { border-left: 3px solid #003366 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       }
-    </style>
+    
+    .card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .table {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .table td, .table th {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .table-striped tbody tr:nth-of-type(odd) td {
+      background-color: var(--table-striped-bg) !important;
+    }
+    .list-group-item {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control, .form-select {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control:focus, .form-select:focus {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+    }
+    .modal-content {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .text-primary {
+      color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .form-label {
+      color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .bg-light {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .login-card, .password-card, .forgot-card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .header h5, [data-theme="dark"] .header h6 {
+      color: var(--text-color) !important;
+    }
+
+    /* Profile pill button glassmorphic hover effect */
+    .dropdown #userMenuDropdown {
+      transition: all 0.2s ease-in-out !important;
+    }
+    .dropdown #userMenuDropdown:hover,
+    .dropdown #userMenuDropdown[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.15) !important;
+      border-color: rgba(255, 255, 255, 0.6) !important;
+      color: #fff !important;
+    }
+    .dropdown .btn-outline-secondary:hover,
+    .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(0, 0, 0, 0.05) !important;
+      border-color: rgba(0, 0, 0, 0.25) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown .btn-outline-secondary:hover,
+    [data-theme="dark"] .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      color: var(--text-color) !important;
+    }
+
+</style>
   </head>
   <body>
     <div class="container py-3 main-container">
@@ -79,9 +377,41 @@
         <div class="header-title">
           <h5>INTERNAL QUALITY ASSURANCE CELL (IQAC)</h5>
         </div>
-        <div>
-          <a href="/dashboard" class="btn btn-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
-          <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+        <div class="d-flex align-items-center gap-2">
+          <a href="/dashboard" class="btn btn-light btn-sm"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+          <!-- User Dropdown Menu -->
+          <div class="dropdown">
+            <button class="btn btn-outline-light d-flex align-items-center gap-2 px-3 py-1 rounded-pill shadow-sm" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="height: 38px;">
+              <div class="d-flex align-items-center justify-content-center bg-white text-primary rounded-circle" style="width: 26px; height: 26px;">
+                <i class="bi bi-person-fill fs-6"></i>
+              </div>
+              <span class="fw-semibold small me-1" style="color: #fff !important;">{{ session.get('full_name', username or session.get('username', '')).title() }}</span>
+              <i class="bi bi-chevron-down opacity-75 small" style="color: #fff !important;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuDropdown">
+              <li class="dropdown-header border-bottom pb-2 mb-2">
+              <div class="small text-secondary">Role</div>
+              <div class="fw-semibold" style="color: var(--text-color);">{{ session.get('role', 'User') }}</div>
+            </li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0);" onclick="toggleTheme(); event.stopPropagation();">
+                  <i class="bi bi-moon-fill" id="themeIcon"></i>
+                  <span>Toggle Dark Mode</span>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2" href="/change_password">
+                  <i class="bi bi-key-fill"></i> Change Password
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="/logout">
+                  <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </header>
 
@@ -165,7 +495,7 @@
             <div class="text-center worklog-header mb-3">
               <h5>CHRIST (Deemed to be University), Bengaluru</h5>
               <h6>Internal Quality Assurance Cell (IQAC)</h6>
-              <h6 class="fw-bold text-primary mt-3">Worklog of {{ username.title() }}</h6>
+              <h6 class="fw-bold text-primary mt-3">Worklog of {{ user['full_name'] or username.title() }}</h6>
             </div>
             <div class="report-summary">
               <div><strong>Report Type:</strong>
@@ -183,7 +513,7 @@
               <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
             </div>
             <div class="report-info">
-              <div><strong>Name:</strong> {{ username.title() }} <strong>(Employee ID:</strong> {{ user['emp_id'] or '—' }})</div>
+              <div><strong>Name:</strong> {{ user['full_name'] or username.title() }} <strong>(Employee ID:</strong> {{ user['emp_id'] or '—' }})</div>
               <div><strong>Designation:</strong> {{ user['designation'] or '—' }}</div>
               <div><strong>No. of Entries:</strong> {{ logs|length }}</div>
             </div>
@@ -237,8 +567,30 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+
+      // Initialize Month Picker flatpickr
+      document.querySelectorAll('input[type="month"]').forEach(el => {
+        flatpickr(el, {
+          plugins: [
+            new monthSelectPlugin({
+              shorthand: true,
+              dateFormat: "Y-m",
+              altInput: true,
+              altFormat: "F Y"
+            })
+          ],
+          defaultDate: el.value || null,
+          onChange: function (selectedDates, dateStr) {
+            el.value = dateStr;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+
         const modeSelect = document.getElementById("filter_mode");
         const dateFields = document.getElementById("date_range_fields");
         const monthField = document.getElementById("month_field");
@@ -265,18 +617,31 @@
         const today = new Date().toISOString().split('T')[0];
         const fromDate = document.getElementById('from_date');
         const toDate = document.getElementById('to_date');
-        if (fromDate) {
-          fromDate.max = today;
-          fromDate.addEventListener('change', function () {
-            if (toDate) {
-              toDate.min = this.value;
-              if (toDate.value && toDate.value < this.value) toDate.value = this.value;
+
+        if (fromDate && toDate) {
+          const fpFrom = flatpickr(fromDate, {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d-m-Y",
+            maxDate: today,
+            defaultDate: fromDate.value || null,
+            onChange: function(selectedDates, dateStr) {
+              fromDate.value = dateStr;
+              fpTo.set('minDate', dateStr);
             }
           });
-        }
-        if (toDate) {
-          toDate.max = today;
-          if (fromDate && fromDate.value) toDate.min = fromDate.value;
+          
+          const fpTo = flatpickr(toDate, {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d-m-Y",
+            maxDate: today,
+            minDate: fromDate.value || null,
+            defaultDate: toDate.value || null,
+            onChange: function(selectedDates, dateStr) {
+              toDate.value = dateStr;
+            }
+          });
         }
 
         toggleFilterFields(modeSelect.value || "{{ filter_mode or 'date' }}");
@@ -294,8 +659,35 @@
       <div class="footer-content">
         <span>Concept: <strong>Dr. Cecil Donald</strong></span>
         <span class="divider">|</span>
-        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26)</span>
+        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26) &amp; <strong>Darshan Heble, Ananya S Shetty, Arnav Narula</strong> (MCA 2025-27)</span>
       </div>
     </footer>
-  </body>
+  
+  <script>
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        if (theme === 'dark') {
+          icon.className = 'bi bi-sun-fill text-warning';
+        } else {
+          icon.className = 'bi bi-moon-fill text-primary';
+        }
+      }
+      localStorage.setItem('theme', theme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+    }
+
+    // Set initial icon state on load
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      applyTheme(savedTheme);
+    })();
+  </script>
+</body>
 </html>

@@ -20,3 +20,6 @@ __pycache__/
 
 .venv
 venv
+seed_demo.py
+
+AI_CONTEXT.md

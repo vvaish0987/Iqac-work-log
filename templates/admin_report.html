@@ -3,18 +3,230 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin Report - IQAC Worklog</title>
+    <title>{% if form_type == 'coordinator' %}IQAC Monthly Report{% else %}Admin Report - IQAC Worklog{% endif %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-      html { height: 100%; }
-      body { background-color:#f8fafc; font-size:14px; min-height: 100%; display: flex; flex-direction: column; }
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+      <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #212529;
+      --border-color: #dee2e6;
+      --table-striped-bg: rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f1f5f9;
+      --border-color: #334155;
+      --table-striped-bg: rgba(255, 255, 255, 0.05);
+          color-scheme: dark;
+    }
+
+    [data-theme="dark"] .flatpickr-monthSelect-month {
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-monthSelect-month:hover,
+    [data-theme="dark"] .flatpickr-monthSelect-month:focus {
+      background: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-monthSelect-month.selected {
+      background: #38bdf8 !important;
+      color: #0f172a !important;
+    }
+
+
+    [data-theme="dark"] .text-muted {
+      color: #94a3b8 !important;
+    }
+
+
+    [data-theme="dark"] .btn-outline-primary {
+      color: #38bdf8 !important;
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .btn-outline-primary:hover,
+    [data-theme="dark"] .btn-outline-primary:focus,
+    [data-theme="dark"] .btn-outline-primary:active {
+      background-color: #38bdf8 !important;
+      color: #0f172a !important;
+      border-color: #38bdf8 !important;
+    }
+
+
+    [data-theme="dark"] .form-control::placeholder,
+    [data-theme="dark"] textarea::placeholder,
+    [data-theme="dark"] input::placeholder {
+      color: #94a3b8 !important;
+      opacity: 0.7 !important;
+    }
+
+
+    [data-theme="dark"] .input-group-text {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary:hover {
+      background-color: var(--border-color) !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .dropdown-menu {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item {
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item:hover {
+      background-color: var(--border-color) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-header {
+      color: var(--text-color) !important;
+      opacity: 0.8;
+    }
+    [data-theme="dark"] .dropdown-divider {
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] input:-webkit-autofill,
+    [data-theme="dark"] input:-webkit-autofill:hover,
+    [data-theme="dark"] input:-webkit-autofill:focus,
+    [data-theme="dark"] textarea:-webkit-autofill,
+    [data-theme="dark"] textarea:-webkit-autofill:hover,
+    [data-theme="dark"] textarea:-webkit-autofill:focus,
+    [data-theme="dark"] select:-webkit-autofill,
+    [data-theme="dark"] select:-webkit-autofill:hover,
+    [data-theme="dark"] select:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--text-color) !important;
+      -webkit-box-shadow: 0 0 0px 1000px var(--card-bg) inset !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    [data-theme="dark"] .flatpickr-calendar {
+      background: #1e293b !important;
+      color: #f1f5f9 !important;
+      border-color: #334155 !important;
+      box-shadow: 1px 0 0 #334155, -1px 0 0 #334155, 0 1px 0 #334155, 0 -1px 0 #334155, 0 3px 13px rgba(0,0,0,0.8) !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-months .flatpickr-month,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekdays,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekday,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.today {
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay:hover {
+      background: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.selected {
+      background: #003366 !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed:hover {
+      color: #475569 !important;
+      background: transparent !important;
+      border-color: transparent !important;
+      cursor: not-allowed !important;
+      opacity: 0.4 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay {
+      color: #475569 !important;
+    }
+
+
+
+      html { height: 100%; background-color: var(--bg-color); }
+      body { background-color:var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; font-size:14px; min-height: 100%; display: flex; flex-direction: column; }
       .main-container { flex: 1; }
       header { background-color:#003366; color:#fff; padding:1rem 1.5rem; border-radius:.5rem; margin-bottom:1.5rem; position: relative; }
       .logo-container { background-color: #fff; padding: 8px 12px; border-radius: 8px; display: inline-block; }
       .logo-container img { height: 75px; width: auto; }
       .header-title { color: #fff; margin: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
       .header-title h5 { font-size: 1.25rem; font-weight: 700; margin: 0; }
+
+    /* ── Responsive header for small screens ── */
+    @media (max-width: 576px) {
+      header {
+        padding: 0.6rem 0.75rem !important;
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+      }
+      .logo-container img {
+        height: 44px !important;
+      }
+      .header-title {
+        margin: 0 0.5rem !important;
+        min-width: 0;
+      }
+      .header-title h5, .header-title h6 {
+        font-size: 0.72rem !important;
+        line-height: 1.2 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-title small {
+        font-size: 0.65rem !important;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-title .btn-warning {
+        font-size: 0.7rem !important;
+        padding: 2px 6px !important;
+      }
+      /* Shrink user pill button on mobile */
+      #userMenuDropdown {
+        padding: 2px 8px !important;
+        height: auto !important;
+        font-size: 0.72rem !important;
+      }
+      #userMenuDropdown .fw-semibold {
+        max-width: 64px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+      }
+      #roleDropdown {
+        font-size: 0.7rem !important;
+        padding: 2px 6px !important;
+      }
+    }
+    @media (max-width: 400px) {
+      .header-title h5, .header-title h6 {
+        font-size: 0.62rem !important;
+      }
+      .logo-container img {
+        height: 36px !important;
+      }
+    }
+
       h5, h6 { margin:0; }
       .card { box-shadow:0 0.5rem 1rem rgba(0,0,0,.1); border:none; }
       .btn-primary { background-color:#003366; border-color:#003366; }
@@ -60,20 +272,60 @@
       .print-header-logo img { height:50px; width:auto; }
       .print-header-title { flex:1; text-align:center; font-size:18px; font-weight:bold; letter-spacing:0.5px; color:#fff !important; }
       @media print {
-        .print-header { display:block !important; background-color:#003366 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-        .print-header-content { display:flex; align-items:center; justify-content:space-between; }
-        .print-header-logo { display:flex; align-items:center; }
-        .print-header-title { color:#fff !important; }
-        .no-print { display:none !important; }
-        body { background:white; font-size:11px; margin:0; padding:0; display:block !important; }
+        /* Force light mode colors for printing */
+        *, *::before, *::after {
+          color: #000 !important;
+          background-color: transparent !important;
+          background-image: none !important;
+          box-shadow: none !important;
+          text-shadow: none !important;
+        }
+        .print-header { 
+          display:block !important; 
+          background-color:#003366 !important; 
+          background:#003366 !important; 
+          -webkit-print-color-adjust:exact; 
+          print-color-adjust:exact; 
+        }
+        .print-header * {
+          color: #fff !important;
+        }
+        .print-header-logo, .print-header-logo img {
+          background-color: #fff !important;
+          background: #fff !important;
+        }
+        .section-header, .info-label, .table th {
+          background-color: #BDD7EE !important;
+          color: #1F497D !important;
+          -webkit-print-color-adjust:exact;
+          print-color-adjust:exact;
+        }
+        .section-subheader {
+          color: #1F497D !important;
+        }
+        html, body {
+          height: auto !important;
+          min-height: auto !important;
+          overflow: visible !important;
+          background: white !important;
+          font-size: 11px;
+          margin: 0;
+          padding: 0;
+          display: block !important;
+        }
         .main-container { display:block !important; }
         .container { max-width:100%; padding:0; margin:0; }
-        .card { box-shadow:none; border:none; padding:0; margin:0 0 0.25rem 0; }
+        .card, .card-body { 
+          display: block !important; 
+          box-shadow: none !important; 
+          border: none !important; 
+          padding: 0 !important; 
+          margin: 0 0 0.5rem 0 !important; 
+        }
         .worklog-header { display:none; }
         table { page-break-inside:auto; width:100%; border-collapse:collapse; }
         tr { page-break-inside:avoid; page-break-after:auto; break-inside:avoid; }
-        table th, table td { border:1px solid #000; padding:6px 8px; text-align:left; }
-        table th { background:none; color:#000; font-weight:bold; }
+        table th, table td { border:1px solid #000 !important; padding:6px 8px; text-align:left; }
         .report-info, .report-summary, .ai-summary { background:none; border:none; padding:0; margin:0.5rem 0; }
         .worklog-header { text-align:center; }
         .worklog-header h5, .worklog-header h6 { margin:0.25rem 0; }
@@ -83,8 +335,172 @@
         .page-break { page-break-before:auto; break-before:auto; }
         .page-break + .page-break { page-break-before:always; break-before:page; }
         footer { display: none !important; }
+        .no-print, .no-print * { display: none !important; }
       }
-    </style>
+    
+    .card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .table {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .table td, .table th {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .table-striped tbody tr:nth-of-type(odd) td {
+      background-color: var(--table-striped-bg) !important;
+    }
+    .list-group-item {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control, .form-select {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control:focus, .form-select:focus {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+    }
+    .modal-content {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .text-primary {
+      color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .form-label {
+      color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .bg-light {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .login-card, .password-card, .forgot-card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .header h5, [data-theme="dark"] .header h6 {
+      color: var(--text-color) !important;
+    }
+
+    /* Profile pill button glassmorphic hover effect */
+    .dropdown #userMenuDropdown {
+      transition: all 0.2s ease-in-out !important;
+    }
+    .dropdown #userMenuDropdown:hover,
+    .dropdown #userMenuDropdown[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.15) !important;
+      border-color: rgba(255, 255, 255, 0.6) !important;
+      color: #fff !important;
+    }
+    .dropdown .btn-outline-secondary:hover,
+    .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(0, 0, 0, 0.05) !important;
+      border-color: rgba(0, 0, 0, 0.25) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown .btn-outline-secondary:hover,
+    [data-theme="dark"] .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      color: var(--text-color) !important;
+    }
+
+    .report-card {
+      padding: 2rem !important;
+    }
+    .section-header {
+      background-color: #BDD7EE;
+      color: #1F497D;
+      font-weight: bold;
+      padding: 6px 12px;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid #AAAAAA;
+      border-radius: 4px;
+      font-size: 1rem;
+      text-align: left;
+    }
+    .section-subheader {
+      font-weight: bold;
+      color: #1F497D;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+      text-align: left;
+    }
+    .table th {
+      background-color: #BDD7EE !important;
+      color: #1F497D !important;
+      font-weight: bold;
+      border: 1px solid #AAAAAA !important;
+      font-size: 0.85rem;
+    }
+    .table td {
+      border: 1px solid #CCCCCC !important;
+      font-size: 0.85rem;
+      vertical-align: top;
+      text-align: left;
+    }
+    .info-table {
+      width: 100%;
+      margin-bottom: 1rem;
+      border: 1px solid #AAAAAA;
+    }
+    .info-table td {
+      padding: 8px;
+      border: 1px solid #CCCCCC;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+    .info-label {
+      background-color: #BDD7EE;
+      font-weight: bold;
+      color: #1F497D;
+      width: 25%;
+    }
+    .info-value {
+      width: 25%;
+    }
+    .text-area-display {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 8px 12px;
+      white-space: pre-line;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    [data-theme="dark"] .section-header, 
+    [data-theme="dark"] .section-subheader,
+    [data-theme="dark"] .info-label,
+    [data-theme="dark"] .table th {
+      color: #0f172a !important;
+    }
+    [data-theme="dark"] .text-area-display {
+      background-color: #1e293b;
+      border-color: #334155;
+      color: #f1f5f9;
+    }
+</style>
   </head>
   <body>
     <div class="container py-3 main-container">
@@ -106,10 +522,42 @@
         <div class="header-title">
           <h5>INTERNAL QUALITY ASSURANCE CELL (IQAC)</h5>
         </div>
-        <div>
-          <a href="/admin_report_ai" class="btn btn-light btn-sm me-2"><i class="bi bi-lightning-charge"></i> Quick Summary</a>
-          <a href="{{ '/secretary_dashboard' if session['role'] == 'Secretary' else '/admin' }}" class="btn btn-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Back</a>
-          <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <a href="/admin_report_ai" class="btn btn-light btn-sm"><i class="bi bi-lightning-charge"></i> Quick Summary</a>
+          <a href="{{ '/secretary_dashboard' if session['role'] == 'Secretary' else '/admin' }}" class="btn btn-light btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+          <!-- User Dropdown Menu -->
+          <div class="dropdown">
+            <button class="btn btn-outline-light d-flex align-items-center gap-2 px-3 py-1 rounded-pill shadow-sm" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="height: 38px;">
+              <div class="d-flex align-items-center justify-content-center bg-white text-primary rounded-circle" style="width: 26px; height: 26px;">
+                <i class="bi bi-person-fill fs-6"></i>
+              </div>
+              <span class="fw-semibold small me-1" style="color: #fff !important;">{{ session.get('full_name', username or session.get('username', '')).title() }}</span>
+              <i class="bi bi-chevron-down opacity-75 small" style="color: #fff !important;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuDropdown">
+              <li class="dropdown-header border-bottom pb-2 mb-2">
+              <div class="small text-secondary">Role</div>
+              <div class="fw-semibold" style="color: var(--text-color);">{{ session.get('role', 'User') }}</div>
+            </li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0);" onclick="toggleTheme(); event.stopPropagation();">
+                  <i class="bi bi-moon-fill" id="themeIcon"></i>
+                  <span>Toggle Dark Mode</span>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2" href="/change_password">
+                  <i class="bi bi-key-fill"></i> Change Password
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="/logout">
+                  <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </header>
 
@@ -126,6 +574,7 @@
         <div class="card-body">
           <h6 class="mb-3 text-primary">Generate Worklog Report</h6>
           <form method="post" action="/admin_report" class="row g-3 align-items-end">
+            <input type="hidden" name="form_type" value="worklog">
             <div class="col-md-3">
               <label class="form-label">User</label>
               <select name="user" class="form-select" required>
@@ -133,7 +582,7 @@
                 <option value="All" {% if selected_user == 'All' %}selected{% endif %}>All Users</option>
                 {% for u in users %}
                   <option value="{{ u['username'] }}" {% if selected_user == u['username'] %}selected{% endif %}>
-                    {{ u['username'] }} ({{ u['emp_id'] }})
+                    {{ u['full_name'] or u['username'] }} ({{ u['emp_id'] or 'No ID' }})
                   </option>
                 {% endfor %}
               </select>
@@ -196,23 +645,418 @@
         </div>
       </div>
 
-      {% if logs and logs|length > 0 %}
-        {% if selected_user == 'All' %}
-          {% set grouped_logs = {} %}
-          {% for log in logs %}
-            {% set uname = log['username'] %}
-            {% if uname not in grouped_logs %}
-              {% set _ = grouped_logs.update({uname: []}) %}
-            {% endif %}
-            {% set _ = grouped_logs[uname].append(log) %}
-          {% endfor %}
-          {% for uname, entries in grouped_logs.items() %}
-            <div class="card mb-5 page-break">
+      <!-- Generate Coordinator Report Card -->
+      <div class="card mb-4 no-print shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-3 text-primary fw-bold">Generate Coordinator Report</h6>
+          <form method="post" action="/admin_report" class="row g-3 align-items-end">
+            <input type="hidden" name="form_type" value="coordinator">
+            <div class="col-md-3">
+              <label class="form-label">Coordinator</label>
+              <select name="coordinator" class="form-select" required>
+                <option value="All" {% if selected_coord == 'All' or not selected_coord %}selected{% endif %}>All Coordinators</option>
+                {% for c in coordinators %}
+                  <option value="{{ c['username'] }}" {% if selected_coord == c['username'] %}selected{% endif %}>
+                    {{ c['full_name'] or c['username'].title() }} ({{ c['role'] }})
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Report Type</label>
+              <select name="filter_mode_coord" id="filter_mode_coord" class="form-select">
+                <option value="date" {% if filter_mode_coord == 'date' %}selected{% endif %}>Custom Date Range</option>
+                <option value="month" {% if filter_mode_coord == 'month' or not filter_mode_coord %}selected{% endif %}>Month-wise</option>
+                <option value="academic_year" {% if filter_mode_coord == 'academic_year' %}selected{% endif %}>Academic Year (May-Apr)</option>
+              </select>
+            </div>
+            <div id="date_range_fields_coord" class="col-md-4 d-flex gap-2" style="{% if filter_mode_coord == 'date' %}display:flex !important;{% else %}display:none !important;{% endif %}">
+              <div class="flex-fill">
+                <label class="form-label">From Date</label>
+                <input type="date" name="from_date" id="from_date_coord" class="form-control" placeholder="MM/DD/YYYY" value="{{ from_date_coord or '' }}">
+              </div>
+              <div class="flex-fill">
+                <label class="form-label">To Date</label>
+                <input type="date" name="to_date" id="to_date_coord" class="form-control" placeholder="MM/DD/YYYY" value="{{ to_date_coord or '' }}">
+              </div>
+            </div>
+            <div id="month_field_coord" class="col-md-3" style="{% if filter_mode_coord == 'month' or not filter_mode_coord %}display:block !important;{% else %}display:none !important;{% endif %}">
+              <label class="form-label">Select Month & Year</label>
+              <input type="month" name="month" id="month_input_coord" class="form-control" value="{{ selected_month_coord or '' }}" placeholder="YYYY-MM">
+            </div>
+            <div id="academic_year_field_coord" class="col-md-3" style="{% if filter_mode_coord == 'academic_year' %}display:block !important;{% else %}display:none !important;{% endif %}">
+              <label class="form-label">Select Academic Year</label>
+              <select name="academic_year" id="academic_year_input_coord" class="form-select">
+                <option value="" disabled {% if not selected_academic_year_coord %}selected{% endif %}>This Academic Year</option>
+                {% set current_year = datetime.now().year %}
+                {% set current_month = datetime.now().month %}
+                {% set start_year = current_year if current_month >= 5 else current_year - 1 %}
+                {% for i in range(5) %}
+                  {% set year = start_year - i %}
+                  <option value="{{ year }}-{{ year + 1 }}" {% if selected_academic_year_coord == (year|string ~ '-' ~ (year+1)|string) %}selected{% endif %}>
+                    {{ year }}-{{ year + 1 }} (May {{ year }} - Apr {{ year + 1 }})
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-12 d-flex gap-2 mt-3">
+              <button class="btn btn-primary px-4" type="submit">Generate</button>
+              <button type="button" class="btn btn-outline-secondary px-4" onclick="printAndRedirect()">Print</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% if form_type == 'coordinator' %}
+        {% if submitted_reports is not none %}
+          {% if submitted_reports|length > 0 %}
+            {% for r in submitted_reports %}
+              <div class="card mb-5 page-break report-card">
+                <div class="card-body">
+                  <div class="text-center mb-4">
+                    <h5 class="fw-bold" style="color: #1F497D;">CHRIST (Deemed to be University), Bengaluru</h5>
+                    <h6 class="fw-semibold text-secondary">Internal Quality Assurance Cell (IQAC)</h6>
+                    <h6 class="fw-bold text-primary mt-2">
+                      IQAC Coordinator Monthly Report
+                    </h6>
+                  </div>
+
+                  <!-- Metadata Info Block -->
+                  <table class="info-table">
+                    <tr>
+                      <td class="info-label">Name of Coordinator:</td>
+                      <td class="info-value">{{ r.full_name or r.username.title() }}</td>
+                      <td class="info-label">Reporting Month:</td>
+                      <td class="info-value">{{ r.reporting_month }}</td>
+                    </tr>
+                    <tr>
+                      <td class="info-label">Designation:</td>
+                      <td class="info-value">{{ r.designation or '—' }}</td>
+                      <td class="info-label">Department:</td>
+                      <td class="info-value">{{ r.department or '—' }}</td>
+                    </tr>
+                  </table>
+
+                  {% set data = r.draft_data %}
+                  {% if data %}
+                    {% if r.report_type == 'aqar_coordinator' %}
+                      <!-- AQAR Aligned Coordinator Report Content -->
+                      <p class="mt-2 ms-1"><strong>Responsibility Area(s):</strong> {{ data.get('responsibility_areas', '—') }}</p>
+
+                      <!-- Section 1: Activities Undertaken -->
+                      <div class="section-header">1. Activities Undertaken During the Month</div>
+                      {% set act_dates = data.get('act_date[]', []) %}
+                      {% if act_dates and act_dates|length > 0 and act_dates[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:11%;">Date</th>
+                              <th style="width:25%;">Activity / Task Undertaken</th>
+                              <th style="width:14%;">Related Area</th>
+                              <th style="width:20%;">Department / Stakeholders</th>
+                              <th style="width:20%;">Outcome / Progress</th>
+                              <th style="width:10%;">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(act_dates|length) %}
+                              {% if act_dates[i] != '' or data.get('act_task[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ act_dates[i] }}</td>
+                                  <td>{{ data.get('act_task[]', [])[i] or '—' }}</td>
+                                  <td>
+                                    {% set area = data.get('act_area[]', [])[i] or '—' %}
+                                    {% if area == 'Others' %}
+                                      {{ data.get('act_area_other[]', [])[i] or 'Others' }}
+                                    {% else %}
+                                      {{ area }}
+                                    {% endif %}
+                                  </td>
+                                  <td>{{ data.get('act_stakeholders[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('act_outcome[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('act_status[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No activities reported.</p>
+                      {% endif %}
+
+                      <!-- Section 2: Meetings, Workshops & Training -->
+                      <div class="section-header">2. Meetings, Workshops & Training Programmes Attended/Organised</div>
+                      {% set meet_dates = data.get('meet_date[]', []) %}
+                      {% if meet_dates and meet_dates|length > 0 and meet_dates[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:12%;">Date</th>
+                              <th style="width:30%;">Programme / Meeting</th>
+                              <th style="width:25%;">Role</th>
+                              <th style="width:33%;">Key Outcome</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(meet_dates|length) %}
+                              {% if meet_dates[i] != '' or data.get('meet_programme[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ meet_dates[i] }}</td>
+                                  <td>{{ data.get('meet_programme[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('meet_role[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('meet_outcome[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No meetings/programmes reported.</p>
+                      {% endif %}
+
+                      <!-- Section 3: Key Achievements -->
+                      <div class="section-header">3. Key Achievements During the Month</div>
+                      {% set achievements = data.get('achievement[]', []) %}
+                      {% if achievements and achievements|length > 0 and achievements[0] != '' %}
+                        <ol class="list-group list-group-numbered border-0 rounded-0 bg-transparent ms-3">
+                          {% for ach in achievements %}
+                            {% if ach != '' %}
+                              <li class="list-group-item border-0 bg-transparent py-1 px-0 text-start" style="font-size:0.9rem;">
+                                {{ ach }}
+                              </li>
+                            {% endif %}
+                          {% endfor %}
+                        </ol>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No achievements reported.</p>
+                      {% endif %}
+
+                      <!-- Section 4: Challenges -->
+                      <div class="section-header">4. Challenges / Issues Faced</div>
+                      {% set challenges = data.get('challenge[]', []) %}
+                      {% if challenges and challenges|length > 0 and challenges[0] != '' %}
+                        <ol class="list-group list-group-numbered border-0 rounded-0 bg-transparent ms-3">
+                          {% for chal in challenges %}
+                            {% if chal != '' %}
+                              <li class="list-group-item border-0 bg-transparent py-1 px-0 text-start" style="font-size:0.9rem;">
+                                {{ chal }}
+                              </li>
+                            {% endif %}
+                          {% endfor %}
+                        </ol>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No challenges reported.</p>
+                      {% endif %}
+
+                      <!-- Section 5: Action Plan -->
+                      <div class="section-header">5. Action Plan for Next Month</div>
+                      {% set plan_activities = data.get('plan_activity[]', []) %}
+                      {% if plan_activities and plan_activities|length > 0 and plan_activities[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:40%;">Planned Activity</th>
+                              <th style="width:25%;">Related Area</th>
+                              <th style="width:35%;">Expected Outcome</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(plan_activities|length) %}
+                              {% if plan_activities[i] != '' or data.get('plan_outcome[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ plan_activities[i] }}</td>
+                                  <td>
+                                    {% set area = data.get('plan_area[]', [])[i] or '—' %}
+                                    {% if area == 'Others' %}
+                                      {{ data.get('plan_area_other[]', [])[i] or 'Others' }}
+                                    {% else %}
+                                      {{ area }}
+                                    {% endif %}
+                                  </td>
+                                  <td>{{ data.get('plan_outcome[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No action plan items reported.</p>
+                      {% endif %}
+
+                    {% else %}
+                      <!-- Standard Coordinator Report Content -->
+                      <!-- Section I: Quality Assurance Initiatives -->
+                      <div class="section-header">Section I: Quality Assurance Initiatives</div>
+                      
+                      <div class="section-subheader">(a) Meetings / Activities conducted relating to IQAC Coordinator's responsibility areas</div>
+                      {% set meeting_dates = data.get('meeting_date[]', []) %}
+                      {% if meeting_dates and meeting_dates|length > 0 and meeting_dates[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:11%;">Date of Meeting</th>
+                              <th style="width:13%;">Department / School Name</th>
+                              <th style="width:18%;">Title of meeting / Activity</th>
+                              <th style="width:16%;">Participants' Details</th>
+                              <th style="width:24%;">Topics Discussed</th>
+                              <th style="width:18%;">Action Points / Outcomes</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(meeting_dates|length) %}
+                              {% if meeting_dates[i] != '' or data.get('dept_name[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ meeting_dates[i] }}</td>
+                                  <td>{{ data.get('dept_name[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('meeting_title[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('participants[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('topics[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('action_points[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No meetings reported.</p>
+                      {% endif %}
+
+                      <div class="section-subheader">(b) Workshops / Seminars / Training Programs organised by the IQAC coordinator (If any)</div>
+                      {% set ws_dates = data.get('ws_date[]', []) %}
+                      {% if ws_dates and ws_dates|length > 0 and ws_dates[0] != '' %}
+                        <table class="table table-bordered table-striped">
+                          <thead>
+                            <tr>
+                              <th style="width:12%;">Date</th>
+                              <th style="width:14%;">Venue</th>
+                              <th style="width:22%;">Title of the Program</th>
+                              <th style="width:10%;">No. of Participants</th>
+                              <th style="width:20%;">Name of the Resource Person/s</th>
+                              <th style="width:22%;">IQAC VERTICALS</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in range(ws_dates|length) %}
+                              {% if ws_dates[i] != '' or data.get('ws_title[]', [])[i] != '' %}
+                                <tr>
+                                  <td>{{ ws_dates[i] }}</td>
+                                  <td>{{ data.get('ws_venue[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('ws_title[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('ws_participants[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('ws_resource[]', [])[i] or '—' }}</td>
+                                  <td>{{ data.get('ws_responsibility[]', [])[i] or '—' }}</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No workshops reported.</p>
+                      {% endif %}
+
+                      <!-- Section II: Plans for Next Month -->
+                      <div class="section-header">Section II: Plans for Next Month</div>
+                      {% set plans = data.get('plan[]', []) %}
+                      {% if plans and plans|length > 0 and plans[0] != '' %}
+                        <ol class="list-group list-group-numbered border-0 rounded-0 bg-transparent ms-3">
+                          {% for p in plans %}
+                            {% if p != '' %}
+                              <li class="list-group-item border-0 bg-transparent py-1 px-0 text-start" style="font-size:0.9rem;">
+                                {{ p }}
+                              </li>
+                            {% endif %}
+                          {% endfor %}
+                        </ol>
+                      {% else %}
+                        <p class="fst-italic text-muted ms-3">No plan items reported.</p>
+                      {% endif %}
+                    {% endif %}
+
+                  {% else %}
+                    <p class="fst-italic text-muted">Raw draft data not found for this report.</p>
+                  {% endif %}
+
+                  <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <div>
+                      <small class="text-muted">Generated via IQAC Portal</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="alert alert-info">No submitted coordinator reports found for the month {{ selected_month_coord }}.</div>
+          {% endif %}
+        {% else %}
+          <div class="alert alert-info">No report data to display. Please generate a report.</div>
+        {% endif %}
+      {% else %}
+        {% if logs and logs|length > 0 %}
+          {% if selected_user == 'All' %}
+            {% set grouped_logs = {} %}
+            {% for log in logs %}
+              {% set uname = log['username'] %}
+              {% if uname not in grouped_logs %}
+                {% set _ = grouped_logs.update({uname: []}) %}
+              {% endif %}
+              {% set _ = grouped_logs[uname].append(log) %}
+            {% endfor %}
+            {% for uname, entries in grouped_logs.items() %}
+              <div class="card mb-5 page-break">
+                <div class="card-body">
+                  <div class="text-center worklog-header mb-3">
+                    <h5>CHRIST (Deemed to be University), Bengaluru</h5>
+                    <h6>Internal Quality Assurance Cell (IQAC)</h6>
+                    <h6 class="fw-bold text-primary mt-3">Worklog of {{ entries[0]['full_name'] or uname.title() }}</h6>
+                  </div>
+                  <div class="report-summary">
+                    <div><strong>Report Type:</strong>
+                      {% if filter_mode == 'month' %}
+                        Month-wise ({{ selected_month | default('—') }})
+                      {% elif filter_mode == 'academic_year' %}
+                        Academic Year ({{ selected_academic_year | default('—') }})
+                      {% else %}
+                        Custom Date Range ({{ from_date | default('—') }} to {{ to_date | default('—') }})
+                      {% endif %}
+                    </div>
+                    <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
+                  </div>
+                  <div class="report-info">
+                    <div><strong>Name:</strong> {{ entries[0]['full_name'] or uname.title() }} <strong>(Employee ID:</strong> {{ entries[0]['emp_id'] or '—' }})</div>
+                    <div><strong>No. of Entries:</strong> {{ entries|length }}</div>
+                  </div>
+                  <table class="table table-bordered table-striped">
+                    <thead><tr><th style="width:12%;">Date</th><th>Category-wise Tasks</th></tr></thead>
+                    <tbody>
+                      {% for log in entries %}
+                        <tr>
+                          <td class="text-center">{{ log['date'] | datetimeformat }}</td>
+                          <td>
+                            {% if log.tasks_dict %}
+                              {% for cat, task in log.tasks_dict.items() %}
+                                <div class="category-task-item">
+                                  <div class="category-name">{{ cat }}</div>
+                                  <div class="category-task-text">{{ task }}</div>
+                                </div>
+                              {% endfor %}
+                            {% else %}
+                              <span class="text-muted">No tasks recorded</span>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  <div class="signature">Director, IQAC</div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="card mb-5">
               <div class="card-body">
                 <div class="text-center worklog-header mb-3">
                   <h5>CHRIST (Deemed to be University), Bengaluru</h5>
                   <h6>Internal Quality Assurance Cell (IQAC)</h6>
-                  <h6 class="fw-bold text-primary mt-3">Worklog of {{ uname.title() }}</h6>
+                  <h6 class="fw-bold text-primary mt-3">Worklog of {{ logs[0]['full_name'] or selected_user.title() }}</h6>
                 </div>
                 <div class="report-summary">
                   <div><strong>Report Type:</strong>
@@ -227,13 +1071,13 @@
                   <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
                 </div>
                 <div class="report-info">
-                  <div><strong>Name:</strong> {{ uname.title() }} <strong>(Employee ID:</strong> {{ entries[0]['emp_id'] or '—' }})</div>
-                  <div><strong>No. of Entries:</strong> {{ entries|length }}</div>
+                  <div><strong>Name:</strong> {{ selected_user.title() }} <strong>(Employee ID:</strong> {{ logs[0]['emp_id'] or '—' }})</div>
+                  <div><strong>No. of Entries:</strong> {{ logs|length }}</div>
                 </div>
                 <table class="table table-bordered table-striped">
-                  <thead><tr><th style="width:12%;">Date</th><th>Category-wise Tasks</th><th style="width:15%;" class="no-print">Attachment</th></tr></thead>
+                  <thead><tr><th style="width:12%;">Date</th><th>Category-wise Tasks</th></tr></thead>
                   <tbody>
-                    {% for log in entries %}
+                    {% for log in logs %}
                       <tr>
                         <td class="text-center">{{ log['date'] | datetimeformat }}</td>
                         <td>
@@ -247,25 +1091,6 @@
                           {% else %}
                             <span class="text-muted">No tasks recorded</span>
                           {% endif %}
-                          {% if log.get('attachment') %}
-                            <div class="attachment-print mt-1"><small><strong>Attachment:</strong> {{ log['attachment'].split('/')[-1] }}</small></div>
-                          {% endif %}
-                        </td>
-                        <td class="no-print">
-                          {% if log.get('attachment') %}
-                            {% set ext = log['attachment'].split('.')[-1].lower() %}
-                            {% if ext in ['jpg', 'jpeg', 'png'] %}
-                              <a href="/static/{{ log['attachment'] }}" target="_blank">
-                                <img src="/static/{{ log['attachment'] }}" style="max-height:60px;max-width:100px;" class="img-thumbnail">
-                              </a>
-                            {% else %}
-                              <a href="/static/{{ log['attachment'] }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-paperclip"></i> View
-                              </a>
-                            {% endif %}
-                          {% else %}
-                            <span class="text-muted">—</span>
-                          {% endif %}
                         </td>
                       </tr>
                     {% endfor %}
@@ -274,84 +1099,38 @@
                 <div class="signature">Director, IQAC</div>
               </div>
             </div>
-          {% endfor %}
+          {% endif %}
         {% else %}
-          <div class="card mb-5">
-            <div class="card-body">
-              <div class="text-center worklog-header mb-3">
-                <h5>CHRIST (Deemed to be University), Bengaluru</h5>
-                <h6>Internal Quality Assurance Cell (IQAC)</h6>
-                <h6 class="fw-bold text-primary mt-3">Worklog of {{ selected_user.title() }}</h6>
-              </div>
-              <div class="report-summary">
-                <div><strong>Report Type:</strong>
-                  {% if filter_mode == 'month' %}
-                    Month-wise ({{ selected_month | default('—') }})
-                  {% elif filter_mode == 'academic_year' %}
-                    Academic Year ({{ selected_academic_year | default('—') }})
-                  {% else %}
-                    Custom Date Range ({{ from_date | default('—') }} to {{ to_date | default('—') }})
-                  {% endif %}
-                </div>
-                <div><strong>Generated on:</strong> {{ datetime.now().strftime('%d-%m-%Y') }}</div>
-              </div>
-              <div class="report-info">
-                <div><strong>Name:</strong> {{ selected_user.title() }} <strong>(Employee ID:</strong> {{ logs[0]['emp_id'] or '—' }})</div>
-                <div><strong>No. of Entries:</strong> {{ logs|length }}</div>
-              </div>
-              <table class="table table-bordered table-striped">
-                <thead><tr><th style="width:12%;">Date</th><th>Category-wise Tasks</th><th style="width:15%;" class="no-print">Attachment</th></tr></thead>
-                <tbody>
-                  {% for log in logs %}
-                    <tr>
-                      <td class="text-center">{{ log['date'] | datetimeformat }}</td>
-                      <td>
-                        {% if log.tasks_dict %}
-                          {% for cat, task in log.tasks_dict.items() %}
-                            <div class="category-task-item">
-                              <div class="category-name">{{ cat }}</div>
-                              <div class="category-task-text">{{ task }}</div>
-                            </div>
-                          {% endfor %}
-                        {% else %}
-                          <span class="text-muted">No tasks recorded</span>
-                        {% endif %}
-                        {% if log.get('attachment') %}
-                          <div class="attachment-print mt-1"><small><strong>Attachment:</strong> {{ log['attachment'].split('/')[-1] }}</small></div>
-                        {% endif %}
-                      </td>
-                      <td class="no-print">
-                        {% if log.get('attachment') %}
-                          {% set ext = log['attachment'].split('.')[-1].lower() %}
-                          {% if ext in ['jpg', 'jpeg', 'png'] %}
-                            <a href="/static/{{ log['attachment'] }}" target="_blank">
-                              <img src="/static/{{ log['attachment'] }}" style="max-height:60px;max-width:100px;" class="img-thumbnail">
-                            </a>
-                          {% else %}
-                            <a href="/static/{{ log['attachment'] }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                              <i class="bi bi-paperclip"></i> View
-                            </a>
-                          {% endif %}
-                        {% else %}
-                          <span class="text-muted">—</span>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-              <div class="signature">Director, IQAC</div>
-            </div>
-          </div>
+          <div class="alert alert-info">No report data to display. Please generate a report.</div>
         {% endif %}
-      {% else %}
-        <div class="alert alert-info">No report data to display. Please generate a report.</div>
       {% endif %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+
+      // Initialize Month Picker flatpickr
+      document.querySelectorAll('input[type="month"]').forEach(el => {
+        flatpickr(el, {
+          plugins: [
+            new monthSelectPlugin({
+              shorthand: true,
+              dateFormat: "Y-m",
+              altInput: true,
+              altFormat: "F Y"
+            })
+          ],
+          defaultDate: el.value || null,
+          onChange: function (selectedDates, dateStr) {
+            el.value = dateStr;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+
         // Set default dates on page load
         const today = new Date();
         const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -362,20 +1141,38 @@
         const toDateInput = document.getElementById('to_date');
         const monthInput = document.getElementById('month_input');
         
-        fromDateInput.max = todayString;
-        toDateInput.max = todayString;
-        if (!fromDateInput.value) fromDateInput.value = todayString;
-        if (!toDateInput.value) toDateInput.value = todayString;
-        toDateInput.min = fromDateInput.value;
-        fromDateInput.addEventListener('change', function () {
-          toDateInput.min = this.value;
-          if (toDateInput.value && toDateInput.value < this.value) toDateInput.value = this.value;
-        });
-        if (!monthInput.value) monthInput.value = currentMonthString;
+        if (fromDateInput && !fromDateInput.value) fromDateInput.value = todayString;
+        if (toDateInput && !toDateInput.value) toDateInput.value = todayString;
+        
+        const fpFrom = fromDateInput ? flatpickr(fromDateInput, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          defaultDate: fromDateInput.value,
+          onChange: function(selectedDates, dateStr) {
+            fromDateInput.value = dateStr;
+            if (fpTo) fpTo.set('minDate', dateStr);
+          }
+        }) : null;
+        
+        const fpTo = toDateInput ? flatpickr(toDateInput, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          minDate: fromDateInput ? fromDateInput.value : null,
+          defaultDate: toDateInput.value,
+          onChange: function(selectedDates, dateStr) {
+            toDateInput.value = dateStr;
+          }
+        }) : null;
+
+        if (monthInput && !monthInput.value) monthInput.value = currentMonthString;
         
         // Set default academic year
         const academicYearSelect = document.getElementById('academic_year_input');
-        if (!academicYearSelect.value) {
+        if (academicYearSelect && !academicYearSelect.value) {
           const currentYear = today.getFullYear();
           const currentMonth = today.getMonth() + 1;
           const startYear = currentMonth >= 5 ? currentYear : currentYear - 1;
@@ -387,7 +1184,7 @@
         const monthField = document.getElementById("month_field");
         const academicYearField = document.getElementById("academic_year_field");
         
-        function setDisplay(el, value) { el.style.setProperty('display', value, 'important'); }
+        function setDisplay(el, value) { if (el) el.style.setProperty('display', value, 'important'); }
         
         function toggleFilterFields(mode) {
           if (mode === "month") { 
@@ -405,8 +1202,78 @@
           }
         }
         
-        toggleFilterFields(modeSelect.value || "{{ filter_mode or 'date' }}");
-        modeSelect.addEventListener("change", function () { toggleFilterFields(this.value); });
+        if (modeSelect) {
+          toggleFilterFields(modeSelect.value || "{{ filter_mode or 'date' }}");
+          modeSelect.addEventListener("change", function () { toggleFilterFields(this.value); });
+        }
+
+        // Coordinator specific fields initialization
+        const fromDateInputCoord = document.getElementById('from_date_coord');
+        const toDateInputCoord = document.getElementById('to_date_coord');
+        const monthInputCoord = document.getElementById('month_input_coord');
+
+        if (fromDateInputCoord && !fromDateInputCoord.value) fromDateInputCoord.value = todayString;
+        if (toDateInputCoord && !toDateInputCoord.value) toDateInputCoord.value = todayString;
+
+        const fpFromCoord = fromDateInputCoord ? flatpickr(fromDateInputCoord, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          defaultDate: fromDateInputCoord.value,
+          onChange: function(selectedDates, dateStr) {
+            fromDateInputCoord.value = dateStr;
+            if (fpToCoord) fpToCoord.set('minDate', dateStr);
+          }
+        }) : null;
+        
+        const fpToCoord = toDateInputCoord ? flatpickr(toDateInputCoord, {
+          dateFormat: "Y-m-d",
+          altInput: true,
+          altFormat: "d-m-Y",
+          maxDate: todayString,
+          minDate: fromDateInputCoord ? fromDateInputCoord.value : null,
+          defaultDate: toDateInputCoord.value,
+          onChange: function(selectedDates, dateStr) {
+            toDateInputCoord.value = dateStr;
+          }
+        }) : null;
+
+        if (monthInputCoord && !monthInputCoord.value) monthInputCoord.value = currentMonthString;
+
+        const academicYearSelectCoord = document.getElementById('academic_year_input_coord');
+        if (academicYearSelectCoord && !academicYearSelectCoord.value) {
+          const currentYear = today.getFullYear();
+          const currentMonth = today.getMonth() + 1;
+          const startYear = currentMonth >= 5 ? currentYear : currentYear - 1;
+          academicYearSelectCoord.value = startYear + '-' + (startYear + 1);
+        }
+
+        const modeSelectCoord = document.getElementById("filter_mode_coord");
+        const dateFieldsCoord = document.getElementById("date_range_fields_coord");
+        const monthFieldCoord = document.getElementById("month_field_coord");
+        const academicYearFieldCoord = document.getElementById("academic_year_field_coord");
+
+        function toggleFilterFieldsCoord(mode) {
+          if (mode === "month") { 
+            setDisplay(monthFieldCoord, 'block'); 
+            setDisplay(dateFieldsCoord, 'none'); 
+            setDisplay(academicYearFieldCoord, 'none');
+          } else if (mode === "academic_year") {
+            setDisplay(monthFieldCoord, 'none'); 
+            setDisplay(dateFieldsCoord, 'none'); 
+            setDisplay(academicYearFieldCoord, 'block');
+          } else { 
+            setDisplay(monthFieldCoord, 'none'); 
+            setDisplay(dateFieldsCoord, 'flex'); 
+            setDisplay(academicYearFieldCoord, 'none');
+          }
+        }
+
+        if (modeSelectCoord) {
+          toggleFilterFieldsCoord(modeSelectCoord.value || "{{ filter_mode_coord or 'month' }}");
+          modeSelectCoord.addEventListener("change", function () { toggleFilterFieldsCoord(this.value); });
+        }
       });
 
       function printAndRedirect() {
@@ -420,8 +1287,35 @@
       <div class="footer-content">
         <span>Concept: <strong>Dr. Cecil Donald</strong></span>
         <span class="divider">|</span>
-        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26)</span>
+        <span>Developed by: <strong>Vaishnavi VK</strong> (MCA 2024-26) &amp; <strong>Darshan Heble, Ananya S Shetty, Arnav Narula</strong> (MCA 2025-27)</span>
       </div>
     </footer>
-  </body>
+  
+  <script>
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        if (theme === 'dark') {
+          icon.className = 'bi bi-sun-fill text-warning';
+        } else {
+          icon.className = 'bi bi-moon-fill text-primary';
+        }
+      }
+      localStorage.setItem('theme', theme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+    }
+
+    // Set initial icon state on load
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      applyTheme(savedTheme);
+    })();
+  </script>
+</body>
 </html>

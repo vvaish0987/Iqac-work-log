@@ -6,20 +6,291 @@
     <title>Workshop Attachments</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-      body { background-color: #f8fafc; font-size: 15px; }
+      <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #212529;
+      --border-color: #dee2e6;
+      --table-striped-bg: rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f1f5f9;
+      --border-color: #334155;
+      --table-striped-bg: rgba(255, 255, 255, 0.05);
+          color-scheme: dark;
+    }
+
+    [data-theme="dark"] .flatpickr-monthSelect-month {
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-monthSelect-month:hover,
+    [data-theme="dark"] .flatpickr-monthSelect-month:focus {
+      background: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-monthSelect-month.selected {
+      background: #38bdf8 !important;
+      color: #0f172a !important;
+    }
+
+
+    [data-theme="dark"] .text-muted {
+      color: #94a3b8 !important;
+    }
+
+
+    [data-theme="dark"] .btn-outline-primary {
+      color: #38bdf8 !important;
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .btn-outline-primary:hover,
+    [data-theme="dark"] .btn-outline-primary:focus,
+    [data-theme="dark"] .btn-outline-primary:active {
+      background-color: #38bdf8 !important;
+      color: #0f172a !important;
+      border-color: #38bdf8 !important;
+    }
+
+
+    [data-theme="dark"] .form-control::placeholder,
+    [data-theme="dark"] textarea::placeholder,
+    [data-theme="dark"] input::placeholder {
+      color: #94a3b8 !important;
+      opacity: 0.7 !important;
+    }
+
+
+    [data-theme="dark"] .input-group-text {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .btn-outline-secondary:hover {
+      background-color: var(--border-color) !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .dropdown-menu {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item {
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-item:hover {
+      background-color: var(--border-color) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown-header {
+      color: var(--text-color) !important;
+      opacity: 0.8;
+    }
+    [data-theme="dark"] .dropdown-divider {
+      border-color: var(--border-color) !important;
+    }
+    [data-theme="dark"] input:-webkit-autofill,
+    [data-theme="dark"] input:-webkit-autofill:hover,
+    [data-theme="dark"] input:-webkit-autofill:focus,
+    [data-theme="dark"] textarea:-webkit-autofill,
+    [data-theme="dark"] textarea:-webkit-autofill:hover,
+    [data-theme="dark"] textarea:-webkit-autofill:focus,
+    [data-theme="dark"] select:-webkit-autofill,
+    [data-theme="dark"] select:-webkit-autofill:hover,
+    [data-theme="dark"] select:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--text-color) !important;
+      -webkit-box-shadow: 0 0 0px 1000px var(--card-bg) inset !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    [data-theme="dark"] .flatpickr-calendar {
+      background: #1e293b !important;
+      color: #f1f5f9 !important;
+      border-color: #334155 !important;
+      box-shadow: 1px 0 0 #334155, -1px 0 0 #334155, 0 1px 0 #334155, 0 -1px 0 #334155, 0 3px 13px rgba(0,0,0,0.8) !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-months .flatpickr-month,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekdays,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-weekday,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.today {
+      border-color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay:hover {
+      background: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.selected {
+      background: #003366 !important;
+      color: #fff !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.notAllowed:hover {
+      color: #475569 !important;
+      background: transparent !important;
+      border-color: transparent !important;
+      cursor: not-allowed !important;
+      opacity: 0.4 !important;
+    }
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.prevMonthDay,
+    [data-theme="dark"] .flatpickr-calendar .flatpickr-day.nextMonthDay {
+      color: #475569 !important;
+    }
+
+
+
+      body { background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; font-size: 15px; }
       .card { box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1); border: none; border-radius: 0.5rem; }
       .btn-primary { background-color: #003366; border-color: #003366; }
       .text-primary { color: #003366 !important; }
-    </style>
-  </head>
+    
+    .card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .table {
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .table td, .table th {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .table-striped tbody tr:nth-of-type(odd) td {
+      background-color: var(--table-striped-bg) !important;
+    }
+    .list-group-item {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control, .form-select {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .form-control:focus, .form-select:focus {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+    }
+    .modal-content {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .text-primary {
+      color: #38bdf8 !important;
+    }
+    [data-theme="dark"] .form-label {
+      color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .bg-light {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+    }
+    .login-card, .password-card, .forgot-card {
+      background-color: var(--card-bg) !important;
+      color: var(--text-color) !important;
+      border-color: var(--border-color) !important;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .header h5, [data-theme="dark"] .header h6 {
+      color: var(--text-color) !important;
+    }
+
+    /* Profile pill button glassmorphic hover effect */
+    .dropdown #userMenuDropdown {
+      transition: all 0.2s ease-in-out !important;
+    }
+    .dropdown #userMenuDropdown:hover,
+    .dropdown #userMenuDropdown[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.15) !important;
+      border-color: rgba(255, 255, 255, 0.6) !important;
+      color: #fff !important;
+    }
+    .dropdown .btn-outline-secondary:hover,
+    .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(0, 0, 0, 0.05) !important;
+      border-color: rgba(0, 0, 0, 0.25) !important;
+      color: var(--text-color) !important;
+    }
+    [data-theme="dark"] .dropdown .btn-outline-secondary:hover,
+    [data-theme="dark"] .dropdown .btn-outline-secondary[aria-expanded="true"] {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      color: var(--text-color) !important;
+    }
+
+</style>
+  
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+</head>
   <body>
     <div class="container py-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="text-primary mb-0">Workshop Attachments — {{ selected_month }}</h5>
-        <div>
-          <a href="/" class="btn btn-outline-secondary btn-sm me-2">Home</a>
-          <a href="/logout" class="btn btn-outline-secondary btn-sm">Logout</a>
+        <div class="d-flex align-items-center gap-2">
+          <a href="/" class="btn btn-outline-secondary btn-sm">Home</a>
+          <!-- User Dropdown Menu -->
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 py-1 rounded-pill shadow-sm" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="height: 38px;">
+              <div class="d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle" style="width: 26px; height: 26px;">
+                <i class="bi bi-person-fill fs-6"></i>
+              </div>
+              <span class="fw-semibold small me-1" style="color: var(--text-color) !important;">{{ session.get('full_name', username or session.get('username', '')).title() }}</span>
+              <i class="bi bi-chevron-down opacity-75 small" style="color: var(--text-color) !important;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuDropdown">
+              <li class="dropdown-header border-bottom pb-2 mb-2">
+              <div class="small text-secondary">Role</div>
+              <div class="fw-semibold" style="color: var(--text-color);">{{ session.get('role', 'User') }}</div>
+            </li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0);" onclick="toggleTheme(); event.stopPropagation();">
+                  <i class="bi bi-moon-fill" id="themeIcon"></i>
+                  <span>Toggle Dark Mode</span>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2" href="/change_password">
+                  <i class="bi bi-key-fill"></i> Change Password
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="/logout">
+                  <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -38,10 +309,10 @@
                 <div class="d-flex flex-wrap gap-2">
                   {% for f in files %}
                     <div class="d-flex align-items-center gap-2">
-                      <a href="{{ url_for('static', filename=f.path) }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm me-1">
+                      <a href="/view_attachment/{{ f.id }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm me-1">
                         <i class="bi bi-eye me-1"></i> View
                       </a>
-                      <a href="{{ url_for('static', filename=f.path) }}" download="{{ f.name }}" class="btn btn-outline-secondary btn-sm">
+                      <a href="/view_attachment/{{ f.id }}?download=1" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-download me-1"></i>{{ f.name }}
                       </a>
                     </div>
@@ -61,5 +332,57 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
+  
+  <script>
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        if (theme === 'dark') {
+          icon.className = 'bi bi-sun-fill text-warning';
+        } else {
+          icon.className = 'bi bi-moon-fill text-primary';
+        }
+      }
+      localStorage.setItem('theme', theme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+    }
+
+    // Set initial icon state on load
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      applyTheme(savedTheme);
+    })();
+  </script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+<script>
+
+      // Initialize Month Picker flatpickr
+      document.querySelectorAll('input[type="month"]').forEach(el => {
+        flatpickr(el, {
+          plugins: [
+            new monthSelectPlugin({
+              shorthand: true,
+              dateFormat: "Y-m",
+              altInput: true,
+              altFormat: "F Y"
+            })
+          ],
+          defaultDate: el.value || null,
+          onChange: function (selectedDates, dateStr) {
+            el.value = dateStr;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+
+</script>
+</body>
 </html>

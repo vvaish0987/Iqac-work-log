@@ -1,8 +1,28 @@
 from flask import Blueprint, request, redirect, flash, session, send_file
 import os
+import html as _html
 from datetime import datetime
 from io import BytesIO
 from db import get_db_connection, get_cursor
+import cloudinary
+import cloudinary.uploader
+
+def esc(s):
+    """HTML-escape a string so ReportLab's XML parser doesn't choke on & < > characters."""
+    if s is None:
+        return ''
+    return _html.escape(str(s))
+
+def is_coordinator(role_str):
+    if not role_str:
+        return False
+    roles = [r.strip().lower() for r in role_str.split(',')]
+    return 'school iqac coordinator' in roles or 'campus iqac coordinator' in roles
+
+def _cloudinary_upload_ws(file_obj, username, reporting_month, index):
+    public_id = f"{username}/{reporting_month}/workshop_{index + 1}"
+    result = cloudinary.uploader.upload(file_obj, folder="iqac/workshop_attachments", public_id=public_id, resource_type="auto", access_mode="public", overwrite=True)
+    return result["secure_url"], result["public_id"]
 
 # ReportLab for PDF generation
 try:
@@ -15,6 +35,61 @@ try:
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
+
+from werkzeug.datastructures import MultiDict
+
+def sort_list_fields(form_data, report_type, ws_files=None):
+    def sort_section(date_key, keys):
+        dates = form_data.get(date_key) or []
+        if not isinstance(dates, list):
+            dates = [dates] if dates else []
+        if not dates:
+            return None
+            
+        max_len = len(dates)
+        lists = {}
+        for k in keys:
+            vals = form_data.get(k) or []
+            if not isinstance(vals, list):
+                vals = [vals] if vals else []
+            lists[k] = vals
+            if len(vals) > max_len:
+                max_len = len(vals)
+                
+        ws_file_objs = []
+        if date_key == "ws_date[]" and ws_files:
+            ws_file_objs = ws_files
+            
+        rows = []
+        for i in range(max_len):
+            row = {}
+            for k in keys:
+                row[k] = lists[k][i] if i < len(lists[k]) else ""
+            if date_key == "ws_date[]" and ws_files:
+                row["_file"] = ws_file_objs[i] if i < len(ws_file_objs) else None
+            rows.append(row)
+            
+        def get_date_val(r):
+            v = r.get(date_key) or ""
+            return v.strip()
+            
+        rows.sort(key=lambda r: (1 if not get_date_val(r) else 0, get_date_val(r)))
+        
+        for k in keys:
+            form_data[k] = [r[k] for r in rows]
+            
+        if date_key == "ws_date[]" and ws_files:
+            return [r["_file"] for r in rows]
+        return None
+
+    if report_type == "aqar_coordinator":
+        sort_section("act_date[]", ["act_date[]", "act_task[]", "act_area[]", "act_area_other[]", "act_stakeholders[]", "act_outcome[]", "act_status[]"])
+        sort_section("meet_date[]", ["meet_date[]", "meet_programme[]", "meet_role[]", "meet_outcome[]"])
+    elif report_type == "standard":
+        sort_section("meeting_date[]", ["meeting_date[]", "dept_name[]", "participants[]", "topics[]", "action_points[]"])
+        sorted_ws_files = sort_section("ws_date[]", ["ws_date[]", "ws_venue[]", "ws_title[]", "ws_participants[]", "ws_resource[]", "ws_responsibility[]", "ws_existing_file[]"])
+        return sorted_ws_files
+    return None
 
 pdf_bp = Blueprint('pdf', __name__)
 
@@ -30,7 +105,7 @@ def iqac_monthly_report_download():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -41,6 +116,12 @@ def iqac_monthly_report_download():
         return redirect("/iqac_monthly_report")
 
     reporting_month = request.form.get("reporting_month", "report")
+
+    today_str = datetime.now().strftime("%Y-%m")
+    if reporting_month == today_str:
+        conn.close()
+        flash("Downloading the report PDF for the current month is not allowed during the drafting phase.", "danger")
+        return redirect("/iqac_monthly_report")
 
     # Check if report is locked
     cursor.execute("""
@@ -62,6 +143,9 @@ def iqac_monthly_report_download():
         else:
             form_data_obj[key] = request.form.get(key)
 
+    ws_files = request.files.getlist("ws_report_file[]")
+    sorted_ws_files = sort_list_fields(form_data_obj, "standard", ws_files) or ws_files
+
     aqar_emails_env = os.getenv("AQAR_COORDINATOR_EMAILS", "")
     aqar_emails = [e.strip().lower() for e in aqar_emails_env.split(",") if e.strip()]
     email = (user.get("email") or "").strip().lower()
@@ -74,82 +158,120 @@ def iqac_monthly_report_download():
             ON CONFLICT (username, report_type, reporting_month)
             DO UPDATE SET form_data = EXCLUDED.form_data, updated_at = CURRENT_TIMESTAMP
         """, (username, report_type, reporting_month, json.dumps(form_data_obj)))
-
-        # Insert/update signed_reports status = 'pending_upload'
-        cursor.execute("""
-            SELECT status FROM signed_reports 
-            WHERE username=%s AND reporting_month=%s
-        """, (username, reporting_month))
-        existing_report = cursor.fetchone()
-        
-        if not existing_report:
-            cursor.execute("""
-                INSERT INTO signed_reports (username, reporting_month, status)
-                VALUES (%s, %s, 'pending_upload')
-            """, (username, reporting_month))
-        else:
-            cursor.execute("""
-                UPDATE signed_reports 
-                SET status = 'pending_upload', remarks = NULL, uploaded_file_path = NULL
-                WHERE username = %s AND reporting_month = %s
-            """, (username, reporting_month))
-            
         conn.commit()
     except Exception as e:
-        print("Error saving draft/signed_reports:", str(e))
+        print("Error saving draft:", str(e))
         conn.rollback()
 
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    ws_upload_dir = os.path.join(base_dir, "static", "signed_reports", "workshop_attachments", username, reporting_month)
-
-    import glob
-    ws_files = request.files.getlist("ws_report_file[]")
-    ws_attachments = []
-    
-    # Let's count how many rows are in the form for workshops
-    ws_titles = request.form.getlist("ws_title[]")
+    ws_titles = form_data_obj.get("ws_title[]") or []
+    ws_existing_files = form_data_obj.get("ws_existing_file[]") or []
     num_rows = len(ws_titles)
-    
-    os.makedirs(ws_upload_dir, exist_ok=True)
-    
-    for i in range(num_rows):
-        uploaded_file = ws_files[i] if i < len(ws_files) else None
-        if uploaded_file and uploaded_file.filename:
-            # Delete any existing workshop_{i+1}.* files to prevent duplicates with different extensions
-            for existing in glob.glob(os.path.join(ws_upload_dir, f"workshop_{i+1}.*")):
+    ws_attachments = []  # list of (index, cloudinary_url, filename)
+
+    try:
+        # Load existing workshop attachments from DB for this user/month
+        db_conn2 = get_db_connection()
+        db_cur2 = get_cursor(db_conn2)
+        db_cur2.execute("""
+            SELECT workshop_index, filename, cloudinary_url, cloudinary_public_id
+            FROM workshop_attachment_files
+            WHERE username=%s AND reporting_month=%s
+        """, (username, reporting_month))
+        existing_ws = db_cur2.fetchall()
+        db_conn2.close()
+
+        new_db_records = []
+
+        for i in range(num_rows):
+            uploaded_file = sorted_ws_files[i] if i < len(sorted_ws_files) else None
+            existing_name = ws_existing_files[i] if i < len(ws_existing_files) else ""
+
+            if uploaded_file and uploaded_file.filename:
                 try:
-                    os.remove(existing)
-                except Exception:
-                    pass
-            ext = os.path.splitext(uploaded_file.filename)[1]
-            save_path = os.path.join(ws_upload_dir, f"workshop_{i+1}{ext}")
-            uploaded_file.save(save_path)
-            ws_attachments.append((i, save_path, uploaded_file.filename))
+                    cld_url, cld_pid = _cloudinary_upload_ws(uploaded_file, username, reporting_month, i)
+                    new_db_records.append({
+                        "workshop_index": i,
+                        "filename": uploaded_file.filename,
+                        "cloudinary_url": cld_url,
+                        "cloudinary_public_id": cld_pid
+                    })
+                    ws_attachments.append((i, cld_url, uploaded_file.filename))
+                except Exception as e:
+                    print(f"Workshop upload error row {i}: {e}")
+            elif existing_name:
+                # Find the matching record from existing_ws
+                matching = None
+                for rec in existing_ws:
+                    if rec["filename"] == existing_name:
+                        matching = rec
+                        break
+                if matching:
+                    new_db_records.append({
+                        "workshop_index": i,
+                        "filename": matching["filename"],
+                        "cloudinary_url": matching["cloudinary_url"],
+                        "cloudinary_public_id": matching["cloudinary_public_id"]
+                    })
+                    ws_attachments.append((i, matching["cloudinary_url"], matching["filename"]))
+
+        # Clear and re-insert workshop attachment records with sorted indices
+        db_conn3 = get_db_connection()
+        db_cur3 = get_cursor(db_conn3)
+        db_cur3.execute("""
+            DELETE FROM workshop_attachment_files
+            WHERE username=%s AND reporting_month=%s
+        """, (username, reporting_month))
+
+        for rec in new_db_records:
+            db_cur3.execute("""
+                INSERT INTO workshop_attachment_files (username, reporting_month, workshop_index, filename, cloudinary_url, cloudinary_public_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (username, reporting_month, rec["workshop_index"], rec["filename"], rec["cloudinary_url"], rec["cloudinary_public_id"]))
+
+        db_conn3.commit()
+        db_conn3.close()
+    except Exception as e:
+        print(f"Workshop attachment processing error: {e}")
+
+    # Construct MultiDict from sorted form_data_obj to pass to _generate_iqac_pdf
+    sorted_multi_form = MultiDict()
+    for k, v in form_data_obj.items():
+        if isinstance(v, list):
+            for val in v:
+                sorted_multi_form.add(k, val)
         else:
-            # No new file uploaded, check if an existing file exists on disk
-            existing_files = glob.glob(os.path.join(ws_upload_dir, f"workshop_{i+1}.*"))
-            if existing_files:
-                save_path = existing_files[0]
-                filename = os.path.basename(save_path)
-                ws_attachments.append((i, save_path, filename))
+            sorted_multi_form.add(k, v)
 
-    # Clean up orphaned files from deleted rows
-    if os.path.exists(ws_upload_dir):
-        for f in os.listdir(ws_upload_dir):
-            if f.startswith("workshop_"):
-                try:
-                    parts = os.path.splitext(f)[0].split("_")
-                    if len(parts) > 1:
-                        idx = int(parts[1])
-                        if idx > num_rows:
-                            os.remove(os.path.join(ws_upload_dir, f))
-                except Exception:
-                    pass
+    try:
+        pdf_buffer = _generate_iqac_pdf(sorted_multi_form, ws_attachments)
+    except Exception as e:
+        import traceback
+        print(f"PDF generation error:\n{traceback.format_exc()}")
+        conn.close()
+        flash("PDF generation failed. Please try again.", "danger")
+        return redirect("/iqac_monthly_report")
 
-    pdf_buffer = _generate_iqac_pdf(request.form, ws_attachments)
+    # Only mark pending_upload AFTER successful PDF generation
+    try:
+        cursor.execute("SELECT status FROM signed_reports WHERE username=%s AND reporting_month=%s", (username, reporting_month))
+        existing_report = cursor.fetchone()
+        if not existing_report:
+            cursor.execute("INSERT INTO signed_reports (username, reporting_month, status) VALUES (%s, %s, 'pending_upload')", (username, reporting_month))
+        else:
+            cursor.execute("UPDATE signed_reports SET status='pending_upload', remarks=NULL, uploaded_file_path=NULL WHERE username=%s AND reporting_month=%s", (username, reporting_month))
+        conn.commit()
+    except Exception as e:
+        print("Error updating signed_reports status:", str(e))
+        conn.rollback()
     conn.close()
 
-    filename = f"IQAC_Monthly_Report_{reporting_month}.pdf"
+    full_name = (user.get("full_name") or username).strip()
+    try:
+        month_label = datetime.strptime(reporting_month, "%Y-%m").strftime("%B")
+    except Exception:
+        month_label = reporting_month
+    safe_name = "".join(c if c.isalnum() or c in (' ', '-') else '' for c in full_name).strip()
+    filename = f"{safe_name} {month_label} IQAC Report.pdf"
 
     return send_file(
         pdf_buffer,
@@ -276,8 +398,8 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
     elements.append(HRFlowable(width=usable_width, thickness=2, color=accent, spaceAfter=10))
 
     # ── Header Info ─────────────────────────────────────────────────────────
-    coord_name = form_data.get('coordinator_name', '')
-    school = form_data.get('school_campus', '')
+    coord_name = esc(form_data.get('coordinator_name', ''))
+    school = esc(form_data.get('school_campus', ''))
     rep_month_raw = form_data.get('reporting_month', '')
     try:
         rep_month_display = datetime.strptime(rep_month_raw, '%Y-%m').strftime('%m-%Y')
@@ -318,10 +440,9 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
     participants = form_data.getlist('participants[]')
     topics = form_data.getlist('topics[]')
     action_pts = form_data.getlist('action_points[]')
-    resp_areas = form_data.getlist('responsibility_area[]')
 
     pa_headers = ['Date of\nMeeting', 'Department\nName', "Participants'\nDetails",
-                  'Topics\nDiscussed', 'Action Points\n/ Plan']
+                  'Topics\nDiscussed', 'Action Points\n/ Outcomes']
     pa_cols = [w * 0.13, w * 0.20, w * 0.22, w * 0.225, w * 0.225]
 
     pa_rows_filled = [(meet_dates[i] if i < len(meet_dates) else '').strip() or
@@ -336,10 +457,10 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
             continue
         pa_data.append([
             Paragraph(format_date(meet_dates[i]) if i < len(meet_dates) else '', small),
-            Paragraph(dept_names[i] if i < len(dept_names) else '', small),
-            Paragraph(participants[i] if i < len(participants) else '', small),
-            Paragraph(topics[i] if i < len(topics) else '', small),
-            Paragraph(action_pts[i] if i < len(action_pts) else '', small),
+            Paragraph(esc(dept_names[i]) if i < len(dept_names) else '', small),
+            Paragraph(esc(participants[i]) if i < len(participants) else '', small),
+            Paragraph(esc(topics[i]) if i < len(topics) else '', small),
+            Paragraph(esc(action_pts[i]) if i < len(action_pts) else '', small),
         ])
 
     if has_pa_data:
@@ -380,26 +501,12 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
                 continue
             
             ws_title = ws_titles[i] if i < len(ws_titles) else ''
-            attachment_name = None
-            if ws_attachments:
-                for att_idx, _, att_filename in ws_attachments:
-                    if att_idx == i:
-                        attachment_name = att_filename
-                        break
-            
-            title_para_text = ws_title
-            if attachment_name:
-                username = session.get('username', '')
-                rep_month_raw = form_data.get('reporting_month', '')
-                file_url = f"{request.host_url}static/signed_reports/workshop_attachments/{username}/{rep_month_raw}/{attachment_name}"
-                title_para_text += f"<br/><a href='{file_url}' color='blue'><b>View Attachment:</b> {attachment_name}</a>"
-
             pb_data.append([
                 Paragraph(format_date(ws_dates[i]) if i < len(ws_dates) else '', small),
-                Paragraph(ws_venues[i] if i < len(ws_venues) else '', small),
-                Paragraph(title_para_text, small),
-                Paragraph(ws_parts[i] if i < len(ws_parts) else '', small),
-                Paragraph(ws_res[i] if i < len(ws_res) else '', small),
+                Paragraph(esc(ws_venues[i]) if i < len(ws_venues) else '', small),
+                Paragraph(esc(ws_title), small),
+                Paragraph(esc(ws_parts[i]) if i < len(ws_parts) else '', small),
+                Paragraph(esc(ws_res[i]) if i < len(ws_res) else '', small),
             ])
         pb_table = Table(pb_data, colWidths=pb_cols, repeatRows=1)
         pb_table.setStyle(table_style())
@@ -416,7 +523,7 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
         plan_rows = []
         for i, p in enumerate(plans, 1):
             plan_rows.append([Paragraph(f'{i}.', make_style(f'pn{i}', size=9, space_after=0)),
-                              Paragraph(p, make_style(f'pt{i}', size=9, space_after=0))])
+                              Paragraph(esc(p), make_style(f'pt{i}', size=9, space_after=0))])
 
         plan_table = Table(plan_rows, colWidths=[0.6 * cm, usable_width - 0.6 * cm])
         plan_table.setStyle(TableStyle([
@@ -433,33 +540,47 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
     # ── Signature Footer ────────────────────────────────────────────────────
     elements.append(Spacer(1, 16))
 
-    coord_sig = form_data.get('sig_coordinator_name', '')
-    dean_rem = form_data.get('sig_dean_remarks', '')
-    dir_rem = form_data.get('sig_director_remarks', '')
-    footer_date = form_data.get('footer_date', '')
+    coord_sig = esc(form_data.get('sig_coordinator_name', ''))
+    dean_rem = esc(form_data.get('sig_dean_remarks', ''))
+    dir_rem = esc(form_data.get('sig_director_remarks', ''))
+    footer_date = esc(form_data.get('footer_date', ''))
 
-    def sig_cell(label, value):
-        return [
-            Paragraph(label, make_style('sigh', size=8, bold=True, space_after=4)),
-            Paragraph(f'{value or ""}   {"_" * 28}', make_style('sigv', size=8, space_after=2)),
-            Paragraph('(Signature)', make_style('sigs', size=7, italic=True, space_after=0)),
+    _sc = [0]
+    def sig_cell(label, value, show_remarks_lines=False):
+        _sc[0] += 1
+        n = _sc[0]
+        line = '_' * 32
+        items = [
+            Paragraph(label, make_style(f'sigh{n}', size=8, bold=True, space_after=6)),
         ]
+        if show_remarks_lines:
+            # Empty space matching coordinator name height, then signature line
+            items.append(Spacer(1, 20))
+            items.append(Paragraph(line, make_style(f'sigln{n}', size=8, space_after=4)))
+        else:
+            if value:
+                items.append(Paragraph(esc(value), make_style(f'sigval{n}', size=9, space_after=4)))
+            items.append(Spacer(1, 4))
+            items.append(Paragraph(line, make_style(f'sigln{n}', size=8, space_after=4)))
+        items.append(Paragraph('(Signature)', make_style(f'sigs{n}', size=7, italic=True, space_after=0)))
+        return items
 
     third = usable_width / 3
     sig_data = [
-        [sig_cell('Name & Signature of\nIQAC Coordinator', coord_sig),
-         sig_cell('Remarks & Signature of\nDean', dean_rem),
-         sig_cell('Remarks & Signature of\nDirector IQAC', dir_rem)],
+        [sig_cell('Name & Signature of\nIQAC Coordinator', coord_sig, show_remarks_lines=False),
+         sig_cell('Remarks & Signature of\nDean', dean_rem, show_remarks_lines=True),
+         sig_cell('Remarks & Signature of\nDirector IQAC', dir_rem, show_remarks_lines=True)],
     ]
     sig_table = Table(sig_data, colWidths=[third, third, third])
     sig_table.setStyle(TableStyle([
         ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
         ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 30),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ]))
     elements.append(sig_table)
     elements.append(Spacer(1, 6))
@@ -474,6 +595,459 @@ def _generate_iqac_pdf(form_data, ws_attachments=None):
 # AQAR-ALIGNED IQAC COORDINATOR REPORT
 # ============================================================================
 
+def _check_submission_window(username=None):
+    """Returns (is_open, reporting_month_str, open_day, close_day, window_msg)."""
+    import calendar
+    try:
+        conn = get_db_connection()
+        cursor = get_cursor(conn)
+        cursor.execute("SELECT key, value FROM app_settings WHERE key IN ('submission_open_day', 'submission_close_day')")
+        rows = {r['key']: int(r['value']) for r in cursor.fetchall()}
+        conn.close()
+        open_day, close_day = rows.get('submission_open_day', 1), rows.get('submission_close_day', 5)
+    except Exception:
+        open_day, close_day = 1, 5
+
+    today = datetime.now().date()
+    current_day = today.day
+
+    last_day = calendar.monthrange(today.year, today.month)[1]
+    effective_open_day = min(open_day, last_day)
+    effective_close_day = min(close_day, last_day)
+
+    # Compute previous month info
+    if today.month == 1:
+        prev_year, prev_month = today.year - 1, 12
+    else:
+        prev_year, prev_month = today.year, today.month - 1
+    prev_month_str = f"{prev_year}-{prev_month:02d}"
+    prev_month_name = datetime(prev_year, prev_month, 1).strftime("%m-%Y")
+
+    # Check if they qualify for extended deadline for previous month
+    use_prev_month = False
+    if current_day <= 9:
+        use_prev_month = True
+    elif username and current_day <= effective_close_day:
+        # Check if they have submitted previous month's report
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM signed_reports 
+                WHERE username = %s AND reporting_month = %s AND status IN ('uploaded', 'reviewed')
+            """, (username, prev_month_str))
+            row = cursor.fetchone()
+            submitted = row['count'] > 0 if row else False
+            conn.close()
+        except Exception:
+            submitted = False
+        
+        if not submitted:
+            use_prev_month = True
+
+    if use_prev_month:
+        reporting_month_str = prev_month_str
+        month_name = prev_month_name
+        is_open = effective_open_day <= current_day <= effective_close_day
+        
+        if is_open:
+            close_date = today.replace(day=effective_close_day).strftime("%d-%m-%Y")
+            window_msg = f"Submission window for {month_name} is open until {close_date}."
+        elif current_day < effective_open_day:
+            open_date = today.replace(day=effective_open_day).strftime("%d-%m-%Y")
+            window_msg = f"Submission window for {month_name} opens on {open_date}."
+        else:
+            window_msg = f"Submission window for {month_name} is closed."
+    else:
+        # Days 10 onwards (or if already submitted): drafting window for the current month
+        report_year, report_month = today.year, today.month
+        reporting_month_str = f"{report_year}-{report_month:02d}"
+        month_name = datetime(report_year, report_month, 1).strftime("%m-%Y")
+        is_open = False
+        window_msg = f"Drafting period for {month_name}. Submission window will open next month."
+
+    return is_open, reporting_month_str, open_day, close_day, window_msg
+
+
+@pdf_bp.route("/iqac_coordinator_report/preview", methods=["POST"])
+def iqac_coordinator_report_preview():
+    if "username" not in session:
+        return redirect("/login")
+
+    username = session["username"]
+    conn = get_db_connection()
+    cursor = get_cursor(conn)
+
+    cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
+    user = cursor.fetchone()
+
+    if not user or not is_coordinator(user["role"]):
+        conn.close()
+        flash("Access denied.", "danger")
+        return redirect("/login")
+
+    if not REPORTLAB_AVAILABLE:
+        conn.close()
+        flash("PDF generation library (reportlab) is not installed on the server.", "danger")
+        return redirect("/iqac_monthly_report")
+
+    reporting_month = request.form.get("reporting_month", "report")
+
+    import json
+    form_data_obj = {}
+    for key in request.form.keys():
+        if key.endswith('[]'):
+            form_data_obj[key] = request.form.getlist(key)
+        else:
+            form_data_obj[key] = request.form.get(key)
+
+    sort_list_fields(form_data_obj, "aqar_coordinator")
+
+    # Read AQAR coordinator names from env
+    aqar_names_env = os.getenv("AQAR_COORDINATOR_NAMES", "")
+    aqar_names = [n.strip() for n in aqar_names_env.split(",") if n.strip()] if aqar_names_env else []
+
+    sorted_multi_form = MultiDict()
+    for k, v in form_data_obj.items():
+        if isinstance(v, list):
+            for val in v:
+                sorted_multi_form.add(k, val)
+        else:
+            sorted_multi_form.add(k, v)
+
+    conn.close()
+
+    try:
+        pdf_buffer = _generate_aqar_coordinator_pdf(sorted_multi_form, aqar_names)
+    except Exception as e:
+        import traceback
+        print(f"PDF preview generation error:\n{traceback.format_exc()}")
+        flash("PDF generation failed. Please try again.", "danger")
+        return redirect("/iqac_monthly_report")
+
+    full_name = (user.get("full_name") or username).strip()
+    try:
+        month_label = datetime.strptime(reporting_month, "%Y-%m").strftime("%B")
+    except Exception:
+        month_label = reporting_month
+    safe_name = "".join(c if c.isalnum() or c in (' ', '-') else '' for c in full_name).strip()
+    filename = f"{safe_name} {month_label} IQAC Report Preview.pdf"
+
+    return send_file(
+        pdf_buffer,
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name=filename
+    )
+
+
+@pdf_bp.route("/iqac_coordinator_report/submit", methods=["POST"])
+def iqac_coordinator_report_submit():
+    if "username" not in session:
+        return {"success": False, "error": "Not logged in"}
+
+    username = session["username"]
+    conn = get_db_connection()
+    cursor = get_cursor(conn)
+
+    cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
+    user = cursor.fetchone()
+
+    if not user or not is_coordinator(user["role"]):
+        conn.close()
+        return {"success": False, "error": "Access denied"}
+
+    if not REPORTLAB_AVAILABLE:
+        conn.close()
+        return {"success": False, "error": "Reportlab library is not installed"}
+
+    reporting_month = request.form.get("reporting_month", "").strip()
+    if not reporting_month:
+        conn.close()
+        return {"success": False, "error": "Reporting month is missing"}
+
+    # Check if corrections were requested for this report
+    cursor.execute("""
+        SELECT status FROM signed_reports 
+        WHERE username = %s AND reporting_month = %s
+    """, (username, reporting_month))
+    report_row = cursor.fetchone()
+    is_correction_requested = report_row and report_row.get("status") == "corrections_requested"
+
+    # Enforce submission window only if NOT a requested correction
+    is_open, _, _, _, window_msg = _check_submission_window(username)
+    if not is_open and not is_correction_requested:
+        conn.close()
+        return {"success": False, "error": "Submission window is closed. " + window_msg}
+
+    # Server-side validations: Ensure partially filled rows are completed
+    import json
+    form_data_obj = {}
+    for key in request.form.keys():
+        if key.endswith('[]'):
+            form_data_obj[key] = request.form.getlist(key)
+        else:
+            form_data_obj[key] = request.form.get(key)
+
+    # Server-side validation: Ensure Responsibility Area(s) is completed
+    resp_areas = form_data_obj.get("responsibility_areas", "").strip()
+    if not resp_areas:
+        conn.close()
+        return {"success": False, "error": "Responsibility Area(s) is required."}
+
+    # Section 1 (Activities)
+    act_dates = form_data_obj.get("act_date[]") or []
+    act_tasks = form_data_obj.get("act_task[]") or []
+    act_areas = form_data_obj.get("act_area[]") or []
+    act_stakeholders = form_data_obj.get("act_stakeholders[]") or []
+    act_outcomes = form_data_obj.get("act_outcome[]") or []
+    act_statuses = form_data_obj.get("act_status[]") or []
+    
+    max_act = max(len(act_dates), len(act_tasks), len(act_areas), len(act_stakeholders), len(act_outcomes), len(act_statuses))
+    for i in range(max_act):
+        date_val = act_dates[i].strip() if i < len(act_dates) else ""
+        task_val = act_tasks[i].strip() if i < len(act_tasks) else ""
+        area_val = act_areas[i].strip() if i < len(act_areas) else ""
+        stakeholder_val = act_stakeholders[i].strip() if i < len(act_stakeholders) else ""
+        outcome_val = act_outcomes[i].strip() if i < len(act_outcomes) else ""
+        status_val = act_statuses[i].strip() if i < len(act_statuses) else ""
+        
+        row_vals = [date_val, task_val, area_val, stakeholder_val, outcome_val, status_val]
+        if any(row_vals) and not all(row_vals):
+            missing = []
+            if not date_val: missing.append("Date")
+            if not task_val: missing.append("Task / Activity conducted")
+            if not area_val: missing.append("Related Area")
+            if not stakeholder_val: missing.append("Target Stakeholders")
+            if not outcome_val: missing.append("Outcome / Status")
+            if not status_val: missing.append("Status")
+            
+            conn.close()
+            return {"success": False, "error": f"Section 1 (Activities) - Row {i+1}, Column(s) [{', '.join(missing)}] is required."}
+
+        # Check 'Others' specify input for Section 1
+        if area_val == "Others":
+            act_area_others = form_data_obj.get("act_area_other[]") or []
+            area_other_val = act_area_others[i].strip() if i < len(act_area_others) else ""
+            if not area_other_val:
+                conn.close()
+                return {"success": False, "error": f"Section 1 (Activities) - Row {i+1}, Column 'Related Area (Specify other)' is required."}
+
+    # Section 2 (Meetings)
+    meet_dates = form_data_obj.get("meet_date[]") or []
+    meet_programmes = form_data_obj.get("meet_programme[]") or []
+    meet_roles = form_data_obj.get("meet_role[]") or []
+    meet_outcomes = form_data_obj.get("meet_outcome[]") or []
+    
+    max_meet = max(len(meet_dates), len(meet_programmes), len(meet_roles), len(meet_outcomes))
+    for i in range(max_meet):
+        date_val = meet_dates[i].strip() if i < len(meet_dates) else ""
+        prog_val = meet_programmes[i].strip() if i < len(meet_programmes) else ""
+        role_val = meet_roles[i].strip() if i < len(meet_roles) else ""
+        outcome_val = meet_outcomes[i].strip() if i < len(meet_outcomes) else ""
+        
+        row_vals = [date_val, prog_val, role_val, outcome_val]
+        if any(row_vals) and not all(row_vals):
+            missing = []
+            if not date_val: missing.append("Date")
+            if not prog_val: missing.append("Programme Name & Details")
+            if not role_val: missing.append("Role / Contribution")
+            if not outcome_val: missing.append("Key Decisions / Outcome")
+            
+            conn.close()
+            return {"success": False, "error": f"Section 2 (Meetings) - Row {i+1}, Column(s) [{', '.join(missing)}] is required."}
+
+    # Section 5 (Action Plan)
+    plan_activities = form_data_obj.get("plan_activity[]") or []
+    plan_areas = form_data_obj.get("plan_area[]") or []
+    plan_outcomes = form_data_obj.get("plan_outcome[]") or []
+    
+    max_plan = max(len(plan_activities), len(plan_areas), len(plan_outcomes))
+    for i in range(max_plan):
+        act_val = plan_activities[i].strip() if i < len(plan_activities) else ""
+        area_val = plan_areas[i].strip() if i < len(plan_areas) else ""
+        outcome_val = plan_outcomes[i].strip() if i < len(plan_outcomes) else ""
+        
+        row_vals = [act_val, area_val, outcome_val]
+        if any(row_vals) and not all(row_vals):
+            missing = []
+            if not act_val: missing.append("Planned Activity")
+            if not area_val: missing.append("Related Area")
+            if not outcome_val: missing.append("Expected Outcome")
+            
+            conn.close()
+            return {"success": False, "error": f"Section 5 (Action Plan) - Row {i+1}, Column(s) [{', '.join(missing)}] is required."}
+
+        # Check 'Others' specify input for Section 5
+        if area_val == "Others":
+            plan_area_others = form_data_obj.get("plan_area_other[]") or []
+            area_other_val = plan_area_others[i].strip() if i < len(plan_area_others) else ""
+            if not area_other_val:
+                conn.close()
+                return {"success": False, "error": f"Section 5 (Action Plan) - Row {i+1}, Column 'Related Area (Specify other)' is required."}
+
+    # Ensure report is not completely empty
+    has_any = False
+    for k, v in form_data_obj.items():
+        if k in ('reporting_month', 'sig_coordinator_name', 'footer_date'):
+            continue
+        if isinstance(v, list):
+            if any(val.strip() for val in v):
+                has_any = True
+                break
+        elif v and v.strip():
+            has_any = True
+            break
+            
+    if not has_any:
+        conn.close()
+        return {"success": False, "error": "The report cannot be completely empty. Please fill in at least one entry."}
+
+    # Sort form data list fields
+    sort_list_fields(form_data_obj, "aqar_coordinator")
+
+    # Generate PDF buffer
+    aqar_names_env = os.getenv("AQAR_COORDINATOR_NAMES", "")
+    aqar_names = [n.strip() for n in aqar_names_env.split(",") if n.strip()] if aqar_names_env else []
+
+    sorted_multi_form = MultiDict()
+    for k, v in form_data_obj.items():
+        if isinstance(v, list):
+            for val in v:
+                sorted_multi_form.add(k, val)
+        else:
+            sorted_multi_form.add(k, v)
+
+    try:
+        pdf_buffer = _generate_aqar_coordinator_pdf(sorted_multi_form, aqar_names)
+    except Exception as e:
+        import traceback
+        print(f"PDF submission generation error:\n{traceback.format_exc()}")
+        conn.close()
+        return {"success": False, "error": "PDF generation failed."}
+
+    # Upload PDF buffer directly to Cloudinary
+    from werkzeug.utils import secure_filename
+    pdf_buffer.seek(0)
+    public_id = f"{secure_filename(username)}_{reporting_month}"
+
+    try:
+        opts = {
+            "folder": "iqac/signed_reports",
+            "resource_type": "raw",
+            "access_mode": "public",
+            "public_id": public_id,
+            "overwrite": True
+        }
+        result = cloudinary.uploader.upload(pdf_buffer, **opts)
+        file_url = result["secure_url"]
+        cld_public_id = result["public_id"]
+    except Exception as e:
+        conn.close()
+        return {"success": False, "error": f"Cloudinary upload failed: {str(e)}"}
+
+    # Save draft in database
+    aqar_emails_env = os.getenv("AQAR_COORDINATOR_EMAILS", "")
+    aqar_emails = [e.strip().lower() for e in aqar_emails_env.split(",") if e.strip()]
+    email = (user.get("email") or "").strip().lower()
+    report_type = "aqar_coordinator" if email in aqar_emails else "standard"
+
+    try:
+        cursor.execute("""
+            INSERT INTO report_drafts (username, report_type, reporting_month, form_data, updated_at)
+            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (username, report_type, reporting_month)
+            DO UPDATE SET form_data = EXCLUDED.form_data, updated_at = CURRENT_TIMESTAMP
+        """, (username, report_type, reporting_month, json.dumps(form_data_obj)))
+
+        # Update or Insert in signed_reports
+        cursor.execute("""
+            SELECT * FROM signed_reports
+            WHERE username=%s AND reporting_month=%s
+        """, (username, reporting_month))
+        existing = cursor.fetchone()
+
+        if existing:
+            if existing.get("cloudinary_public_id") and existing["cloudinary_public_id"] != cld_public_id:
+                try:
+                    cloudinary.uploader.destroy(existing["cloudinary_public_id"], resource_type="raw")
+                except Exception:
+                    pass
+            cursor.execute("""
+                UPDATE signed_reports
+                SET uploaded_file_path=%s, cloudinary_public_id=%s, status='uploaded', uploaded_at=CURRENT_TIMESTAMP, remarks=NULL
+                WHERE id=%s
+            """, (file_url, cld_public_id, existing["id"]))
+        else:
+            cursor.execute("""
+                INSERT INTO signed_reports (username, reporting_month, uploaded_file_path, cloudinary_public_id, status)
+                VALUES (%s, %s, %s, %s, 'uploaded')
+            """, (username, reporting_month, file_url, cld_public_id))
+            
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return {"success": False, "error": f"Database save failed: {str(e)}"}
+
+    conn.close()
+
+    # Send email notification to Admin/Secretary and Director
+    try:
+        from app import send_email
+        notify_conn = get_db_connection()
+        notify_cur = get_cursor(notify_conn)
+        notify_cur.execute("SELECT email FROM users WHERE role IN ('Admin', 'Secretary') AND email IS NOT NULL AND email != ''")
+        recipients = notify_cur.fetchall()
+        notify_conn.close()
+
+        reporting_month_display = datetime.strptime(reporting_month, "%Y-%m").strftime("%m-%Y")
+        coordinator_name = user.get("full_name") or username.title()
+        if isinstance(coordinator_name, str):
+            coordinator_name = coordinator_name.strip().title()
+
+        # 1. Notify Admin/Secretary
+        subject = f"IQAC Report Submitted – {coordinator_name} ({reporting_month_display})"
+        body = (
+            f"Dear Admin/Secretary,\n\n"
+            f"{coordinator_name} ({user.get('designation', '')}, {user.get('department', '')}) "
+            f"has submitted their signed IQAC report for {reporting_month_display}.\n\n"
+            f"Please log in to review and authorise the report.\n\n"
+            f"Regards,\n"
+            f"Internal Quality Assurance Cell (IQAC)\n"
+            f"CHRIST (Deemed to be University)"
+        )
+        for r in recipients:
+            try:
+                send_email(r['email'], subject, body)
+            except Exception as e:
+                print(f"Failed to notify {r['email']}: {e}")
+
+        # 2. Notify Director
+        director_emails = ["director.iqac@christuniversity.in", "arnavnarula25@gmail.com"]
+        director_subject = f"Monthly Report Submitted – {coordinator_name} ({reporting_month_display})"
+        director_body = (
+            f"Dear Director,\n\n"
+            f"IQAC Coordinator {coordinator_name} ({user.get('designation', '')}, {user.get('department', '')}) "
+            f"has submitted their Monthly Report (AQAR Aligned) for {reporting_month_display}.\n\n"
+            f"Please log in to review the report.\n\n"
+            f"Regards,\n"
+            f"Internal Quality Assurance Cell (IQAC)\n"
+            f"CHRIST (Deemed to be University)"
+        )
+        for d_email in director_emails:
+            try:
+                send_email(d_email, director_subject, director_body)
+                print(f"Sent submission notification email to Director: {d_email}")
+            except Exception as e:
+                print(f"Failed to notify Director ({d_email}): {e}")
+
+    except Exception as e:
+        print(f"Notification error: {e}")
+
+    return {"success": True}
+
+
 @pdf_bp.route("/iqac_coordinator_report/download", methods=["POST"])
 def iqac_coordinator_report_download():
     if "username" not in session:
@@ -486,7 +1060,7 @@ def iqac_coordinator_report_download():
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
 
-    if not user or user["role"].lower() not in ("school iqac coordinator", "campus iqac coordinator"):
+    if not user or not is_coordinator(user["role"]):
         conn.close()
         flash("Access denied.", "danger")
         return redirect("/login")
@@ -497,6 +1071,12 @@ def iqac_coordinator_report_download():
         return redirect("/iqac_monthly_report")
 
     reporting_month = request.form.get("reporting_month", "report")
+
+    today_str = datetime.now().strftime("%Y-%m")
+    if reporting_month == today_str:
+        conn.close()
+        flash("Downloading the report PDF for the current month is not allowed during the drafting phase.", "danger")
+        return redirect("/iqac_monthly_report")
 
     # Check if report is locked
     cursor.execute("""
@@ -517,6 +1097,8 @@ def iqac_coordinator_report_download():
             form_data_obj[key] = request.form.getlist(key)
         else:
             form_data_obj[key] = request.form.get(key)
+
+    sort_list_fields(form_data_obj, "aqar_coordinator")
 
     aqar_emails_env = os.getenv("AQAR_COORDINATOR_EMAILS", "")
     aqar_emails = [e.strip().lower() for e in aqar_emails_env.split(",") if e.strip()]
@@ -559,10 +1141,31 @@ def iqac_coordinator_report_download():
     aqar_names_env = os.getenv("AQAR_COORDINATOR_NAMES", "")
     aqar_names = [n.strip() for n in aqar_names_env.split(",") if n.strip()] if aqar_names_env else []
 
-    pdf_buffer = _generate_aqar_coordinator_pdf(request.form, aqar_names)
+    # Construct MultiDict from sorted form_data_obj to pass to _generate_aqar_coordinator_pdf
+    sorted_multi_form = MultiDict()
+    for k, v in form_data_obj.items():
+        if isinstance(v, list):
+            for val in v:
+                sorted_multi_form.add(k, val)
+        else:
+            sorted_multi_form.add(k, v)
+
+    try:
+        pdf_buffer = _generate_aqar_coordinator_pdf(sorted_multi_form, aqar_names)
+    except Exception as e:
+        print(f"PDF generation error: {e}")
+        conn.close()
+        flash("PDF generation failed. Please try again.", "danger")
+        return redirect("/iqac_coordinator_report")
     conn.close()
 
-    filename = f"IQAC_Coordinator_Report_AQAR_{reporting_month}.pdf"
+    full_name = (user.get("full_name") or username).strip()
+    try:
+        month_label = datetime.strptime(reporting_month, "%Y-%m").strftime("%B")
+    except Exception:
+        month_label = reporting_month
+    safe_name = "".join(c if c.isalnum() or c in (' ', '-') else '' for c in full_name).strip()
+    filename = f"{safe_name} {month_label} IQAC Report.pdf"
 
     return send_file(
         pdf_buffer,
@@ -675,21 +1278,21 @@ def _generate_aqar_coordinator_pdf(form_data, aqar_names=None):
 
     # ── Title ──
     elements.append(Paragraph('INTERNAL QUALITY ASSURANCE CELL (IQAC)', make_style('aqar_h1', size=13, bold=True, align=TA_CENTER, space_after=4)))
-    elements.append(Paragraph('Monthly Work Done Report', make_style('aqar_h2', size=10, bold=True, align=TA_CENTER, space_after=4)))
+    elements.append(Paragraph('Monthly Report', make_style('aqar_h2', size=10, bold=True, align=TA_CENTER, space_after=4)))
     elements.append(Paragraph('(AQAR | NAAC | Rankings/Awards | Quality Assurance Activities)', make_style('aqar_h3', size=8, align=TA_CENTER, space_after=4, italic=True)))
 
     elements.append(HRFlowable(width=usable_width, thickness=2, color=accent, spaceAfter=10))
 
     # ── Particulars Table ──
-    coord_name = form_data.get('coordinator_name', '')
-    school = form_data.get('school_campus', '')
+    coord_name = esc(form_data.get('coordinator_name', ''))
+    school = esc(form_data.get('school_campus', ''))
     rep_month_raw = form_data.get('reporting_month', '')
     try:
         rep_month_display = datetime.strptime(rep_month_raw, '%Y-%m').strftime('%m-%Y')
     except Exception:
         rep_month_display = rep_month_raw
 
-    resp_areas_val = form_data.get('responsibility_areas', '')
+    resp_areas_val = esc(form_data.get('responsibility_areas', ''))
     if not resp_areas_val:
         resp_areas_val = 'AQAR / NAAC / Rankings/Awards / Audits / Documentation / Others'
 
@@ -755,11 +1358,11 @@ def _generate_aqar_coordinator_pdf(form_data, aqar_names=None):
             area_text = get_area_text(act_areas, act_area_others, i)
             s1_data.append([
                 Paragraph(format_date(act_dates[i]) if i < len(act_dates) else '', small),
-                Paragraph(act_tasks[i] if i < len(act_tasks) else '', small),
-                Paragraph(area_text, small),
-                Paragraph(act_stakeholders[i] if i < len(act_stakeholders) else '', small),
-                Paragraph(act_outcomes[i] if i < len(act_outcomes) else '', small),
-                Paragraph(act_statuses[i] if i < len(act_statuses) else '', small),
+                Paragraph(esc(act_tasks[i]) if i < len(act_tasks) else '', small),
+                Paragraph(esc(area_text), small),
+                Paragraph(esc(act_stakeholders[i]) if i < len(act_stakeholders) else '', small),
+                Paragraph(esc(act_outcomes[i]) if i < len(act_outcomes) else '', small),
+                Paragraph(esc(act_statuses[i]) if i < len(act_statuses) else '', small),
             ])
         s1_table = Table(s1_data, colWidths=s1_cols, repeatRows=1)
         s1_table.setStyle(table_style())
@@ -789,9 +1392,9 @@ def _generate_aqar_coordinator_pdf(form_data, aqar_names=None):
                 continue
             s2_data.append([
                 Paragraph(format_date(meet_dates[i]) if i < len(meet_dates) else '', small),
-                Paragraph(meet_programmes[i] if i < len(meet_programmes) else '', small),
-                Paragraph(meet_roles[i] if i < len(meet_roles) else '', small),
-                Paragraph(meet_outcomes[i] if i < len(meet_outcomes) else '', small),
+                Paragraph(esc(meet_programmes[i]) if i < len(meet_programmes) else '', small),
+                Paragraph(esc(meet_roles[i]) if i < len(meet_roles) else '', small),
+                Paragraph(esc(meet_outcomes[i]) if i < len(meet_outcomes) else '', small),
             ])
         s2_table = Table(s2_data, colWidths=s2_cols, repeatRows=1)
         s2_table.setStyle(table_style())
@@ -805,7 +1408,7 @@ def _generate_aqar_coordinator_pdf(form_data, aqar_names=None):
         elements.append(section_header('3. Key Achievements During the Month'))
         elements.append(Spacer(1, 4))
         for i, a in enumerate(achievements, 1):
-            elements.append(Paragraph(f'{i}. {a}', make_style(f'aqar_ach{i}', size=9, space_after=3)))
+            elements.append(Paragraph(f'{i}. {esc(a)}', make_style(f'aqar_ach{i}', size=9, space_after=3)))
         elements.append(Spacer(1, 8))
 
     # ── Section 4: Challenges / Issues Faced ──
@@ -815,7 +1418,7 @@ def _generate_aqar_coordinator_pdf(form_data, aqar_names=None):
         elements.append(section_header('4. Challenges / Issues Faced'))
         elements.append(Spacer(1, 4))
         for i, c in enumerate(challenges, 1):
-            elements.append(Paragraph(f'{i}. {c}', make_style(f'aqar_ch{i}', size=9, space_after=3)))
+            elements.append(Paragraph(f'{i}. {esc(c)}', make_style(f'aqar_ch{i}', size=9, space_after=3)))
 
     # ── Section 5: Action Plan for Next Month ──
     plan_activities = form_data.getlist('plan_activity[]')
@@ -840,18 +1443,18 @@ def _generate_aqar_coordinator_pdf(form_data, aqar_names=None):
                 continue
             area_text = get_area_text(plan_areas, plan_area_others, i)
             s5_data.append([
-                Paragraph(plan_activities[i] if i < len(plan_activities) else '', small),
-                Paragraph(area_text, small),
-                Paragraph(plan_outcomes[i] if i < len(plan_outcomes) else '', small),
+                Paragraph(esc(plan_activities[i]) if i < len(plan_activities) else '', small),
+                Paragraph(esc(area_text), small),
+                Paragraph(esc(plan_outcomes[i]) if i < len(plan_outcomes) else '', small),
             ])
         s5_table = Table(s5_data, colWidths=s5_cols, repeatRows=1)
         s5_table.setStyle(table_style())
         elements.append(s5_table)
 
     # ── Signature Section ──
-    coord_sig = form_data.get('sig_coordinator_name', '')
+    coord_sig = esc(form_data.get('sig_coordinator_name', ''))
     footer_date = form_data.get('footer_date', '')
-    dir_rem = form_data.get('sig_director_remarks', '')
+    dir_rem = esc(form_data.get('sig_director_remarks', ''))
 
     sig_block = [
         Spacer(1, 20),
