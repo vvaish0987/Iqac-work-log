@@ -1211,35 +1211,6 @@
         }
       });
 
-      // Toast Helper function
-      function showToast(message, type = 'success') {
-        const toastEl = document.getElementById('customToast');
-        const toastIcon = document.getElementById('toastIcon');
-        const toastMsg = document.getElementById('toastMessage');
-        
-        // Reset classes
-        toastEl.className = 'toast align-items-center text-white border-0';
-        toastIcon.className = 'bi fs-5';
-        
-        if (type === 'success') {
-          toastEl.classList.add('bg-success');
-          toastIcon.classList.add('bi-check-circle-fill');
-        } else if (type === 'danger') {
-          toastEl.classList.add('bg-danger');
-          toastIcon.classList.add('bi-exclamation-triangle-fill');
-        } else {
-          toastEl.classList.add('bg-warning', 'text-dark');
-          toastIcon.classList.add('bi-exclamation-circle-fill');
-        }
-        
-        toastMsg.textContent = message;
-        
-        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
-        toast.show();
-      }
-
-      window.showToast = showToast;
-
       if (errors.length) {
         showToast('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'), 'danger');
         // Scroll to the first highlighted field
@@ -1346,6 +1317,33 @@
             saveBtn.innerHTML = '<i class="bi bi-journal-bookmark me-2"></i>Save as Draft';
           }
         });
+    }
+
+    // Toast Helper function (declared globally)
+    function showToast(message, type = 'success') {
+      const toastEl = document.getElementById('customToast');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastMsg = document.getElementById('toastMessage');
+      
+      // Reset classes
+      toastEl.className = 'toast align-items-center text-white border-0';
+      toastIcon.className = 'bi fs-5';
+      
+      if (type === 'success') {
+        toastEl.classList.add('bg-success');
+        toastIcon.classList.add('bi-check-circle-fill');
+      } else if (type === 'danger') {
+        toastEl.classList.add('bg-danger');
+        toastIcon.classList.add('bi-exclamation-triangle-fill');
+      } else {
+        toastEl.classList.add('bg-warning', 'text-dark');
+        toastIcon.classList.add('bi-exclamation-circle-fill');
+      }
+      
+      toastMsg.textContent = message;
+      
+      const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+      toast.show();
     }
 
     // Debounce timer for Auto-Save
