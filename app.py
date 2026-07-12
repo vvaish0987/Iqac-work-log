@@ -432,7 +432,7 @@ def get_submission_window():
         cursor.execute("SELECT key, value FROM app_settings WHERE key IN ('submission_open_day', 'submission_close_day')")
         rows = {r['key']: int(r['value']) for r in cursor.fetchall()}
         conn.close()
-        close_day = min(rows.get('submission_close_day', 10), 10)
+        close_day = rows.get('submission_close_day', 10)
         return rows.get('submission_open_day', 1), close_day
     except Exception:
         return 1, 10

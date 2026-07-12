@@ -165,7 +165,7 @@
       header { background-color:#003366; color:#fff; padding:1rem 1.5rem; border-radius:.5rem; margin-bottom:1.5rem; position: relative; }
       .logo-container { background-color: #fff; padding: 8px 12px; border-radius: 8px; display: inline-block; }
       .logo-container img { height: 75px; width: auto; }
-      .header-title { color: #fff; margin: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+      .header-title { color: #fff; margin: 0 1.5rem; text-align: center; flex-grow: 1; }
       .header-title h5 { font-size: 1.25rem; font-weight: 700; margin: 0; }
 
     /* ── Responsive header for small screens ── */
@@ -493,7 +493,38 @@
     [data-theme="dark"] .section-subheader,
     [data-theme="dark"] .info-label,
     [data-theme="dark"] .table th {
-      color: #0f172a !important;
+      background-color: #1e3a8a !important; /* Muted deep blue background */
+      color: #f8fafc !important;             /* High contrast off-white text */
+      border-color: #334155 !important;
+    }
+    [data-theme="dark"] .table td,
+    [data-theme="dark"] .info-table td {
+      border-color: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .category-task-item {
+      background-color: #1e293b !important;  /* Muted dark slate background */
+      border-left-color: #38bdf8 !important; /* Sky blue left boundary accent */
+    }
+    [data-theme="dark"] .category-name {
+      color: #38bdf8 !important;             /* High contrast sky blue text */
+    }
+    [data-theme="dark"] .category-task-text {
+      color: #cbd5e1 !important;             /* Off-white text for description */
+    }
+    [data-theme="dark"] .report-info,
+    [data-theme="dark"] .report-summary {
+      background-color: #0f172a !important;  /* Dark slate card body */
+      border-left-color: #38bdf8 !important;
+      color: #cbd5e1 !important;
+    }
+    [data-theme="dark"] .report-info strong,
+    [data-theme="dark"] .report-summary strong {
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .signature,
+    [data-theme="dark"] .worklog-header h5 {
+      color: #38bdf8 !important;
     }
     [data-theme="dark"] .text-area-display {
       background-color: #1e293b;
@@ -561,14 +592,34 @@
         </div>
       </header>
 
+      
+      <!-- Toast Messages -->
       {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show no-print" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        {% if messages %}
+          <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+            {% for category, message in messages %}
+              <div class="toast align-items-center text-white {% if category == 'success' %}bg-success{% elif category == 'danger' %}bg-danger{% else %}bg-warning text-dark{% endif %} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                  <div class="toast-body d-flex align-items-center gap-2">
+                    <i class="bi {% if category == 'success' %}bi-check-circle-fill{% elif category == 'danger' %}bi-exclamation-triangle-fill{% else %}bi-exclamation-circle-fill{% endif %} fs-5"></i>
+                    <span>{{ message }}</span>
+                  </div>
+                  <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+              </div>
+            {% endfor %}
           </div>
-        {% endfor %}
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              document.querySelectorAll('.toast').forEach(function(toastEl) {
+                var toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+                toast.show();
+              });
+            });
+          </script>
+        {% endif %}
       {% endwith %}
+
 
       <div class="card mb-4 no-print">
         <div class="card-body">
@@ -1084,7 +1135,13 @@
                           {% if log.tasks_dict %}
                             {% for cat, task in log.tasks_dict.items() %}
                               <div class="category-task-item">
-                                <div class="category-name">{{ cat }}</div>
+                                <div class="category-name">
+                                  {% if cat.startswith('Others (') %}
+                                    Others ({{ cat[8:-1] }})
+                                  {% else %}
+                                    {{ cat }}
+                                  {% endif %}
+                                </div>
                                 <div class="category-task-text">{{ task }}</div>
                               </div>
                             {% endfor %}

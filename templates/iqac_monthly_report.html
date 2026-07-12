@@ -479,7 +479,10 @@
     [data-theme="dark"] .subsection-title {
       color: #38bdf8 !important;
     }
-    
+    .is-invalid-custom {
+      border: 2px solid #dc3545 !important;
+      box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+    }
 </style>
 </head>
 
@@ -848,6 +851,20 @@
     </div>
   </div>
 
+  <!-- Custom Alert Toast Structure -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="customToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body d-flex align-items-center gap-2">
+          <i id="toastIcon" class="bi fs-5"></i>
+          <span id="toastMessage" style="font-size: 0.9rem; font-weight: 500; white-space: pre-line;"></span>
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Download/Save Buttons -->
   <div class="d-flex gap-2 mb-4">
     {% if not is_current_month %}
@@ -858,7 +875,8 @@
     <button type="button" id="saveDraftBtn" class="btn btn-warning btn-lg px-5 text-dark fw-bold">
       <i class="bi bi-journal-bookmark me-2"></i>Save as Draft
     </button>
-    <a href="{{ back_url or '/iqac_dashboard' }}" id="cancelBtn" class="btn btn-outline-secondary btn-lg">Cancel</a>
+    <span id="autosaveStatus" class="align-self-center text-muted small ms-2" style="transition: opacity 0.3s; opacity: 0;"></span>
+    <a href="{{ back_url or '/iqac_dashboard' }}" id="cancelBtn" class="btn btn-outline-secondary btn-lg ms-auto">Cancel</a>
   </div>
 
   </form>
@@ -919,6 +937,7 @@
           dateFormat: "Y-m-d",
           altInput: true,
           altFormat: "d-m-Y",
+          placeholder: "DD-MM-YYYY",
           minDate: minDate,
           maxDate: maxDate,
           defaultDate: el.value || null,
@@ -1115,9 +1134,24 @@
     document.getElementById('reportForm').addEventListener('submit', function (e) {
       e.preventDefault();
 
+      // Clear all previous validation highlights
+      document.querySelectorAll('.is-invalid-custom').forEach(el => el.classList.remove('is-invalid-custom'));
+
       function highlight(el) {
-        el.style.border = '2px solid red';
-        el.addEventListener('input', () => el.style.border = '', { once: true });
+        // Flatpickr altInput generates a sibling with class .flatpickr-input. 
+        // Let's look for sibling inputs that have .flatpickr-input or .form-control:not([type="hidden"])
+        let targetEl = el;
+        const sibling = el.parentElement.querySelector('.flatpickr-input:not([type="hidden"])') || 
+                        el.parentElement.querySelector('input.form-control[readonly]');
+        if (sibling) {
+          targetEl = sibling;
+        }
+        
+        targetEl.classList.add('is-invalid-custom');
+        const clear = () => targetEl.classList.remove('is-invalid-custom');
+        targetEl.addEventListener('input', clear, { once: true });
+        targetEl.addEventListener('change', clear, { once: true });
+        el.addEventListener('change', clear, { once: true });
       }
 
       let errors = [];
@@ -1141,7 +1175,7 @@
           if (!parts || !parts.value.trim()) { if (parts) highlight(parts); rowOk = false; missingFields.push("Participants"); }
           if (!topicsVal) {
             const display = row.querySelector('.resp-area-display');
-            if (display) display.style.border = '2px solid red';
+            if (display) highlight(display);
             rowOk = false;
             missingFields.push("Topics Discussed");
           }
@@ -1169,7 +1203,7 @@
           if (!resource.value.trim()) { highlight(resource); rowOk = false; missingFields.push("Resource Person"); }
           if (!respVal) {
             const display = row.querySelector('.resp-area-display');
-            if (display) display.style.border = '2px solid red';
+            if (display) highlight(display);
             rowOk = false;
             missingFields.push("Responsibility Area");
           }
@@ -1178,7 +1212,12 @@
       });
 
       if (errors.length) {
-        alert('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'));
+        showToast('Please complete all fields in partially-filled rows:\n\n' + errors.join('\n'), 'danger');
+        // Scroll to the first highlighted field
+        const firstBad = document.querySelector('.is-invalid-custom');
+        if (firstBad) {
+          firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return;
       }
 
@@ -1206,46 +1245,134 @@
           document.body.appendChild(a);
           a.click();
           setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
+          showToast('PDF generated successfully!', 'success');
           setTimeout(() => { window.location.href = '/iqac_dashboard'; }, 1500);
         })
         .catch(() => {
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-file-earmark-pdf me-2"></i>Download as PDF';
-          alert('PDF generation failed. Please try again.');
+          showToast('PDF generation failed. Please try again.', 'danger');
         });
     });
 
-    document.getElementById('saveDraftBtn').addEventListener('click', function () {
+    // Unified Draft Save function
+    function saveDraft(isAuto = false) {
       const form = document.getElementById('reportForm');
-      const btn = this;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving…';
+      const saveBtn = document.getElementById('saveDraftBtn');
+      const statusSpan = document.getElementById('autosaveStatus');
+      
+      if (!isAuto) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving…';
+        // Clear autosave status text when saving manually
+        statusSpan.style.opacity = '0';
+        statusSpan.innerHTML = '';
+      } else {
+        statusSpan.style.opacity = '1';
+        statusSpan.innerHTML = '<i class="bi bi-cloud-arrow-up-fill text-warning me-1"></i>Saving changes...';
+      }
 
       const formData = new FormData(form);
       formData.append('report_type', 'standard');
 
-      fetch('/iqac_report/save_draft', {
+      return fetch('/iqac_report/save_draft', {
         method: 'POST',
         body: formData
       })
         .then(r => r.json())
         .then(res => {
           if (res.success) {
-            alert('Draft saved successfully!');
-            window.location.reload();
+            if (!isAuto) {
+              showToast('Draft saved successfully!', 'success');
+              setTimeout(() => { window.location.reload(); }, 2500);
+            } else {
+              const now = new Date();
+              const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+              statusSpan.innerHTML = `<i class="bi bi-cloud-check-fill text-success me-1"></i>Saved draft at ${timeStr}`;
+              setTimeout(() => {
+                if (statusSpan.innerHTML.includes(timeStr)) {
+                  statusSpan.style.opacity = '0';
+                }
+              }, 4000);
+            }
           } else {
-            alert('Failed to save draft: ' + res.error);
+            if (!isAuto) {
+              showToast('Failed to save draft: ' + res.error, 'danger');
+            } else {
+              statusSpan.innerHTML = '<i class="bi bi-cloud-slash-fill text-danger me-1"></i>Save failed';
+            }
           }
         })
         .catch(err => {
           console.error(err);
-          alert('An error occurred while saving the draft.');
+          if (!isAuto) {
+            showToast('An error occurred while saving the draft.', 'danger');
+          } else {
+            statusSpan.innerHTML = '<i class="bi bi-cloud-slash-fill text-danger me-1"></i>Offline / Save error';
+          }
         })
         .finally(() => {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="bi bi-journal-bookmark me-2"></i>Save as Draft';
+          if (!isAuto) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-journal-bookmark me-2"></i>Save as Draft';
+          }
         });
+    }
+
+    // Toast Helper function (declared globally)
+    function showToast(message, type = 'success') {
+      const toastEl = document.getElementById('customToast');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastMsg = document.getElementById('toastMessage');
+      
+      // Reset classes
+      toastEl.className = 'toast align-items-center text-white border-0';
+      toastIcon.className = 'bi fs-5';
+      
+      if (type === 'success') {
+        toastEl.classList.add('bg-success');
+        toastIcon.classList.add('bi-check-circle-fill');
+      } else if (type === 'danger') {
+        toastEl.classList.add('bg-danger');
+        toastIcon.classList.add('bi-exclamation-triangle-fill');
+      } else {
+        toastEl.classList.add('bg-warning', 'text-dark');
+        toastIcon.classList.add('bi-exclamation-circle-fill');
+      }
+      
+      toastMsg.textContent = message;
+      
+      const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+      toast.show();
+    }
+
+    // Debounce timer for Auto-Save
+    let autosaveTimeout = null;
+    function triggerAutosave() {
+      {% if locked or readonly %}
+        return; // Do not trigger auto-save if report is locked
+      {% endif %}
+      const statusSpan = document.getElementById('autosaveStatus');
+      statusSpan.style.opacity = '1';
+      statusSpan.innerHTML = '<i class="bi bi-pencil-fill text-muted me-1"></i>Unsaved changes...';
+
+      if (autosaveTimeout) clearTimeout(autosaveTimeout);
+      autosaveTimeout = setTimeout(() => {
+        saveDraft(true);
+      }, 3000); // 3 seconds of inactivity triggers auto-save
+    }
+
+    // Attach listeners for Auto-Save
+    document.getElementById('reportForm').addEventListener('input', triggerAutosave);
+    document.getElementById('reportForm').addEventListener('change', triggerAutosave);
+    
+    // Manual save button trigger
+    document.getElementById('saveDraftBtn').addEventListener('click', function () {
+      if (autosaveTimeout) clearTimeout(autosaveTimeout);
+      saveDraft(false);
     });
+
+
 
     {% if locked or readonly %}
     document.addEventListener("DOMContentLoaded", function () {

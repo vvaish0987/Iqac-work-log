@@ -386,17 +386,34 @@
         </div>
       </header>
 
+      
+      <!-- Toast Messages -->
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-          {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+            {% for category, message in messages %}
+              <div class="toast align-items-center text-white {% if category == 'success' %}bg-success{% elif category == 'danger' %}bg-danger{% else %}bg-warning text-dark{% endif %} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                  <div class="toast-body d-flex align-items-center gap-2">
+                    <i class="bi {% if category == 'success' %}bi-check-circle-fill{% elif category == 'danger' %}bi-exclamation-triangle-fill{% else %}bi-exclamation-circle-fill{% endif %} fs-5"></i>
+                    <span>{{ message }}</span>
+                  </div>
+                  <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+              </div>
+            {% endfor %}
           </div>
-          {% endfor %}
-          <script>setTimeout(()=>{document.querySelectorAll('.alert').forEach(a=>{a.classList.add('fade');setTimeout(()=>a.remove(),500);});},6000);</script>
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              document.querySelectorAll('.toast').forEach(function(toastEl) {
+                var toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+                toast.show();
+              });
+            });
+          </script>
         {% endif %}
       {% endwith %}
+
 
       <div class="card">
         <div class="card-body">
