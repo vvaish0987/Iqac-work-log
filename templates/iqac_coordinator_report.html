@@ -466,10 +466,14 @@
                     </td>
                   </tr>
                   <tr>
-                    <td style="background:#e9ecef; font-weight:600;">School/Campus</td>
+                    <td style="background:#e9ecef; font-weight:600; vertical-align: middle;">Role <span class="text-danger">*</span></td>
                     <td>
-                      <input type="hidden" name="school_campus" value="{{ user.department or '' }}">
-                      <input type="text" class="form-control form-control-sm border-0 bg-light" value="{{ user.department or '' }}" disabled placeholder="e.g., School of Sciences, Bangalore">
+                      {% set selected_role = draft_data.get('school_campus', '') if draft_data else '' %}
+                      <select name="school_campus" class="form-select form-select-sm" required>
+                        <option value="" disabled {% if not selected_role %}selected{% endif %}>Select Role…</option>
+                        <option value="Documentations and Audit" {% if selected_role == "Documentations and Audit" %}selected{% endif %}>Documentations and Audit</option>
+                        <option value="Rankings, Accreditations and Awards" {% if selected_role == "Rankings, Accreditations and Awards" %}selected{% endif %}>Rankings, Accreditations and Awards</option>
+                      </select>
                     </td>
                   </tr>
                   <tr>
@@ -1082,124 +1086,130 @@
         }
       }
 
-      document.getElementById('viewPdfBtn').addEventListener('click', function() {
-        const form = document.getElementById('reportForm');
-        const originalAction = form.action;
-        const originalTarget = form.target;
-        
-        form.action = '/iqac_coordinator_report/preview';
-        form.target = '_blank';
-        form.submit();
-        
-        form.action = originalAction;
-        form.target = originalTarget;
-      });
-
-      document.getElementById('submitReportBtn').addEventListener('click', function() {
-        // Clear all previous highlights
-        document.querySelectorAll('.is-invalid-custom').forEach(el => el.classList.remove('is-invalid-custom'));
-
-        let errors = [];
-
-        // Validate Responsibility Area(s)
-        const respHidden = document.querySelector('.resp-area-hidden');
-        if (respHidden && !respHidden.value.trim()) {
-          const displayEl = document.querySelector('.resp-area-display');
-          if (displayEl) {
-            markInvalid(displayEl);
-          }
-          errors.push("Responsibility Area(s) is required.");
-        }
-
-        // Section 1: Activities
-        validateTableRows('tableActivities-body', [
-          'input[name="act_date[]"]',
-          'textarea[name="act_task[]"]',
-          'select[name="act_area[]"]',
-          'textarea[name="act_stakeholders[]"]',
-          'textarea[name="act_outcome[]"]',
-          'select[name="act_status[]"]'
-        ], [
-          'Date',
-          'Brief Report/Details',
-          'Key Responsibility Area',
-          'Target Stakeholders',
-          'Key Outcome/Significance',
-          'Status'
-        ], 'Section 1 (Activities)', errors);
-
-        // Section 2: Meetings
-        validateTableRows('tableMeetings-body', [
-          'input[name="meet_date[]"]',
-          'textarea[name="meet_programme[]"]',
-          'select[name="meet_role[]"]',
-          'textarea[name="meet_outcome[]"]'
-        ], [
-          'Date',
-          'Programme/Event Details',
-          'Role/Activity',
-          'Key Decisions/Action Points/Outcomes'
-        ], 'Section 2 (Meetings)', errors);
-
-        // Section 5: Action Plan
-        validateTableRows('tableActionPlan-body', [
-          'textarea[name="plan_activity[]"]',
-          'select[name="plan_area[]"]',
-          'textarea[name="plan_outcome[]"]'
-        ], [
-          'Proposed Activity/Topic',
-          'Key Responsibility Area',
-          'Target Outcome/Deliverable'
-        ], 'Section 5 (Action Plan)', errors);
-
-        // Validation check for empty report
-        const anyFieldsFilled = Array.from(document.querySelectorAll('#reportForm input:not([type="hidden"]), #reportForm textarea, #reportForm select'))
-          .some(el => el.value.trim() !== '');
-        
-        if (!anyFieldsFilled) {
-          errors.push("The report cannot be completely empty. Please fill in at least one activity, meeting, or plan.");
-        }
-
-        if (errors.length) {
-          showCustomAlert('Please complete all required fields and partially-filled rows:\n\n' + errors.join('\n'));
-          // Scroll to the first highlighted field
-          const firstBad = document.querySelector('.is-invalid-custom');
-          if (firstBad) firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
-        }
-
-        showCustomConfirm('Are you sure you want to submit this report directly? After submission, the report will be locked and sent to the administrator/secretary for review.', function() {
+      const viewPdfBtn = document.getElementById('viewPdfBtn');
+      if (viewPdfBtn) {
+        viewPdfBtn.addEventListener('click', function() {
           const form = document.getElementById('reportForm');
-          const btn = document.getElementById('submitReportBtn');
-          btn.disabled = true;
-          btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting…';
+          const originalAction = form.action;
+          const originalTarget = form.target;
+          
+          form.action = '/iqac_coordinator_report/preview';
+          form.target = '_blank';
+          form.submit();
+          
+          form.action = originalAction;
+          form.target = originalTarget;
+        });
+      }
 
-          const formData = new FormData(form);
+      const submitReportBtn = document.getElementById('submitReportBtn');
+      if (submitReportBtn) {
+        submitReportBtn.addEventListener('click', function() {
+          // Clear all previous highlights
+          document.querySelectorAll('.is-invalid-custom').forEach(el => el.classList.remove('is-invalid-custom'));
 
-          fetch('/iqac_coordinator_report/submit', {
-            method: 'POST',
-            body: formData
-          })
-          .then(r => r.json())
-          .then(res => {
-            if (res.success) {
-              showCustomAlert('Report submitted and uploaded successfully!', 'Success', function() {
-                window.location.href = '/iqac_dashboard';
-              });
-            } else {
-              showCustomAlert('Failed to submit report: ' + res.error, 'Submission Error');
+          let errors = [];
+
+          // Validate Responsibility Area(s)
+          const respHidden = document.querySelector('.resp-area-hidden');
+          if (respHidden && !respHidden.value.trim()) {
+            const displayEl = document.querySelector('.resp-area-display');
+            if (displayEl) {
+              markInvalid(displayEl);
             }
-          })
-          .catch(err => {
-            console.error(err);
-            showCustomAlert('An error occurred while submitting the report.', 'Error');
-          })
-          .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-send me-2"></i>Submit Report';
+            errors.push("Responsibility Area(s) is required.");
+          }
+
+          // Section 1: Activities
+          validateTableRows('tableActivities-body', [
+            'input[name="act_date[]"]',
+            'textarea[name="act_task[]"]',
+            'select[name="act_area[]"]',
+            'textarea[name="act_stakeholders[]"]',
+            'textarea[name="act_outcome[]"]',
+            'select[name="act_status[]"]'
+          ], [
+            'Date',
+            'Brief Report/Details',
+            'Key Responsibility Area',
+            'Target Stakeholders',
+            'Key Outcome/Significance',
+            'Status'
+          ], 'Section 1 (Activities)', errors);
+
+          // Section 2: Meetings
+          validateTableRows('tableMeetings-body', [
+            'input[name="meet_date[]"]',
+            'textarea[name="meet_programme[]"]',
+            'select[name="meet_role[]"]',
+            'textarea[name="meet_outcome[]"]'
+          ], [
+            'Date',
+            'Programme/Event Details',
+            'Role/Activity',
+            'Key Decisions/Action Points/Outcomes'
+          ], 'Section 2 (Meetings)', errors);
+
+          // Section 5: Action Plan
+          validateTableRows('tableActionPlan-body', [
+            'textarea[name="plan_activity[]"]',
+            'select[name="plan_area[]"]',
+            'textarea[name="plan_outcome[]"]'
+          ], [
+            'Proposed Activity/Topic',
+            'Key Responsibility Area',
+            'Target Outcome/Deliverable'
+          ], 'Section 5 (Action Plan)', errors);
+
+          // Validation check for empty report
+          const anyFieldsFilled = Array.from(document.querySelectorAll('#reportForm input:not([type="hidden"]), #reportForm textarea, #reportForm select'))
+            .some(el => el.value.trim() !== '');
+          
+          if (!anyFieldsFilled) {
+            errors.push("The report cannot be completely empty. Please fill in at least one activity, meeting, or plan.");
+          }
+
+          if (errors.length) {
+            showCustomAlert('Please complete all required fields and partially-filled rows:\n\n' + errors.join('\n'));
+            // Scroll to the first highlighted field
+            const firstBad = document.querySelector('.is-invalid-custom');
+            if (firstBad) firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+
+          showCustomConfirm('Are you sure you want to submit this report directly? After submission, the report will be locked and sent to the administrator/secretary for review.', function() {
+            const form = document.getElementById('reportForm');
+            const btn = document.getElementById('submitReportBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting…';
+
+            const formData = new FormData(form);
+
+            fetch('/iqac_coordinator_report/submit', {
+              method: 'POST',
+              body: formData
+            })
+            .then(r => r.json())
+            .then(res => {
+              if (res.success) {
+                showCustomAlert('Report submitted and uploaded successfully!', 'Success', function() {
+                  window.location.href = '/iqac_dashboard';
+                });
+              } else {
+                showCustomAlert('Failed to submit report: ' + res.error, 'Submission Error');
+              }
+            })
+            .catch(err => {
+              console.error(err);
+              showCustomAlert('An error occurred while submitting the report.', 'Error');
+            })
+            .finally(() => {
+              btn.disabled = false;
+              btn.innerHTML = '<i class="bi bi-send me-2"></i>Submit Report';
+            });
           });
         });
-      });
+      }
 
       // Custom Toast Helper
       function showToast(message, type = 'success') {

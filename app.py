@@ -71,7 +71,7 @@ def is_coordinator(role_str):
     if not role_str:
         return False
     roles = [r.strip().lower() for r in role_str.split(',')]
-    return 'school iqac coordinator' in roles or 'campus iqac coordinator' in roles
+    return 'school iqac coordinator' in roles or 'campus iqac coordinator' in roles or 'iqac core team member' in roles
 
 # Make datetime and timedelta available in all templates
 app.jinja_env.globals['datetime'] = datetime
@@ -102,9 +102,22 @@ AQAR_COORDINATOR_EMAILS = _parse_csv_env("AQAR_COORDINATOR_EMAILS")
 AQAR_COORDINATOR_NAMES = _parse_csv_env("AQAR_COORDINATOR_NAMES")
 
 def is_aqar_coordinator(user):
-    """Check if a user should see the AQAR-aligned report based on their email."""
-    email = (user.get("email") or "").strip().lower() if isinstance(user, dict) else (user["email"] or "").strip().lower()
-    return email in [e.lower() for e in AQAR_COORDINATOR_EMAILS]
+    """Check if a user is an AQAR coordinator (IQAC Core team member) based on their role."""
+    if not user:
+        return False
+    if isinstance(user, dict):
+        role_str = user.get("role") or user.get("user_role") or ""
+    else:
+        role_str = ""
+        try:
+            role_str = user["role"]
+        except (KeyError, IndexError, TypeError):
+            try:
+                role_str = user["user_role"]
+            except (KeyError, IndexError, TypeError):
+                pass
+    roles = [r.strip().lower() for r in role_str.split(',')]
+    return 'iqac core team member' in roles
 
 # ------------------ EMAIL REMINDER FUNCTIONS ------------------
 def send_email(to_email, subject, body):
@@ -623,6 +636,18 @@ def init_postgres():
     # Migrate old 'IQAC Coordinator' role to 'School IQAC Coordinator'
     cursor.execute("UPDATE users SET role='School IQAC Coordinator' WHERE role='IQAC Coordinator'")
 
+    # Automatically migrate users listed in AQAR_COORDINATOR_EMAILS to have the "IQAC Core team member" role
+    aqar_emails_env = os.getenv("AQAR_COORDINATOR_EMAILS", "")
+    if aqar_emails_env:
+        aqar_emails = [e.strip().lower() for e in aqar_emails_env.split(",") if e.strip()]
+        for email in aqar_emails:
+            cursor.execute("SELECT id, role FROM users WHERE LOWER(email) = %s", (email,))
+            user_row = cursor.fetchone()
+            if user_row:
+                # Set the role exclusively to 'IQAC Core team member'
+                cursor.execute("UPDATE users SET role=%s WHERE id=%s", ("IQAC Core team member", user_row["id"]))
+                print(f"Set role exclusively to 'IQAC Core team member' for user {email}.")
+
     # Default admin
     cursor.execute("SELECT * FROM users WHERE username='admin'")
     if not cursor.fetchone():
@@ -782,7 +807,7 @@ def login():
             active_role_lower = session["role"].lower()
             if active_role_lower == "admin":
                 return redirect("/admin")
-            elif active_role_lower in ("school iqac coordinator", "campus iqac coordinator"):
+            elif active_role_lower in ("school iqac coordinator", "campus iqac coordinator", "iqac core team member"):
                 return redirect("/iqac_dashboard")
             elif active_role_lower == "secretary":
                 return redirect("/secretary_dashboard")
@@ -807,7 +832,7 @@ def switch_role(role):
         r_lower = role.lower()
         if r_lower == "admin":
             return redirect("/admin")
-        elif r_lower in ("school iqac coordinator", "campus iqac coordinator"):
+        elif r_lower in ("school iqac coordinator", "campus iqac coordinator", "iqac core team member"):
             return redirect("/iqac_dashboard")
         elif r_lower == "secretary":
             return redirect("/secretary_dashboard")
@@ -1430,7 +1455,7 @@ def admin_panel():
         return redirect("/dashboard")
 
     # Fetch employees for dropdown (exclude Admin and Coordinators)
-    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 AND strpos(role, 'IQAC Core team member') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     # Get stats for dashboard cards
@@ -1450,14 +1475,14 @@ def admin_panel():
     # IQAC Coordinator report submission progress — reports are for the previous month
     prev = now.replace(day=1) - timedelta(days=1)
     current_report_month = prev.strftime("%Y-%m")
-    cursor.execute("SELECT COUNT(*) as count FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0")
+    cursor.execute("SELECT COUNT(*) as count FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 OR strpos(role, 'IQAC Core team member') > 0")
     total_coordinators = cursor.fetchone()['count']
     cursor.execute("""
         SELECT COUNT(DISTINCT sr.username) as count FROM signed_reports sr
         JOIN users u ON sr.username = u.username
         WHERE sr.reporting_month = %s
         AND sr.status IN ('uploaded', 'reviewed')
-        AND (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
+        AND (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0 OR strpos(u.role, 'IQAC Core team member') > 0)
     """, (current_report_month,))
     submitted_coordinators = cursor.fetchone()['count']
     submission_pct = int((submitted_coordinators / total_coordinators * 100) if total_coordinators > 0 else 0)
@@ -1466,7 +1491,7 @@ def admin_panel():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0 OR strpos(u.role, 'IQAC Core team member') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('uploaded', 'reviewed')
     """, (current_report_month,))
     submitted_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
@@ -1475,14 +1500,14 @@ def admin_panel():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0 OR strpos(u.role, 'IQAC Core team member') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('pending_upload', 'corrections_requested')
     """, (current_report_month,))
     draft_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     # Coordinators with nothing done
     cursor.execute("""
-        SELECT username, full_name FROM users WHERE (strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0)
+        SELECT username, full_name FROM users WHERE (strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 OR strpos(role, 'IQAC Core team member') > 0)
         AND username NOT IN (
             SELECT DISTINCT username FROM signed_reports WHERE reporting_month = %s
         )
@@ -1505,7 +1530,7 @@ def admin_panel():
         return redirect("/admin")
 
     # Fetch coordinators for dropdown
-    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 OR strpos(role, 'IQAC Core team member') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
 
     # Coordinator summary form handling
@@ -1818,11 +1843,11 @@ def admin_report():
         return redirect("/dashboard")
 
     # Fetch users
-    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 AND strpos(role, 'IQAC Core team member') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     # Fetch coordinators
-    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'Coordinator') > 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'Coordinator') > 0 OR strpos(role, 'IQAC Core team member') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
 
     logs = []
@@ -2086,7 +2111,7 @@ def admin_report_ai():
         return redirect("/dashboard")
 
     # Fetch users
-    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, emp_id FROM users WHERE strpos(role, 'Admin') = 0 AND strpos(role, 'School IQAC Coordinator') = 0 AND strpos(role, 'Campus IQAC Coordinator') = 0 AND strpos(role, 'IQAC Core team member') = 0 ORDER BY username")
     users = cursor.fetchall()
 
     logs = []
@@ -2540,7 +2565,7 @@ def send_iqac_report_reminder(is_deadline=False):
     cursor = get_cursor(conn)
 
     # Get all IQAC Coordinators
-    cursor.execute("SELECT username, email, full_name FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0")
+    cursor.execute("SELECT username, email, full_name FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 OR strpos(role, 'IQAC Core team member') > 0")
     coordinators = cursor.fetchall()
 
     sent_count = 0
@@ -2665,7 +2690,7 @@ def send_auto_iqac_reminders():
         subject = f"IQAC Report Reminder — {days_left} Days Left — {month_display}"
 
     cursor.execute(
-        "SELECT username, email, full_name FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0"
+        "SELECT username, email, full_name FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 OR strpos(role, 'IQAC Core team member') > 0"
     )
     coordinators = cursor.fetchall()
 
@@ -3583,7 +3608,7 @@ def iqac_upload_signed_report():
             f"Dear Admin/Secretary,\n\n"
             f"{display_name} ({user.get('designation', '')}, {user.get('department', '')}) "
             f"has submitted their signed IQAC report for {reporting_month_display}.\n\n"
-            f"Please log in to review and authorise the report.\n\n"
+            f"Please log in to review and authorise the report: https://iqacworklog.christuniversity.in/login\n\n"
             f"Regards,\n"
             f"Internal Quality Assurance Cell (IQAC)\n"
             f"CHRIST (Deemed to be University)"
@@ -3741,7 +3766,7 @@ def secretary_dashboard():
     prev = now.replace(day=1) - timedelta(days=1)
     current_report_month = prev.strftime("%Y-%m")
 
-    cursor.execute("SELECT COUNT(*) as count FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0")
+    cursor.execute("SELECT COUNT(*) as count FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 OR strpos(role, 'IQAC Core team member') > 0")
     total_coordinators = cursor.fetchone()['count']
 
     cursor.execute("""
@@ -3749,7 +3774,7 @@ def secretary_dashboard():
         JOIN users u ON sr.username = u.username
         WHERE sr.reporting_month = %s
         AND sr.status IN ('uploaded', 'reviewed')
-        AND (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
+        AND (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0 OR strpos(u.role, 'IQAC Core team member') > 0)
     """, (current_report_month,))
     submitted_coordinators = cursor.fetchone()['count']
 
@@ -3758,7 +3783,7 @@ def secretary_dashboard():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0 OR strpos(u.role, 'IQAC Core team member') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('uploaded', 'reviewed')
     """, (current_report_month,))
     submitted_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
@@ -3766,13 +3791,13 @@ def secretary_dashboard():
     cursor.execute("""
         SELECT DISTINCT u.username, u.full_name FROM users u
         JOIN signed_reports sr ON sr.username = u.username
-        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0)
+        WHERE (strpos(u.role, 'School IQAC Coordinator') > 0 OR strpos(u.role, 'Campus IQAC Coordinator') > 0 OR strpos(u.role, 'IQAC Core team member') > 0)
         AND sr.reporting_month = %s AND sr.status IN ('pending_upload', 'corrections_requested')
     """, (current_report_month,))
     draft_coordinator_names = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     cursor.execute("""
-        SELECT username, full_name FROM users WHERE (strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0)
+        SELECT username, full_name FROM users WHERE (strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 OR strpos(role, 'IQAC Core team member') > 0)
         AND username NOT IN (
             SELECT DISTINCT username FROM signed_reports WHERE reporting_month = %s
         )
@@ -3780,7 +3805,7 @@ def secretary_dashboard():
     pending_coordinators = [r['full_name'] or r['username'] for r in cursor.fetchall()]
 
     # Coordinators list for Quick Summary dropdown
-    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 ORDER BY username")
+    cursor.execute("SELECT username, full_name, role FROM users WHERE strpos(role, 'School IQAC Coordinator') > 0 OR strpos(role, 'Campus IQAC Coordinator') > 0 OR strpos(role, 'IQAC Core team member') > 0 ORDER BY username")
     coordinators = cursor.fetchall()
 
     # Handle submission window settings update

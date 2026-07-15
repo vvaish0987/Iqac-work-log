@@ -17,7 +17,7 @@ def is_coordinator(role_str):
     if not role_str:
         return False
     roles = [r.strip().lower() for r in role_str.split(',')]
-    return 'school iqac coordinator' in roles or 'campus iqac coordinator' in roles
+    return 'school iqac coordinator' in roles or 'campus iqac coordinator' in roles or 'iqac core team member' in roles
 
 def _cloudinary_upload_ws(file_obj, username, reporting_month, index):
     public_id = f"{username}/{reporting_month}/workshop_{index + 1}"
@@ -146,10 +146,9 @@ def iqac_monthly_report_download():
     ws_files = request.files.getlist("ws_report_file[]")
     sorted_ws_files = sort_list_fields(form_data_obj, "standard", ws_files) or ws_files
 
-    aqar_emails_env = os.getenv("AQAR_COORDINATOR_EMAILS", "")
-    aqar_emails = [e.strip().lower() for e in aqar_emails_env.split(",") if e.strip()]
-    email = (user.get("email") or "").strip().lower()
-    report_type = "aqar_coordinator" if email in aqar_emails else "standard"
+    role_str = user.get("role") or ""
+    roles = [r.strip().lower() for r in role_str.split(',')]
+    report_type = "aqar_coordinator" if "iqac core team member" in roles else "standard"
 
     try:
         cursor.execute("""
@@ -947,10 +946,9 @@ def iqac_coordinator_report_submit():
         return {"success": False, "error": f"Cloudinary upload failed: {str(e)}"}
 
     # Save draft in database
-    aqar_emails_env = os.getenv("AQAR_COORDINATOR_EMAILS", "")
-    aqar_emails = [e.strip().lower() for e in aqar_emails_env.split(",") if e.strip()]
-    email = (user.get("email") or "").strip().lower()
-    report_type = "aqar_coordinator" if email in aqar_emails else "standard"
+    role_str = user.get("role") or ""
+    roles = [r.strip().lower() for r in role_str.split(',')]
+    report_type = "aqar_coordinator" if "iqac core team member" in roles else "standard"
 
     try:
         cursor.execute("""
@@ -992,58 +990,30 @@ def iqac_coordinator_report_submit():
 
     conn.close()
 
-    # Send email notification to Admin/Secretary and Director
+    # Send email notification exclusively to Director
     try:
         from app import send_email
-        notify_conn = get_db_connection()
-        notify_cur = get_cursor(notify_conn)
-        notify_cur.execute("SELECT email FROM users WHERE role IN ('Admin', 'Secretary') AND email IS NOT NULL AND email != ''")
-        recipients = notify_cur.fetchall()
-        notify_conn.close()
-
         reporting_month_display = datetime.strptime(reporting_month, "%Y-%m").strftime("%m-%Y")
         coordinator_name = user.get("full_name") or username.title()
         if isinstance(coordinator_name, str):
             coordinator_name = coordinator_name.strip().title()
 
-        # 1. Notify Admin/Secretary
-        subject = f"IQAC Report Submitted – {coordinator_name} ({reporting_month_display})"
+        subject = f"Monthly Report Submitted – {coordinator_name} ({reporting_month_display})"
         body = (
-            f"Dear Admin/Secretary,\n\n"
-            f"{coordinator_name} ({user.get('designation', '')}, {user.get('department', '')}) "
-            f"has submitted their signed IQAC report for {reporting_month_display}.\n\n"
-            f"Please log in to review and authorise the report.\n\n"
+            f"Dear Director/Admin,\n\n"
+            f"IQAC Core Team Member {coordinator_name} has submitted their Monthly Report (AQAR Aligned) for {reporting_month_display}.\n\n"
+            f"Please log in to review the report: https://iqacworklog.christuniversity.in/login\n\n"
             f"Regards,\n"
             f"Internal Quality Assurance Cell (IQAC)\n"
             f"CHRIST (Deemed to be University)"
         )
-        for r in recipients:
-            try:
-                send_email(r['email'], subject, body)
-            except Exception as e:
-                print(f"Failed to notify {r['email']}: {e}")
-
-        # 2. Notify Director
-        director_emails = ["director.iqac@christuniversity.in", "arnavnarula25@gmail.com"]
-        director_subject = f"Monthly Report Submitted – {coordinator_name} ({reporting_month_display})"
-        director_body = (
-            f"Dear Director,\n\n"
-            f"IQAC Coordinator {coordinator_name} ({user.get('designation', '')}, {user.get('department', '')}) "
-            f"has submitted their Monthly Report (AQAR Aligned) for {reporting_month_display}.\n\n"
-            f"Please log in to review the report.\n\n"
-            f"Regards,\n"
-            f"Internal Quality Assurance Cell (IQAC)\n"
-            f"CHRIST (Deemed to be University)"
-        )
-        for d_email in director_emails:
-            try:
-                send_email(d_email, director_subject, director_body)
-                print(f"Sent submission notification email to Director: {d_email}")
-            except Exception as e:
-                print(f"Failed to notify Director ({d_email}): {e}")
-
+        try:
+            send_email("director.iqac@christuniversity.in", subject, body)
+            print(f"Sent submission notification email to director.iqac@christuniversity.in")
+        except Exception as e:
+            print(f"Failed to notify Director (director.iqac@christuniversity.in): {e}")
     except Exception as e:
-        print(f"Notification error: {e}")
+        print(f"Notification setup error: {e}")
 
     return {"success": True}
 
@@ -1100,10 +1070,9 @@ def iqac_coordinator_report_download():
 
     sort_list_fields(form_data_obj, "aqar_coordinator")
 
-    aqar_emails_env = os.getenv("AQAR_COORDINATOR_EMAILS", "")
-    aqar_emails = [e.strip().lower() for e in aqar_emails_env.split(",") if e.strip()]
-    email = (user.get("email") or "").strip().lower()
-    report_type = "aqar_coordinator" if email in aqar_emails else "standard"
+    role_str = user.get("role") or ""
+    roles = [r.strip().lower() for r in role_str.split(',')]
+    report_type = "aqar_coordinator" if "iqac core team member" in roles else "standard"
 
     try:
         cursor.execute("""
@@ -1302,7 +1271,7 @@ def _generate_aqar_coordinator_pdf(form_data, aqar_names=None):
          Paragraph('<b>Details</b>', make_style('aqar_p_val', size=9, bold=True, space_after=0))],
         [Paragraph('Name of IQAC Coordinator', make_style('aqar_p1', size=9, space_after=0)),
          Paragraph(coord_name, make_style('aqar_pv1', size=9, space_after=0))],
-        [Paragraph('School/Campus', make_style('aqar_p2', size=9, space_after=0)),
+        [Paragraph('Role', make_style('aqar_p2', size=9, space_after=0)),
          Paragraph(school, make_style('aqar_pv2', size=9, space_after=0))],
         [Paragraph('Reporting Month', make_style('aqar_p3', size=9, space_after=0)),
          Paragraph(rep_month_display, make_style('aqar_pv3', size=9, space_after=0))],

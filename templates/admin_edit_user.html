@@ -443,6 +443,10 @@
                   <label class="form-check-label" for="roleCampus">Campus IQAC Coordinator</label>
                 </div>
                 <div class="form-check mb-2">
+                  <input class="form-check-input role-cb" type="checkbox" name="roles" value="IQAC Core team member" id="roleCore" {% if 'IQAC Core team member' in user_roles %}checked{% endif %}>
+                  <label class="form-check-label" for="roleCore">IQAC Core team member</label>
+                </div>
+                <div class="form-check mb-2">
                   <input class="form-check-input role-cb" type="checkbox" name="roles" value="Secretary" id="roleSecretary" {% if 'Secretary' in user_roles %}checked{% endif %}>
                   <label class="form-check-label" for="roleSecretary">Secretary</label>
                 </div>
