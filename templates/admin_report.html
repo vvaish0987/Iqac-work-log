@@ -782,8 +782,14 @@
                     <tr>
                       <td class="info-label">Designation:</td>
                       <td class="info-value">{{ r.designation or '—' }}</td>
-                      <td class="info-label">Department:</td>
-                      <td class="info-value">{{ r.department or '—' }}</td>
+                      <td class="info-label">{% if r.report_type == 'aqar_coordinator' %}Role:{% else %}Department:{% endif %}</td>
+                      <td class="info-value">
+                        {% if r.report_type == 'aqar_coordinator' %}
+                          {{ (r.draft_data.get('school_campus', '') if r.draft_data else '') or r.department or '—' }}
+                        {% else %}
+                          {{ r.department or '—' }}
+                        {% endif %}
+                      </td>
                     </tr>
                   </table>
 
